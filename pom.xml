@@ -33,7 +33,7 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Uncomment if your JSP pages use JSTL tags -->
+        <!-- Uncomment if JSP pages use JSTL tags -->
         <!--
         <dependency>
           <groupId>org.glassfish.web</groupId>
