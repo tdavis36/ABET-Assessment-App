@@ -13,7 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <jetty.version>11.0.13</jetty.version>
+        <jetty.version>11.0.24</jetty.version>
         <jakarta.servlet.version>5.0.0</jakarta.servlet.version>
     </properties>
 
@@ -86,7 +86,6 @@
                     <httpConnector>
                         <port>8081</port>
                     </httpConnector>
-                    <scanIntervalSeconds>5</scanIntervalSeconds>
                     <supportedPackagings>
                         <supportedPackaging>war</supportedPackaging>
                     </supportedPackagings>
@@ -103,7 +102,7 @@
                     <dependency>
                         <groupId>org.eclipse.jetty</groupId>
                         <artifactId>apache-jstl</artifactId>
-                        <version>${jetty.version}</version>
+                        <version>11.0.0</version>
                     </dependency>
                 </dependencies>
             </plugin>
