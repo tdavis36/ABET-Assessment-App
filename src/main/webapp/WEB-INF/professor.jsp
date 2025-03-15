@@ -10,7 +10,7 @@
 <body>
     <div class="dashboard">
         <h1>Welcome, Dr. [Professor Name]</h1>
-        <a href="index.jsp" class="btn">Logout</a>
+        <a href="/index" class="btn">Logout</a>
         
         <div class="status-key">
             <div><span class="status not-started"></span> Not Started</div>

@@ -10,7 +10,7 @@
 <body>
     <div class="dashboard" id="adminDashboard">
         <h1>Welcome, Dr. [Admin Name]</h1>
-        <a href="index.jsp" class="btn">Logout</a>
+        <a href="/index" class="btn">Logout</a>
 
         <div class="section">
             <h2>Professor Task Overview</h2>

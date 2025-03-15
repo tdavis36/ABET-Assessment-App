@@ -11,8 +11,8 @@
     <div class="container">
         <h1>Welcome to the ABET Assessment Dashboard</h1>
         <p>Please sign in to continue.</p>
-        <a href="admin.jsp" class="btn">Login as Admin</a>
-        <a href="professor.jsp" class="btn">Login as Professor</a>
+        <a href="/admin" class="btn">Login as Admin</a>
+        <a href="/professor" class="btn">Login as Professor</a>
     </div>
 </body>
 </html>
