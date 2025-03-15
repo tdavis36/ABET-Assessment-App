@@ -1,4 +1,4 @@
-package com.example;
+package com.ABETAppTeam;
 
 import java.io.IOException;
 
@@ -8,15 +8,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Servlet implementation for handling index page requests
+ * Servlet implementation for handling admin page requests
  */
-public class IndexServlet extends HttpServlet {
+public class AdminServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public IndexServlet() {
+    public AdminServlet() {
         super();
     }
 
@@ -26,8 +26,8 @@ public class IndexServlet extends HttpServlet {
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Forward the request to the index.jsp page
-        request.getRequestDispatcher("/WEB-INF/index.jsp").forward(request, response);
+        // Forward the request to the admin.jsp page
+        request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
     }
 
     /**

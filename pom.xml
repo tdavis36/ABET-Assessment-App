@@ -18,43 +18,34 @@
     </properties>
 
     <dependencies>
+        <!-- MySQL Connector -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.31</version>
         </dependency>
+
+        <!-- Servlet API is provided by Jetty -->
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
             <version>${jakarta.servlet.version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- Uncomment if your JSP pages use JSTL tags -->
+        <!--
         <dependency>
-            <groupId>jakarta.servlet.jsp</groupId>
-            <artifactId>jakarta.servlet.jsp-api</artifactId>
-            <version>3.1.0</version>
-            <scope>provided</scope>
+          <groupId>org.glassfish.web</groupId>
+          <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+          <version>2.0.0</version>
         </dependency>
-        <dependency>
-            <groupId>jakarta.el</groupId>
-            <artifactId>jakarta.el-api</artifactId>
-            <version>5.0.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.web</groupId>
-            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-            <version>2.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>apache-jsp</artifactId>
-            <version>${jetty.version}</version>
-        </dependency>
+        -->
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Maven Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -64,7 +55,8 @@
                     <target>${maven.compiler.target}</target>
                 </configuration>
             </plugin>
-            
+
+            <!-- Maven WAR Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
@@ -74,6 +66,7 @@
                 </configuration>
             </plugin>
 
+            <!-- Jetty Maven Plugin with JSP Support -->
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
@@ -86,9 +79,6 @@
                     <httpConnector>
                         <port>8081</port>
                     </httpConnector>
-                    <supportedPackagings>
-                        <supportedPackaging>war</supportedPackaging>
-                    </supportedPackagings>
                     <modules>
                         <module>jsp</module>
                     </modules>
@@ -98,15 +88,20 @@
                         <groupId>org.eclipse.jetty</groupId>
                         <artifactId>apache-jsp</artifactId>
                         <version>${jetty.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.eclipse.jetty</groupId>
-                        <artifactId>apache-jstl</artifactId>
-                        <version>11.0.0</version>
+                        <exclusions>
+                            <!-- Exclude transitive dependencies causing conflicts -->
+                            <exclusion>
+                                <groupId>org.eclipse.jetty</groupId>
+                                <artifactId>apache-jstl</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>org.mortbay.jasper</groupId>
+                                <artifactId>taglibs-standard</artifactId>
+                            </exclusion>
+                        </exclusions>
                     </dependency>
                 </dependencies>
             </plugin>
         </plugins>
     </build>
-
 </project>

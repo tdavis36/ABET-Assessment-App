@@ -1,4 +1,4 @@
-package com.example;
+package com.ABETAppTeam;
 
 /**
  * Main class for the ABET Assessment Application
