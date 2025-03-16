@@ -62,7 +62,7 @@
                 <artifactId>maven-war-plugin</artifactId>
                 <version>3.3.2</version>
                 <configuration>
-                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                    <failOnMissingWebXml>true</failOnMissingWebXml>
                 </configuration>
             </plugin>
 
@@ -74,7 +74,6 @@
                 <configuration>
                     <webApp>
                         <contextPath>/</contextPath>
-                        <defaultsDescriptor>src/main/webapp/WEB-INF/web.xml</defaultsDescriptor>
                     </webApp>
                     <httpConnector>
                         <port>8081</port>
@@ -88,17 +87,6 @@
                         <groupId>org.eclipse.jetty</groupId>
                         <artifactId>apache-jsp</artifactId>
                         <version>${jetty.version}</version>
-                        <exclusions>
-                            <!-- Exclude transitive dependencies causing conflicts -->
-                            <exclusion>
-                                <groupId>org.eclipse.jetty</groupId>
-                                <artifactId>apache-jstl</artifactId>
-                            </exclusion>
-                            <exclusion>
-                                <groupId>org.mortbay.jasper</groupId>
-                                <artifactId>taglibs-standard</artifactId>
-                            </exclusion>
-                        </exclusions>
                     </dependency>
                 </dependencies>
             </plugin>
