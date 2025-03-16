@@ -50,9 +50,4 @@
         <url-pattern>/test</url-pattern>
     </servlet-mapping>
 
-    <!-- Welcome File List -->
-    <welcome-file-list>
-        <welcome-file>index.html</welcome-file>
-    </welcome-file-list>
-
 </web-app>
