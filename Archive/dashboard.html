@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABET Assessment Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" id="loginScreen">
+        <h1>Welcome to the ABET Assessment Dashboard</h1>
+        <p>Please sign in to continue.</p>
+        <a href="#" class="btn" onclick="goToAdminDashboard()">Login as Admin</a>
+        <a href="#" class="btn" onclick="goToProfessorDashboard()">Login as Professor</a>
+    </div>
+
+    <div class="dashboard" id="professorDashboard" style="display: none;">
+        <h1>Welcome, Dr. [Professor Name]</h1>
+        
+        <div class="status-key">
+            <div><span class="status not-started"></span> Not Started</div>
+            <div><span class="status in-progress"></span> In Progress</div>
+            <div><span class="status submitted"></span> Submitted</div>
+            <div><span class="status completed"></span> Completed</div>
+        </div>
+        
+        <div class="section">
+            <h2>Outstanding Tasks</h2>
+            <div class="task-box">
+                <div class="task-item">
+                    <div><span class="status not-started"></span> Task 1</div>
+                    <div class="task-actions">
+                        <span class="uploaded-docs">report.pdf (0% completed)</span>
+                        <button class="btn">Open</button>
+                        <button class="btn">Submit</button>
+                    </div>
+                </div>
+                <div class="task-item">
+                    <div><span class="status in-progress"></span> Task 2</div>
+                    <div class="task-actions">
+                        <span class="uploaded-docs">assessment.docx (50% completed)</span>
+                        <button class="btn">Open</button>
+                        <button class="btn">Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Completed Tasks</h2>
+            <div class="task-box">
+                <div class="task-item">
+                    <div><span class="status submitted"></span> Task A</div>
+                    <span class="uploaded-docs">summary.docx (100% completed)</span>
+                </div>
+                <div class="task-item">
+                    <div><span class="status completed"></span> Task B</div>
+                    <span class="uploaded-docs">final_report.pdf (100% completed)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard" id="adminDashboard" style="display: none;">
+        <h1>Welcome, Dr. [Admin Name]</h1>
+        
+        <div class="section">
+            <h2>Professor Task Overview</h2>
+            <select id="professorSort" onchange="sortProfessors()">
+                <option value="mostOutstanding">Most Outstanding Tasks</option>
+                <option value="mostCompleted">Most Completed Tasks</option>
+            </select>
+            <div id="professorList">
+                <details>
+                    <summary>Dr. Smith - 3 Outstanding, 5 Completed</summary>
+                    <div class="task-box">
+                        <div class="task-item">Task 1 - Not Started</div>
+                        <div class="task-item">Task 2 - In Progress</div>
+                    </div>
+                </details>
+                <details>
+                    <summary>Dr. Johnson - 5 Outstanding, 2 Completed</summary>
+                    <div class="task-box">
+                        <div class="task-item">Task 3 - Not Started</div>
+                        <div class="task-item">Task 4 - Submitted</div>
+                    </div>
+                </details>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>All Tasks Overview</h2>
+            <select id="taskSort" onchange="sortTasks()">
+                <option value="percentComplete">Sort by % Complete</option>
+                <option value="urgency">Sort by Urgency</option>
+            </select>
+            <div id="taskList">
+                <div class="task-item">Task 1 - Dr. Smith (20% completed, High Urgency)</div>
+                <div class="task-item">Task 2 - Dr. Johnson (50% completed, Medium Urgency)</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Create New Task</h2>
+            <label>Task Name:</label>
+            <input type="text" id="taskName" />
+            <label>Form Template:</label>
+            <input type="text" id="formTemplate" />
+            <label>Urgency:</label>
+            <select id="taskUrgency">
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+            </select>
+            <label>Assign to Professor:</label>
+            <select id="assignProfessor">
+                <option value="Dr. Smith">Dr. Smith</option>
+                <option value="Dr. Johnson">Dr. Johnson</option>
+            </select>
+            <button class="btn" onclick="createTask()">Submit</button>
+        </div>
+    </div>
+
+    <script>
+        function goToAdminDashboard() {
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("adminDashboard").style.display = "block";
+        }
+
+        function goToProfessorDashboard() {
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("professorDashboard").style.display = "block";
+        }
+
+        function createTask() {
+            let taskName = document.getElementById("taskName").value;
+            let professor = document.getElementById("assignProfessor").value;
+            let urgency = document.getElementById("taskUrgency").value;
+            let newTask = document.createElement("div");
+            newTask.classList.add("task-item");
+            newTask.innerHTML = `${taskName} - ${professor} (${urgency} Urgency)`;
+            document.getElementById("taskList").appendChild(newTask);
+        }
+    </script>
+</body>
+</html>

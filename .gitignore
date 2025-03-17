@@ -618,3 +618,4 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
+*/target/*
