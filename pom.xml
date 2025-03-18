@@ -81,6 +81,7 @@
                     <modules>
                         <module>jsp</module>
                     </modules>
+                    <scan>3</scan>
                 </configuration>
                 <dependencies>
                     <dependency>

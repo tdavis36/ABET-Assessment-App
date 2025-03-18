@@ -1,16 +1,15 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
 </head>
 <body>
     <div class="dashboard" id="adminDashboard">
         <h1>Welcome, Dr. [Admin Name]</h1>
-        <a href="/index" class="btn">Logout</a>
+        <a href="${pageContext.request.contextPath}/" class="btn">Logout</a>
 
         <div class="section">
             <h2>Professor Task Overview</h2>
