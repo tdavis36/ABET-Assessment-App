@@ -76,21 +76,21 @@ public class DisplaySystemControllerTest {
 
         // Verify that the user in the map matches our professor
         Object userObj = dashboardData.get("user");
-        assertTrue(userObj instanceof Professor, "The 'user' key should map to a Professor object.");
+        assertInstanceOf(Professor.class, userObj, "The 'user' key should map to a Professor object.");
         Professor returnedProfessor = (Professor) userObj;
         assertEquals(professor.getUserId(), returnedProfessor.getUserId(),
                 "The returned professor should have the correct userId.");
 
         // Verify the professor’s courses
         Object coursesObj = dashboardData.get("courses");
-        assertTrue(coursesObj instanceof List, "The 'courses' key should map to a List of courses.");
+        assertInstanceOf(List.class, coursesObj, "The 'courses' key should map to a List of courses.");
         @SuppressWarnings("unchecked")
         List<Course> returnedCourses = (List<Course>) coursesObj;
         assertTrue(returnedCourses.contains(course), "The returned courses should contain the test course.");
 
         // Verify the professor’s FCARs
         Object fcarsObj = dashboardData.get("fcars");
-        assertTrue(fcarsObj instanceof List, "The 'fcars' key should map to a List of FCARs.");
+        assertInstanceOf(List.class, fcarsObj, "The 'fcars' key should map to a List of FCARs.");
         @SuppressWarnings("unchecked")
         List<FCAR> returnedFCARs = (List<FCAR>) fcarsObj;
         assertTrue(returnedFCARs.contains(fcar), "The returned FCARs should contain the test FCAR.");
