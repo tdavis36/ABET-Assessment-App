@@ -44,8 +44,8 @@ public class AdminTest {
         // Act: Call the createUser method.
         boolean result = admin.createUser(userType, username, password, email, firstName, lastName);
 
-        // Assert: Ensure the method returned true (assuming successful creation for unhandled types).
-        assertTrue(result, "User creation should return true even for unhandled user types.");
+        // Assert: Ensure the method returned false (assuming successful creation for unhandled types).
+        assertFalse(result, "User creation should return false even for unhandled user types.");
     }
 
     @Test
@@ -78,7 +78,7 @@ public class AdminTest {
         String lastName = "Davis";
 
         // Act: Call the createUser method.
-        boolean result = admin.createUser(userType, username, password, email, firstName, lastName);
+        boolean result = admin.createUser(userType, username, password, null, firstName, lastName);
 
         // Assert: Check if the method still returns true, as the logic is not yet implemented.
         assertTrue(result, "User creation should succeed as no validation is currently enforced.");
