@@ -46,38 +46,37 @@
                 <div class="task-item">Task 2 - Dr. Johnson (50% completed, Medium Urgency)</div>
             </div>
         </div>
-        
+
+        <!-- Create New Task (FORM Version) -->
         <div class="section">
             <h2>Create New Task</h2>
-            <label>Task Name:</label>
-            <input type="text" id="taskName" />
-            <label>Form Template:</label>
-            <input type="text" id="formTemplate" />
-            <label>Urgency:</label>
-            <select id="taskUrgency">
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-            </select>
-            <label>Assign to Professor:</label>
-            <select id="assignProfessor">
-                <option value="Dr. Smith">Dr. Smith</option>
-                <option value="Dr. Johnson">Dr. Johnson</option>
-            </select>
-            <button class="btn" onclick="createTask()">Submit</button>
-        </div>
-    </div>
+            <form action="${pageContext.request.contextPath}/AdminServlet" method="post">
+                <!-- Hidden action parameter, so the servlet knows what to do -->
+                <input type="hidden" name="action" value="assignTask" />
 
-    <script>
-        function createTask() {
-            let taskName = document.getElementById("taskName").value;
-            let professor = document.getElementById("assignProfessor").value;
-            let urgency = document.getElementById("taskUrgency").value;
-            let newTask = document.createElement("div");
-            newTask.classList.add("task-item");
-            newTask.innerHTML = `${taskName} - ${professor} (${urgency} Urgency)`;
-            document.getElementById("taskList").appendChild(newTask);
-        }
-    </script>
+                <label>Task Name:</label>
+                <input type="text" name="taskName" required />
+
+                <label>Form Template:</label>
+                <input type="text" name="formTemplate" />
+
+                <label>Urgency:</label>
+                <select name="urgency">
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+
+                <label>Assign to Professor:</label>
+                <select name="professorId">
+                    <option value="Dr. Smith">Dr. Smith</option>
+                    <option value="Dr. Johnson">Dr. Johnson</option>
+                    <!-- Possibly use real professor IDs here -->
+                </select>
+
+                <button class="btn" type="submit">Submit</button>
+            </form>
+        </div>
+
 </body>
 </html>
