@@ -17,7 +17,7 @@ public class FCARController {
     private static FCARController instance;
 
     // Cache for recently accessed FCARs
-    private Map<String, FCAR> fcarCache;
+    private final Map<String, FCAR> fcarCache;
 
     /**
      * Private constructor for singleton pattern
@@ -287,9 +287,7 @@ public class FCARController {
         Map<String, FCAR> fcars = FCARFactory.getFCARsForCourse(courseId);
 
         // Update the cache with the retrieved FCARs
-        for (Map.Entry<String, FCAR> entry : fcars.entrySet()) {
-            this.fcarCache.put(entry.getKey(), entry.getValue());
-        }
+        this.fcarCache.putAll(fcars);
 
         return new ArrayList<>(fcars.values());
     }
@@ -304,9 +302,7 @@ public class FCARController {
         Map<String, FCAR> fcars = FCARFactory.getFCARsByProfessor(professorId);
 
         // Update the cache with the retrieved FCARs
-        for (Map.Entry<String, FCAR> entry : fcars.entrySet()) {
-            this.fcarCache.put(entry.getKey(), entry.getValue());
-        }
+        this.fcarCache.putAll(fcars);
 
         return new ArrayList<>(fcars.values());
     }
@@ -322,9 +318,7 @@ public class FCARController {
         Map<String, FCAR> fcars = FCARFactory.getFCARsBySemester(semester, year);
 
         // Update the cache with the retrieved FCARs
-        for (Map.Entry<String, FCAR> entry : fcars.entrySet()) {
-            this.fcarCache.put(entry.getKey(), entry.getValue());
-        }
+        this.fcarCache.putAll(fcars);
 
         return new ArrayList<>(fcars.values());
     }
