@@ -1,11 +1,15 @@
 package com.ABETAppTeam;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/ProfessorServlet")
 public class ProfessorServlet extends HttpServlet {
@@ -31,6 +35,10 @@ public class ProfessorServlet extends HttpServlet {
         if ("createFakeFCARForm".equals(action)) {
             // Forward to FCAR creation form
             request.getRequestDispatcher("/WEB-INF/fakeFcarForm.jsp").forward(request, response);
+            return;
+        } else if ("createFCARForm".equals(action)) {
+            // Forward to comprehensive FCAR form
+            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
             return;
         } else if ("viewFCARs".equals(action)) {
             // Pass stored FCARs to admin dashboard
@@ -80,14 +88,103 @@ public class ProfessorServlet extends HttpServlet {
             }
             response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
         } else if ("submitFCAR".equals(action)) {
-            // Retrieve form inputs
+            // Retrieve basic form inputs
             String courseId = request.getParameter("courseId");
             String professorId = request.getParameter("professorId");
             String semester = request.getParameter("semester");
             int year = Integer.parseInt(request.getParameter("year"));
 
-            // Create and store FCAR
+            // Create FCAR
             FCAR newFCAR = FCARFactory.createFCAR(courseId, professorId, semester, year);
+
+            // Get outcome and indicator
+            String outcome = request.getParameter("outcome");
+            String indicator = request.getParameter("indicator");
+            String targetGoal = request.getParameter("targetGoal");
+
+            // Get assessment method details
+            String workUsed = request.getParameter("workUsed");
+            String assessmentDescription = request.getParameter("assessmentDescription");
+
+            // Get achievement levels
+            int level4 = Integer.parseInt(request.getParameter("level4"));
+            int level3 = Integer.parseInt(request.getParameter("level3"));
+            int level2 = Integer.parseInt(request.getParameter("level2"));
+            int level1 = Integer.parseInt(request.getParameter("level1"));
+            int level0 = Integer.parseInt(request.getParameter("level0"));
+
+            // Calculate results
+            int totalStudents = level4 + level3 + level2 + level1 + level0;
+            int studentsMetTarget = level4 + level3;
+            double percentageMetTarget = totalStudents > 0 ? (double) studentsMetTarget / totalStudents * 100 : 0;
+            boolean targetMet = percentageMetTarget >= Double.parseDouble(targetGoal);
+
+            // Get summary and improvement actions
+            String summary = request.getParameter("summary");
+            String improvementActions = request.getParameter("improvementActions");
+
+            // Store additional data in the FCAR
+            // In a real implementation, you would extend the FCAR class to include these
+            // fields
+            // For now, we'll store them as assessment methods and improvement actions
+            newFCAR.addAssessmentMethod("outcome", outcome);
+            newFCAR.addAssessmentMethod("indicator", indicator);
+            newFCAR.addAssessmentMethod("targetGoal", targetGoal);
+            newFCAR.addAssessmentMethod("workUsed", workUsed);
+            newFCAR.addAssessmentMethod("assessmentDescription", assessmentDescription);
+            newFCAR.addAssessmentMethod("level4", String.valueOf(level4));
+            newFCAR.addAssessmentMethod("level3", String.valueOf(level3));
+            newFCAR.addAssessmentMethod("level2", String.valueOf(level2));
+            newFCAR.addAssessmentMethod("level1", String.valueOf(level1));
+            newFCAR.addAssessmentMethod("level0", String.valueOf(level0));
+            newFCAR.addAssessmentMethod("totalStudents", String.valueOf(totalStudents));
+            newFCAR.addAssessmentMethod("studentsMetTarget", String.valueOf(studentsMetTarget));
+            newFCAR.addAssessmentMethod("percentageMetTarget", String.format("%.2f", percentageMetTarget));
+            newFCAR.addAssessmentMethod("targetMet", String.valueOf(targetMet));
+
+            newFCAR.addImprovementAction("summary", summary);
+            if (improvementActions != null && !improvementActions.isEmpty()) {
+                newFCAR.addImprovementAction("actions", improvementActions);
+            }
+
+            // Check if breakdown by major was selected
+            String breakdownByMajor = request.getParameter("breakdownByMajor");
+            if (breakdownByMajor != null && breakdownByMajor.equals("on")) {
+                // Get major breakdown data
+                String[] majors = request.getParameterValues("major[]");
+                String[] majorLevel4s = request.getParameterValues("majorLevel4[]");
+                String[] majorLevel3s = request.getParameterValues("majorLevel3[]");
+                String[] majorLevel2s = request.getParameterValues("majorLevel2[]");
+                String[] majorLevel1s = request.getParameterValues("majorLevel1[]");
+                String[] majorLevel0s = request.getParameterValues("majorLevel0[]");
+
+                if (majors != null) {
+                    for (int i = 0; i < majors.length; i++) {
+                        if (majors[i] != null && !majors[i].isEmpty()) {
+                            String majorPrefix = "major_" + i + "_";
+                            newFCAR.addAssessmentMethod(majorPrefix + "name", majors[i]);
+
+                            if (majorLevel4s != null && i < majorLevel4s.length) {
+                                newFCAR.addAssessmentMethod(majorPrefix + "level4", majorLevel4s[i]);
+                            }
+                            if (majorLevel3s != null && i < majorLevel3s.length) {
+                                newFCAR.addAssessmentMethod(majorPrefix + "level3", majorLevel3s[i]);
+                            }
+                            if (majorLevel2s != null && i < majorLevel2s.length) {
+                                newFCAR.addAssessmentMethod(majorPrefix + "level2", majorLevel2s[i]);
+                            }
+                            if (majorLevel1s != null && i < majorLevel1s.length) {
+                                newFCAR.addAssessmentMethod(majorPrefix + "level1", majorLevel1s[i]);
+                            }
+                            if (majorLevel0s != null && i < majorLevel0s.length) {
+                                newFCAR.addAssessmentMethod(majorPrefix + "level0", majorLevel0s[i]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Set status and store FCAR
             newFCAR.setStatus("Submitted");
             synchronized (allFCARs) {
                 allFCARs.add(newFCAR);
