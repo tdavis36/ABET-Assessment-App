@@ -79,7 +79,10 @@
 </head>
 <body>
 <h1>Faculty Course Assessment Reports (FCARs)</h1>
-<a href="${pageContext.request.contextPath}/ProfessorServlet" class="btn">Back to Dashboard</a>
+<div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <a href="${pageContext.request.contextPath}/ProfessorServlet" class="btn">Back to Professor Dashboard</a>
+    <a href="${pageContext.request.contextPath}/AdminServlet" class="btn">Back to Admin Dashboard</a>
+</div>
 
 <div class="section">
     <h2>Existing FCARs</h2>
