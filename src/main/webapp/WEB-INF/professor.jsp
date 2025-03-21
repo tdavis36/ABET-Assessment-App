@@ -127,16 +127,27 @@
         </div>
     </div>
 
-    <!-- Buttons for FCAR -->
-    <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get">
-        <input type="hidden" name="action" value="createFakeFCARForm"/>
-        <button type="submit">Create FCAR</button>
-    </form>
-
-    <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get">
-        <input type="hidden" name="action" value="viewFCARs"/>
-        <button type="submit">View FCARs</button>
-    </form>
+    <!-- FCAR Section -->
+    <div class="section">
+        <h2>Faculty Course Assessment Reports (FCARs)</h2>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get">
+                <input type="hidden" name="action" value="createFCARForm"/>
+                <button type="submit" class="btn">Create Comprehensive FCAR</button>
+            </form>
+            
+            <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get">
+                <input type="hidden" name="action" value="createFakeFCARForm"/>
+                <button type="submit" class="btn">Create Simple FCAR</button>
+            </form>
+            
+            <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get">
+                <input type="hidden" name="action" value="viewFCARs"/>
+                <button type="submit" class="btn">View FCARs</button>
+            </form>
+        </div>
+        <p>Use the Comprehensive FCAR form to enter detailed assessment data for student outcomes and indicators.</p>
+    </div>
 </div>
 </body>
 </html>
