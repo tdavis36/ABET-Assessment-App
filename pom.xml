@@ -15,6 +15,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <jetty.version>11.0.24</jetty.version>
         <jakarta.servlet.version>5.0.0</jakarta.servlet.version>
+        <mockito.version>5.15.2</mockito.version>
     </properties>
 
     <dependencies>
@@ -33,14 +34,26 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Uncomment if JSP pages use JSTL tags -->
-        <!--
         <dependency>
-          <groupId>org.glassfish.web</groupId>
-          <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-          <version>2.0.0</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.12.1</version>
+            <scope>test</scope>
         </dependency>
-        -->
+
+        <!-- <dependency>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+            <version>2.0.0</version>
+        </dependency> -->
+
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -81,6 +94,7 @@
                     <modules>
                         <module>jsp</module>
                     </modules>
+                    <scan>3</scan>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -89,6 +103,26 @@
                         <version>${jetty.version}</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
