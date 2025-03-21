@@ -47,36 +47,74 @@
             </div>
         </div>
 
-        <!-- Create New Task (FORM Version) -->
+        <!-- View FCARs Section -->
         <div class="section">
-            <h2>Create New Task</h2>
-            <form action="${pageContext.request.contextPath}/AdminServlet" method="post">
-                <!-- Hidden action parameter, so the servlet knows what to do -->
-                <input type="hidden" name="action" value="assignTask" />
+            <h2>FCARs</h2>
 
-                <label>Task Name:</label>
-                <input type="text" name="taskName" required />
+            <!-- Dynamically display all created FCARs -->
+            <div id="fcarList">
+                <h3>Existing FCARs</h3>
+                <c:choose>
+                    <c:when test="${not empty allFCARs}">
+                        <ul>
+                            <c:forEach var="fcar" items="${allFCARs}">
+                                <li>
+                                    <strong>Professor:</strong> ${fcar.professorId} -
+                                    <strong>Course:</strong> ${fcar.courseId} -
+                                    <strong>Status:</strong> ${fcar.status}
+                                    <a href="${pageContext.request.contextPath}/ViewFCARServlet">View Details</a>
 
-                <label>Form Template:</label>
-                <input type="text" name="formTemplate" />
 
-                <label>Urgency:</label>
-                <select name="urgency">
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                </select>
-
-                <label>Assign to Professor:</label>
-                <select name="professorId">
-                    <option value="Dr. Smith">Dr. Smith</option>
-                    <option value="Dr. Johnson">Dr. Johnson</option>
-                    <!-- Possibly use real professor IDs here -->
-                </select>
-
-                <button class="btn" type="submit">Submit</button>
-            </form>
+                                </li>
+                            </c:forEach>
+                        </ul>
+                    </c:when>
+                    <c:otherwise>
+                        <p>No FCARs available.</p>
+                    </c:otherwise>
+                </c:choose>
+            </div>
         </div>
+
+        <!-- Create New Task (FORM Version) -->
+        <form action="${pageContext.request.contextPath}/AdminServlet" method="post">
+            <input type="hidden" name="action" value="assignTask" />
+
+            <label>Task Name:</label>
+            <input type="text" name="taskName" required />
+
+            <label>Form Template:</label>
+            <input type="text" name="formTemplate" />
+
+            <label>Urgency:</label>
+            <select name="urgency">
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+            </select>
+
+            <label>Assign to Professor:</label>
+            <select name="assignProfessor">
+                <option value="Dr. Smith">Dr. Smith</option>
+                <option value="Dr. Johnson">Dr. Johnson</option>
+            </select>
+
+            <button class="btn" onclick="createTask()">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        function createTask() {
+            let taskName = document.getElementById("taskName").value;
+            let professor = document.getElementById("assignProfessor").value;
+            let urgency = document.getElementById("taskUrgency").value;
+            let newTask = document.createElement("div");
+            newTask.classList.add("task-item");
+            newTask.innerHTML = `${taskName} - ${professor} (${urgency} Urgency)`;
+            document.getElementById("taskList").appendChild(newTask);
+        }
+    </script>
+
 
 </body>
 </html>

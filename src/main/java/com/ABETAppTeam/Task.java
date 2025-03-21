@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public class Task {
     private String taskId;
+    private String fcarId;
     private String taskName;
     private String description;
     private String assignedProfessorId;
@@ -13,7 +14,7 @@ public class Task {
         this.taskId = UUID.randomUUID().toString();
         this.taskName = taskName;
         this.description = description;
-        this.assignedProfessorId = assignedProfessorId;
+        this.assignedProfessorId = (assignedProfessorId != null) ? assignedProfessorId : "Unassigned";  // ✅ FIXED
         this.status = "Not Started";
     }
 
@@ -28,6 +29,12 @@ public class Task {
 
     public void setTaskName(String taskName) {
         this.taskName = taskName;
+    }
+    public void setFcarId(String fcarId) {
+        this.fcarId = fcarId;
+    }
+    public String getFcarId() {
+        return fcarId;
     }
 
     public String getDescription() {
@@ -52,9 +59,5 @@ public class Task {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public void setFcarId(String fcarId) {
-
     }
 }

@@ -9,10 +9,20 @@
     <meta charset="UTF-8">
     <title>Professor Dashboard</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
+    <style>
+        /* Status Colors */
+        .not-started { color: gray; }
+        .in-progress { color: yellow; }
+        .submitted { color: blue; }
+        .completed { color: green; }
+
+        .task-box { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+        .task-item { display: flex; justify-content: space-between; padding: 8px; }
+        .task-actions button { margin-left: 5px; }
+    </style>
 </head>
 <body>
 <div class="dashboard">
-    <!-- Example: retrieve the professor's name from session or user object -->
     <h1>Welcome, Dr. <c:out value="${sessionScope.professorName}"/></h1>
     <a href="${pageContext.request.contextPath}/" class="btn">Logout</a>
 
@@ -28,68 +38,105 @@
     <div class="section">
         <h2>Outstanding Tasks</h2>
         <div class="task-box">
-            <c:forEach var="task" items="${tasks}">
-                <!-- Show tasks that are NOT completed -->
-                <c:if test="${task.status ne 'Completed'}">
-                    <div class="task-item">
-                        <div>
-                            <span class="status ${task.status}"></span>
-                            <c:out value="${task.taskName}"/>
-                        </div>
-                        <div class="task-actions">
-                            <!-- Example placeholder for doc progress -->
-                            <span class="uploaded-docs">(0% completed)</span>
+            <c:choose>
+                <c:when test="${not empty tasks}">
+                    <c:forEach var="task" items="${tasks}">
+                        <c:if test="${task.status ne 'Completed'}">
+                            <div class="task-item">
+                                <div>
+                                    <span class="status ${task.status}"></span>
+                                    <c:out value="${task.taskName}"/>
+                                </div>
+                                <div class="task-actions">
+                                    <span class="uploaded-docs">(0% completed)</span>
 
-                            <!-- 'Open' could lead to a detail page or a form upload -->
-                            <form method="get" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
-                                <input type="hidden" name="action" value="openTask"/>
-                                <input type="hidden" name="taskId" value="${task.taskId}"/>
-                                <button class="btn" type="submit">Open</button>
-                            </form>
+                                    <!-- Open Task -->
+                                    <form method="get" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
+                                        <input type="hidden" name="action" value="openTask"/>
+                                        <input type="hidden" name="taskId" value="${task.taskId}"/>
+                                        <button class="btn" type="submit">Open</button>
+                                    </form>
 
-                            <!-- 'Submit' updates the status to "Submitted" -->
-                            <form method="post" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
-                                <input type="hidden" name="action" value="submitTask"/>
-                                <input type="hidden" name="taskId" value="${task.taskId}"/>
-                                <button class="btn" type="submit">Submit</button>
-                            </form>
+                                    <!-- Submit Task -->
+                                    <form method="post" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
+                                        <input type="hidden" name="action" value="submitTask"/>
+                                        <input type="hidden" name="taskId" value="${task.taskId}"/>
+                                        <button class="btn" type="submit">Submit</button>
+                                    </form>
 
-                            <!-- (New) 'Complete' sets status to "Completed" -->
-                            <form method="post" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
-                                <input type="hidden" name="action" value="completeTask"/>
-                                <input type="hidden" name="taskId" value="${task.taskId}"/>
-                                <button class="btn" type="submit">Complete</button>
-                            </form>
-                        </div>
-                    </div>
-                </c:if>
-            </c:forEach>
+                                    <!-- Complete Task -->
+                                    <form method="post" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
+                                        <input type="hidden" name="action" value="completeTask"/>
+                                        <input type="hidden" name="taskId" value="${task.taskId}"/>
+                                        <button class="btn" type="submit">Complete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </c:if>
+                    </c:forEach>
+                </c:when>
+                <c:otherwise>
+                    <p>No outstanding tasks.</p>
+                </c:otherwise>
+            </c:choose>
+
+            <!-- Dummy Tasks for UI Testing -->
+            <div class="task-item">
+                <div><span class="status not-started"></span> Research Paper Review</div>
+                <span class="uploaded-docs">document.docx (0% completed)</span>
+            </div>
+            <div class="task-item">
+                <div><span class="status in-progress"></span> Midterm Exam Grading</div>
+                <span class="uploaded-docs">grades.xlsx (50% completed)</span>
+            </div>
         </div>
     </div>
-
-    <!-- Button to create a Fake FCAR -->
-    <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get">
-        <input type="hidden" name="action" value="createFakeFCARForm"/>
-        <button type="submit">Create FCAR</button>
-    </form>
 
     <!-- Completed Tasks -->
     <div class="section">
         <h2>Completed Tasks</h2>
         <div class="task-box">
-            <c:forEach var="task" items="${tasks}">
-                <c:if test="${task.status eq 'Completed'}">
-                    <div class="task-item">
-                        <div>
-                            <span class="status completed"></span>
-                            <c:out value="${task.taskName}"/>
-                        </div>
-                        <span class="uploaded-docs">(100% completed)</span>
-                    </div>
-                </c:if>
-            </c:forEach>
+            <c:choose>
+                <c:when test="${not empty tasks}">
+                    <c:forEach var="task" items="${tasks}">
+                        <c:if test="${task.status eq 'Completed'}">
+                            <div class="task-item">
+                                <div>
+                                    <span class="status completed"></span>
+                                    <c:out value="${task.taskName}"/>
+                                </div>
+                                <span class="uploaded-docs">(100% completed)</span>
+                            </div>
+                        </c:if>
+                    </c:forEach>
+                </c:when>
+                <c:otherwise>
+                    <p>No completed tasks.</p>
+                </c:otherwise>
+            </c:choose>
+
+            <!-- Dummy Completed Tasks for UI Testing -->
+            <div class="task-item">
+                <div><span class="status submitted"></span> Semester Course Summary</div>
+                <span class="uploaded-docs">summary.docx (100% completed)</span>
+            </div>
+            <div class="task-item">
+                <div><span class="status completed"></span> Final Research Paper</div>
+                <span class="uploaded-docs">final_report.pdf (100% completed)</span>
+            </div>
         </div>
     </div>
+
+    <!-- Buttons for FCAR -->
+    <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get">
+        <input type="hidden" name="action" value="createFakeFCARForm"/>
+        <button type="submit">Create FCAR</button>
+    </form>
+
+    <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get">
+        <input type="hidden" name="action" value="viewFCARs"/>
+        <button type="submit">View FCARs</button>
+    </form>
 </div>
 </body>
 </html>
