@@ -142,5 +142,13 @@ public class FCARFactory {
 
         return result;
     }
-}
 
+    /**
+     * Get all FCARs
+     * 
+     * @return Map of FCAR IDs to FCAR objects
+     */
+    public static Map<String, FCAR> getAllFCARs() {
+        return fcarMap;
+    }
+}

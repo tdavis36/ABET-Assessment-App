@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>FCAR Assessment Form</title>
+    <title>Faculty Course Assessment Report (FCAR)</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
     <style>
         .form-container {
@@ -90,8 +90,8 @@
 </head>
 <body>
 <div class="form-container">
-    <h1>Faculty Course Assessment Report (FCAR)</h1>
-    <p>Complete the assessment form below for the assigned outcome/indicator.</p>
+<h1>Faculty Course Assessment Report (FCAR)</h1>
+    <p>Complete the assessment form below for the course.</p>
     
     <form action="${pageContext.request.contextPath}/ProfessorServlet" method="post">
         <input type="hidden" name="action" value="submitFCAR"/>
@@ -99,28 +99,33 @@
         <!-- Basic Information Section -->
         <div class="form-section">
             <h2>Basic Information</h2>
+            <!-- If editing an existing FCAR, include its ID as a hidden field -->
+            <c:if test="${not empty fcar}">
+                <input type="hidden" name="fcarId" value="${fcar.fcarId}" />
+            </c:if>
+            
             <div class="form-group">
                 <label for="courseId">Course:</label>
-                <input type="text" id="courseId" name="courseId" required />
+                <input type="text" id="courseId" name="courseId" value="${fcar.courseId}" required />
             </div>
             
             <div class="form-group">
                 <label for="professorId">Professor:</label>
-                <input type="text" id="professorId" name="professorId" required />
+                <input type="text" id="professorId" name="professorId" value="${fcar.professorId}" required />
             </div>
             
             <div class="form-group">
                 <label for="semester">Semester:</label>
                 <select id="semester" name="semester" required>
-                    <option value="Spring">Spring</option>
-                    <option value="Summer">Summer</option>
-                    <option value="Fall">Fall</option>
+                    <option value="Spring" ${fcar.semester == 'Spring' ? 'selected' : ''}>Spring</option>
+                    <option value="Summer" ${fcar.semester == 'Summer' ? 'selected' : ''}>Summer</option>
+                    <option value="Fall" ${fcar.semester == 'Fall' ? 'selected' : ''}>Fall</option>
                 </select>
             </div>
             
             <div class="form-group">
                 <label for="year">Year:</label>
-                <input type="number" id="year" name="year" min="2020" max="2030" value="2025" required />
+                <input type="number" id="year" name="year" min="2020" max="2030" value="${not empty fcar.year ? fcar.year : '2025'}" required />
             </div>
         </div>
         
@@ -131,12 +136,12 @@
                 <label for="outcome">Student Learning Outcome:</label>
                 <select id="outcome" name="outcome" required onchange="updateIndicators()">
                     <option value="">Select an outcome</option>
-                    <option value="outcome1">Analyze a complex computing problem and to apply principles of computing and other relevant disciplines to identify solutions.</option>
-                    <option value="outcome2">Design, implement, and evaluate a computing-based solution to meet a given set of computing requirements in the context of the program's discipline.</option>
-                    <option value="outcome3">Communicate effectively in a variety of professional contexts.</option>
-                    <option value="outcome4">Recognize professional responsibilities and make informed judgments in computing practice based on legal and ethical principles.</option>
-                    <option value="outcome5">Function effectively as a member or leader of a team engaged in activities appropriate to the program's discipline.</option>
-                    <option value="outcome6">Apply computer science theory and software development fundamentals to produce computing-based solutions.</option>
+                    <option value="outcome1" ${fcar.assessmentMethods['outcome'] == 'outcome1' ? 'selected' : ''}>Analyze a complex computing problem and to apply principles of computing and other relevant disciplines to identify solutions.</option>
+                    <option value="outcome2" ${fcar.assessmentMethods['outcome'] == 'outcome2' ? 'selected' : ''}>Design, implement, and evaluate a computing-based solution to meet a given set of computing requirements in the context of the program's discipline.</option>
+                    <option value="outcome3" ${fcar.assessmentMethods['outcome'] == 'outcome3' ? 'selected' : ''}>Communicate effectively in a variety of professional contexts.</option>
+                    <option value="outcome4" ${fcar.assessmentMethods['outcome'] == 'outcome4' ? 'selected' : ''}>Recognize professional responsibilities and make informed judgments in computing practice based on legal and ethical principles.</option>
+                    <option value="outcome5" ${fcar.assessmentMethods['outcome'] == 'outcome5' ? 'selected' : ''}>Function effectively as a member or leader of a team engaged in activities appropriate to the program's discipline.</option>
+                    <option value="outcome6" ${fcar.assessmentMethods['outcome'] == 'outcome6' ? 'selected' : ''}>Apply computer science theory and software development fundamentals to produce computing-based solutions.</option>
                 </select>
             </div>
             
@@ -145,11 +150,12 @@
                 <select id="indicator" name="indicator" required>
                     <option value="">Select an outcome first</option>
                 </select>
+                <input type="hidden" id="savedIndicator" value="${fcar.assessmentMethods['indicator']}" />
             </div>
             
             <div class="form-group">
                 <label for="targetGoal">Target Goal (%):</label>
-                <input type="number" id="targetGoal" name="targetGoal" min="0" max="100" value="70" required />
+                <input type="number" id="targetGoal" name="targetGoal" min="0" max="100" value="${not empty fcar.assessmentMethods['targetGoal'] ? fcar.assessmentMethods['targetGoal'] : '70'}" required />
             </div>
         </div>
         
@@ -158,12 +164,12 @@
             <h2>Assessment Method</h2>
             <div class="form-group">
                 <label for="workUsed">Work Used for Assessment:</label>
-                <input type="text" id="workUsed" name="workUsed" placeholder="e.g., Final Project, Exam Question 3, Assignment 2" required />
+                <input type="text" id="workUsed" name="workUsed" value="${fcar.assessmentMethods['workUsed']}" placeholder="e.g., Final Project, Exam Question 3, Assignment 2" required />
             </div>
             
             <div class="form-group">
                 <label for="assessmentDescription">Description of Assessment Method:</label>
-                <textarea id="assessmentDescription" name="assessmentDescription" placeholder="Describe how the work was used to assess the outcome/indicator..." required></textarea>
+                <textarea id="assessmentDescription" name="assessmentDescription" placeholder="Describe how the work was used to assess the outcome/indicator..." required>${fcar.assessmentMethods['assessmentDescription']}</textarea>
             </div>
         </div>
         
@@ -184,11 +190,11 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td><input type="number" name="level4" min="0" value="0" required /></td>
-                        <td><input type="number" name="level3" min="0" value="0" required /></td>
-                        <td><input type="number" name="level2" min="0" value="0" required /></td>
-                        <td><input type="number" name="level1" min="0" value="0" required /></td>
-                        <td><input type="number" name="level0" min="0" value="0" required /></td>
+                        <td><input type="number" name="level4" min="0" value="${not empty fcar.assessmentMethods['level4'] ? fcar.assessmentMethods['level4'] : '0'}" required /></td>
+                        <td><input type="number" name="level3" min="0" value="${not empty fcar.assessmentMethods['level3'] ? fcar.assessmentMethods['level3'] : '0'}" required /></td>
+                        <td><input type="number" name="level2" min="0" value="${not empty fcar.assessmentMethods['level2'] ? fcar.assessmentMethods['level2'] : '0'}" required /></td>
+                        <td><input type="number" name="level1" min="0" value="${not empty fcar.assessmentMethods['level1'] ? fcar.assessmentMethods['level1'] : '0'}" required /></td>
+                        <td><input type="number" name="level0" min="0" value="${not empty fcar.assessmentMethods['level0'] ? fcar.assessmentMethods['level0'] : '0'}" required /></td>
                     </tr>
                 </tbody>
             </table>
@@ -239,7 +245,7 @@
             <h2>Results</h2>
             <div class="form-group">
                 <label for="summary">Summary/Observations of Results:</label>
-                <textarea id="summary" name="summary" placeholder="Provide a summary and observations of the assessment results..." required></textarea>
+                <textarea id="summary" name="summary" placeholder="Provide a summary and observations of the assessment results..." required>${fcar.improvementActions['summary']}</textarea>
             </div>
             
             <div class="results-section">
@@ -259,7 +265,7 @@
             <h2>Improvement Actions</h2>
             <div class="form-group">
                 <label for="improvementActions">Proposed Actions for Improvement:</label>
-                <textarea id="improvementActions" name="improvementActions" placeholder="Describe any actions that will be taken to improve student performance..."></textarea>
+                <textarea id="improvementActions" name="improvementActions" placeholder="Describe any actions that will be taken to improve student performance...">${fcar.improvementActions['actions']}</textarea>
             </div>
         </div>
         
@@ -431,7 +437,25 @@
     
     // Initialize the form
     document.addEventListener('DOMContentLoaded', function() {
+        // Update indicators dropdown
         updateIndicators();
+        
+        // If editing an existing FCAR, select the saved indicator
+        const savedIndicator = document.getElementById('savedIndicator').value;
+        if (savedIndicator) {
+            // Wait a bit for the indicators to be populated
+            setTimeout(function() {
+                const indicatorSelect = document.getElementById('indicator');
+                for (let i = 0; i < indicatorSelect.options.length; i++) {
+                    if (indicatorSelect.options[i].value === savedIndicator) {
+                        indicatorSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }, 100);
+        }
+        
+        // Calculate results based on achievement levels
         calculateResults();
     });
 </script>

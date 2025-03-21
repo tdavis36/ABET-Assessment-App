@@ -1,11 +1,14 @@
 package com.ABETAppTeam;
 
+import java.io.IOException;
+import java.util.List;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.List;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/AdminServlet")
 public class AdminServlet extends HttpServlet {
@@ -19,68 +22,66 @@ public class AdminServlet extends HttpServlet {
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
 
+        // Always fetch all FCARs for the admin to see
+        List<FCAR> allFCARs = ProfessorServlet.getAllFCARs();
+        request.setAttribute("allFCARs", allFCARs);
+
         if ("viewFCARs".equals(action)) {
-            List<FCAR> allFCARs = ProfessorServlet.getAllFCARs();
-            request.setAttribute("allFCARs", allFCARs);
             request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
+            return;
+        } else if ("editFCAR".equals(action)) {
+            // Get the FCAR ID
+            String fcarId = request.getParameter("fcarId");
+
+            // Get the FCAR from the controller
+            FCARController controller = FCARController.getInstance();
+            FCAR fcar = controller.getFCAR(fcarId);
+
+            if (fcar != null) {
+                // Pass the FCAR to the form
+                request.setAttribute("fcar", fcar);
+                request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+            } else {
+                // FCAR not found
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "FCAR not found.");
+            }
             return;
         }
 
-        // Fetch tasks and display the admin page
-        List<Task> allTasks = TaskController.getAllTasks();
-        request.setAttribute("allTasks", allTasks);
+        // Default: display the admin page with all FCARs
         request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
     }
 
     /**
-     * Handles POST requests: create a Task + Template FCAR, or fallback to doGet
+     * Handles POST requests: create FCARs
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String action = request.getParameter("action");
-        if ("assignTask".equals(action)) {
-            // 1. Parse form data
-            String taskName = request.getParameter("taskName");
-            String formTemplate = request.getParameter("formTemplate");
-            String urgency = request.getParameter("urgency"); // ✅ FIXED - matches form field
+
+        if ("createFCAR".equals(action)) {
+            // Get form data
+            String courseId = request.getParameter("courseId");
             String professorId = request.getParameter("professorId");
+            String semester = request.getParameter("semester");
+            int year = Integer.parseInt(request.getParameter("year"));
 
-            // 2. Create a new FCAR (template) for the professor
-            FCAR templateFCAR = FakeFCARForm.createFakeFCAR();
-            if (templateFCAR == null) {
+            // Create a new FCAR and assign it to the professor
+            FCARController controller = FCARController.getInstance();
+            String fcarId = controller.createFCAR(courseId, professorId, semester, year);
+
+            if (fcarId != null) {
+                // Success - redirect back to admin page
+                response.sendRedirect(request.getContextPath() + "/AdminServlet?fcarCreated=true");
+            } else {
+                // Error creating FCAR
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to create FCAR.");
-                return;
             }
-            templateFCAR.setProfessorId(professorId);
-            templateFCAR.setStatus("Not Started");
-
-            // 3. Create a Task and link it to the FCAR
-            Task newTask = new Task(taskName, formTemplate, professorId);
-            newTask.setStatus("Not Started");
-
-            TaskController.createTask(newTask); // ass the Task object
-            TaskController.printAllTasks();
-
-            // 5. Show confirmation
-            response.setContentType("text/html");
-            PrintWriter out = response.getWriter();
-            out.println("<html><body>");
-            out.println("<h3>Task Created Successfully!</h3>");
-            out.println("<p>Task Name: " + taskName + "</p>");
-            out.println("<p>Form Template: " + formTemplate + "</p>");
-            out.println("<p>Urgency: " + urgency + "</p>");
-            out.println("<p>Assigned Professor: " + professorId + "</p>");
-            out.println("<p>FCAR ID: " + templateFCAR.getFcarId() + "</p>");
-            out.println("<hr>");
-            out.println("<a href='" + request.getContextPath() + "/AdminServlet'>Back to Admin Dashboard</a> | ");
-            out.println("<a href='" + request.getContextPath() + "/ProfessorServlet'>Switch to Professor View</a>");
-            out.println("</body></html>");
         } else {
             // Default: forward to admin.jsp
             doGet(request, response);
         }
     }
-
 }
