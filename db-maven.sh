@@ -209,7 +209,7 @@ SELECT * FROM temp_import LIMIT 10;
 EOF
 
   echo -e "${CYAN}Executing import...${NC}"
-  docker exec -i java_project_db mysql -u "$DB_USER" -p"$DB_PASS" < "$TEMP_SQL"
+  docker exec -i java_project_db mariadb -u "$DB_USER" -p"$DB_PASS" < "$TEMP_SQL"
 
   if [ $? -eq 0 ]; then
     echo -e "${GREEN}CSV data imported to temporary table.${NC}"

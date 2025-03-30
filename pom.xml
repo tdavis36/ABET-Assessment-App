@@ -92,13 +92,13 @@
                     <plugin>
                         <groupId>org.flywaydb</groupId>
                         <artifactId>flyway-maven-plugin</artifactId>
-                        <version>11.4.0</version>
+                        <version>11.5.0</version>
                         <configuration>
-                            <url>jdbc:mysql://localhost:3306/${db.name}</url>
-                            <user>${db.username}</user>
-                            <password>${db.password}</password>
+                            <url>jdbc:mariadb://localhost:3306/${DB_NAME}</url>
+                            <user>${DB_USERNAME}</user>
+                            <password>${DB_PASSWORD}</password>
                             <locations>
-                                <location>filesystem:src/main/resources/db/migration</location>
+                                <location>classpath:db/migration</location>
                             </locations>
                         </configuration>
                         <executions>
@@ -121,14 +121,15 @@
                     <plugin>
                         <groupId>org.flywaydb</groupId>
                         <artifactId>flyway-maven-plugin</artifactId>
-                        <version>9.22.3</version>
+                        <version>11.5.0</version>
                         <configuration>
-                            <url>jdbc:mysql://localhost:3306/${db.name}</url>
-                            <user>${db.username}</user>
-                            <password>${db.password}</password>
+                            <url>jdbc:mariadb://localhost:3306/${DB_NAME}</url>
+                            <user>${DB_USERNAME}</user>
+                            <password>${DB_PASSWORD}</password>
                             <locations>
-                                <location>filesystem:src/main/resources/db/migration</location>
+                                <location>classpath:db/migration</location>
                             </locations>
+                            <mixed>true</mixed>
                             <baselineOnMigrate>true</baselineOnMigrate>
                         </configuration>
                         <executions>
@@ -152,13 +153,13 @@
                     <plugin>
                         <groupId>org.flywaydb</groupId>
                         <artifactId>flyway-maven-plugin</artifactId>
-                        <version>11.4.0</version>
+                        <version>11.5.0</version>
                         <configuration>
-                            <url>jdbc:mysql://localhost:3306/${db.name}</url>
-                            <user>${db.username}</user>
-                            <password>${db.password}</password>
+                            <url>jdbc:mariadb://localhost:3306/${DB_NAME}</url>
+                            <user>${DB_USERNAME}</user>
+                            <password>${DB_PASSWORD}</password>
                             <locations>
-                                <location>filesystem:src/main/resources/db/migration</location>
+                                <location>classpath:db/migration</location>
                             </locations>
                         </configuration>
                         <executions>
@@ -190,23 +191,23 @@
     <dependencies>
         <!-- MySQL Connector -->
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.33</version>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>3.4.1</version>
         </dependency>
 
         <!-- Flyway Core -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>9.21.1</version>
+            <version>11.5.0</version>
         </dependency>
 
         <!-- Flyway MySQL -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-mysql</artifactId>
-            <version>9.21.1</version>
+            <version>11.5.0</version>
         </dependency>
 
         <!-- Servlet API is provided by Jetty -->
@@ -255,11 +256,31 @@
                 </configuration>
             </plugin>
 
+            <!-- Maven .env plugin -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files>
+                                <file>.env</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Flyway Plugin -->
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
-                <version>11.4.0</version>
+                <version>11.5.0</version>
                 <configuration>
                     <locations>
                         <location>classpath:db/migration</location>

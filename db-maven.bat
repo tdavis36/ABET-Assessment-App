@@ -400,7 +400,7 @@ exit /b 0
   echo -- DROP TABLE temp_import;>> "!TEMP_SQL!"
 
   echo Executing import...
-  docker exec -i java_project_db mysql -u "!DB_USER!" -p"!DB_PASS!" < "!TEMP_SQL!"
+  docker exec -i java_project_db mariadb -u "!DB_USER!" -p"!DB_PASS!" < "!TEMP_SQL!"
 
   if !ERRORLEVEL! equ 0 (
     echo CSV data imported to temporary table.
