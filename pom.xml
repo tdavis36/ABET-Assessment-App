@@ -9,6 +9,173 @@
     <version>0.0.1</version>
     <packaging>war</packaging>
 
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <properties>
+                <environment>dev</environment>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>local</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <environment>local</environment>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>db-start</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>start-database</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker-compose</executable>
+                                    <arguments>
+                                        <argument>up</argument>
+                                        <argument>-d</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>db-stop</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>stop-database</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker-compose</executable>
+                                    <arguments>
+                                        <argument>down</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Database schema sync -->
+        <profile>
+            <id>db-sync</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-maven-plugin</artifactId>
+                        <version>11.4.0</version>
+                        <configuration>
+                            <url>jdbc:mysql://localhost:3306/${db.name}</url>
+                            <user>${db.username}</user>
+                            <password>${db.password}</password>
+                            <locations>
+                                <location>filesystem:src/main/resources/db/migration</location>
+                            </locations>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>migrate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>db-migrate</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-maven-plugin</artifactId>
+                        <version>9.22.3</version>
+                        <configuration>
+                            <url>jdbc:mysql://localhost:3306/${db.name}</url>
+                            <user>${db.username}</user>
+                            <password>${db.password}</password>
+                            <locations>
+                                <location>filesystem:src/main/resources/db/migration</location>
+                            </locations>
+                            <baselineOnMigrate>true</baselineOnMigrate>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>migrate-database</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>migrate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>db-info</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-maven-plugin</artifactId>
+                        <version>11.4.0</version>
+                        <configuration>
+                            <url>jdbc:mysql://localhost:3306/${db.name}</url>
+                            <user>${db.username}</user>
+                            <password>${db.password}</password>
+                            <locations>
+                                <location>filesystem:src/main/resources/db/migration</location>
+                            </locations>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>migration-info</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>info</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
@@ -16,6 +183,8 @@
         <jetty.version>11.0.24</jetty.version>
         <jakarta.servlet.version>5.0.0</jakarta.servlet.version>
         <mockito.version>5.15.2</mockito.version>
+        <jacoco.argLine/>
+        <bytebuddy.argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar</bytebuddy.argLine>
     </properties>
 
     <dependencies>
@@ -23,7 +192,21 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.31</version>
+            <version>8.0.33</version>
+        </dependency>
+
+        <!-- Flyway Core -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>9.21.1</version>
+        </dependency>
+
+        <!-- Flyway MySQL -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>9.21.1</version>
         </dependency>
 
         <!-- Servlet API is provided by Jetty -->
@@ -40,13 +223,6 @@
             <version>5.12.1</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- <dependency>
-            <groupId>org.glassfish.web</groupId>
-            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-            <version>2.0.0</version>
-        </dependency> -->
-
 
         <dependency>
             <groupId>org.mockito</groupId>
@@ -79,6 +255,19 @@
                 </configuration>
             </plugin>
 
+            <!-- Flyway Plugin -->
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>11.4.0</version>
+                <configuration>
+                    <locations>
+                        <location>classpath:db/migration</location>
+                    </locations>
+                    <mixed>true</mixed>
+                </configuration>
+            </plugin>
+
             <!-- Jetty Maven Plugin with JSP Support -->
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
@@ -105,21 +294,15 @@
                 </dependencies>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
-                <configuration>
-                    <argLine>-javaagent:"${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar"</argLine>
-                </configuration>
-            </plugin>
-
+            <!-- Jacoco Plugin -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
                 <executions>
                     <execution>
+                        <id>prepare-agent</id>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
@@ -130,6 +313,39 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Surefire Plugin with two executions -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+                <executions>
+                    <!-- First execution: normal tests with Byte Buddy -->
+                    <execution>
+                        <id>inline-tests</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>${jacoco.argLine} ${bytebuddy.argLine}</argLine>
+                            <!-- any other configuration specific to inline tests -->
+                        </configuration>
+                    </execution>
+                    <!-- Second execution: coverage tests without Byte Buddy -->
+                    <execution>
+                        <id>coverage-tests</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>${jacoco.argLine}</argLine>
+                            <!-- You might disable tests that depend on inline mocking if needed -->
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
