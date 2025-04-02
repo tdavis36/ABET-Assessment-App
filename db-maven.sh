@@ -1,5 +1,5 @@
 #!/bin/bash
-# Enhanced db-maven script with interactive input and CSV import
+# Enhanced db-maven script using the fabric8 docker-maven-plugin
 # Usage: ./db-maven.sh [operation] [options]
 #
 # Operations:
@@ -44,14 +44,15 @@ TARGET_TABLE=""
 CSV_DELIMITER=","
 SKIP_HEADER=false
 
+# Text colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 # Interactive setup function
 interactive_setup() {
-  # Text colors
-  GREEN='\033[0;32m'
-  YELLOW='\033[1;33m'
-  CYAN='\033[0;36m'
-  NC='\033[0m' # No Color
-
   echo -e "${CYAN}=== Interactive Database Setup ===${NC}"
 
   # Check if .env exists and offer to load defaults
@@ -142,13 +143,6 @@ EOF
 
 # Function to import CSV file
 import_csv() {
-  # Text colors
-  GREEN='\033[0;32m'
-  YELLOW='\033[1;33m'
-  RED='\033[0;31m'
-  CYAN='\033[0;36m'
-  NC='\033[0m' # No Color
-
   if [ -z "$CSV_FILE" ]; then
     echo -e "${RED}Error: No CSV file specified. Use --csv=FILE${NC}"
     exit 1
@@ -173,7 +167,18 @@ import_csv() {
   # Create a temporary SQL file
   TEMP_SQL=$(mktemp)
 
-  # Create LOAD DATA INFILE statement
+  # Check if database container is running
+  CONTAINER_RUNNING=$(docker ps --filter "name=java_project_db" --format "{{.Names}}")
+
+  if [ -z "$CONTAINER_RUNNING" ]; then
+    echo -e "${YELLOW}Database container is not running. Starting it now...${NC}"
+    if [ -f "./mvnw" ]; then
+      ./mvnw process-resources -Pdb-start
+    else
+      mvn process-resources -Pdb-start
+    fi
+  fi
+
   echo -e "${CYAN}Preparing to import CSV data...${NC}"
 
   # Copy the file to the Docker container
@@ -297,16 +302,16 @@ if [ -f ".env" ]; then
 
   # Only use .env values if command line params weren't provided
   if [ -z "$DB_NAME" ] && [ -n "$DB_NAME" ]; then
-    MAVEN_PROPS="$MAVEN_PROPS -Ddb.name=$DB_NAME"
+    MAVEN_PROPS="$MAVEN_PROPS -DDB_NAME=$DB_NAME"
   fi
   if [ -z "$DB_USER" ] && [ -n "$DB_USERNAME" ]; then
-    MAVEN_PROPS="$MAVEN_PROPS -Ddb.username=$DB_USERNAME"
+    MAVEN_PROPS="$MAVEN_PROPS -DDB_USERNAME=$DB_USERNAME"
   fi
   if [ -z "$DB_PASS" ] && [ -n "$DB_PASSWORD" ]; then
-    MAVEN_PROPS="$MAVEN_PROPS -Ddb.password=$DB_PASSWORD"
+    MAVEN_PROPS="$MAVEN_PROPS -DDB_PASSWORD=$DB_PASSWORD"
   fi
   if [ -z "$DB_ROOT" ] && [ -n "$DB_ROOT_PASSWORD" ]; then
-    MAVEN_PROPS="$MAVEN_PROPS -Ddb.root.password=$DB_ROOT_PASSWORD"
+    MAVEN_PROPS="$MAVEN_PROPS -DDB_ROOT_PASSWORD=$DB_ROOT_PASSWORD"
   fi
 
   # Add environment type if specified
@@ -333,10 +338,11 @@ case "$OPERATION" in
     MAVEN_PROFILES="$MAVEN_PROFILES,db-info"
     ;;
   restart)
-    MAVEN_PROFILES="$MAVEN_PROFILES,db-stop,db-start,db-migrate"
+    MAVEN_PROFILES="$MAVEN_PROFILES,db-restart"
     ;;
   *)
-    echo "Unknown operation: $OPERATION"
+    echo -e "${RED}Unknown operation: $OPERATION${NC}"
+    echo -e "${YELLOW}Valid operations: start, stop, sync, migrate, info, restart, setup, import${NC}"
     exit 1
     ;;
 esac
@@ -344,8 +350,8 @@ esac
 # Remove initial comma if present
 MAVEN_PROFILES=${MAVEN_PROFILES#,}
 
-# Execute Maven command
-echo "Running: mvn process-resources -P$MAVEN_PROFILES $MAVEN_PROPS"
+# Execute Maven command with docker-maven-plugin
+echo -e "${CYAN}Running: mvn process-resources -P$MAVEN_PROFILES $MAVEN_PROPS${NC}"
 if [ -f "./mvnw" ]; then
   ./mvnw process-resources -P$MAVEN_PROFILES $MAVEN_PROPS
 else

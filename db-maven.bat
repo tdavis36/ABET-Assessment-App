@@ -1,5 +1,5 @@
 @echo off
-:: Enhanced db-maven script with interactive input and CSV import for Windows
+:: Enhanced db-maven script using the fabric8 docker-maven-plugin for Windows
 :: Usage: db-maven.bat [operation] [options]
 ::
 :: Operations:
@@ -66,25 +66,25 @@ set ARG=%~1
 
 if "!ARG:~0,10!"=="--db-name=" (
   set DB_NAME=!ARG:~10!
-  set MAVEN_PROPS=!MAVEN_PROPS! -Ddb.name=!DB_NAME!
+  set MAVEN_PROPS=!MAVEN_PROPS! -DDB_NAME=!DB_NAME!
   goto :parse_args
 )
 
 if "!ARG:~0,10!"=="--db-user=" (
   set DB_USER=!ARG:~10!
-  set MAVEN_PROPS=!MAVEN_PROPS! -Ddb.username=!DB_USER!
+  set MAVEN_PROPS=!MAVEN_PROPS! -DDB_USERNAME=!DB_USER!
   goto :parse_args
 )
 
 if "!ARG:~0,10!"=="--db-pass=" (
   set DB_PASS=!ARG:~10!
-  set MAVEN_PROPS=!MAVEN_PROPS! -Ddb.password=!DB_PASS!
+  set MAVEN_PROPS=!MAVEN_PROPS! -DDB_PASSWORD=!DB_PASS!
   goto :parse_args
 )
 
 if "!ARG:~0,10!"=="--db-root=" (
   set DB_ROOT=!ARG:~10!
-  set MAVEN_PROPS=!MAVEN_PROPS! -Ddb.root.password=!DB_ROOT!
+  set MAVEN_PROPS=!MAVEN_PROPS! -DDB_ROOT_PASSWORD=!DB_ROOT!
   goto :parse_args
 )
 
@@ -127,22 +127,22 @@ if exist .env (
       if "%%a"=="DB_ROOT_PASSWORD" (
         if "!DB_ROOT!"=="" set DB_ROOT=%%b
         set DB_ROOT_PASSWORD=%%b
-        set MAVEN_PROPS=!MAVEN_PROPS! -Ddb.root.password=%%b
+        set MAVEN_PROPS=!MAVEN_PROPS! -DDB_ROOT_PASSWORD=%%b
       )
       if "%%a"=="DB_NAME" (
         if "!DB_NAME!"=="" set DB_NAME=%%b
         set DB_NAME=%%b
-        set MAVEN_PROPS=!MAVEN_PROPS! -Ddb.name=%%b
+        set MAVEN_PROPS=!MAVEN_PROPS! -DDB_NAME=%%b
       )
       if "%%a"=="DB_USERNAME" (
         if "!DB_USER!"=="" set DB_USER=%%b
         set DB_USERNAME=%%b
-        set MAVEN_PROPS=!MAVEN_PROPS! -Ddb.username=%%b
+        set MAVEN_PROPS=!MAVEN_PROPS! -DDB_USERNAME=%%b
       )
       if "%%a"=="DB_PASSWORD" (
         if "!DB_PASS!"=="" set DB_PASS=%%b
         set DB_PASSWORD=%%b
-        set MAVEN_PROPS=!MAVEN_PROPS! -Ddb.password=%%b
+        set MAVEN_PROPS=!MAVEN_PROPS! -DDB_PASSWORD=%%b
       )
       if "%%a"=="ENV_TYPE" (
         if "!ENV_TYPE!"=="" set ENV_TYPE=%%b
@@ -181,13 +181,13 @@ if "%OPERATION%"=="info" (
   set MAVEN_PROFILES=%MAVEN_PROFILES%,db-info
 )
 if "%OPERATION%"=="restart" (
-  set MAVEN_PROFILES=%MAVEN_PROFILES%,db-stop,db-start,db-migrate
+  set MAVEN_PROFILES=%MAVEN_PROFILES%,db-restart
 )
 
 :: Remove initial comma if present
 if "!MAVEN_PROFILES:~0,1!"=="," set MAVEN_PROFILES=!MAVEN_PROFILES:~1!
 
-:: Execute Maven command
+:: Execute Maven command with docker-maven-plugin
 echo Running: mvn process-resources -P%MAVEN_PROFILES% %MAVEN_PROPS%
 if exist mvnw.cmd (
   mvnw.cmd process-resources -P%MAVEN_PROFILES% %MAVEN_PROPS%
@@ -342,6 +342,20 @@ exit /b 0
   if not exist "!CSV_FILE!" (
     echo Error: CSV file not found: !CSV_FILE!
     exit /b 1
+  )
+
+  :: Check if database container is running
+  for /f "tokens=*" %%i in ('docker ps --filter "name=java_project_db" --format "{{.Names}}"') do (
+    set CONTAINER_RUNNING=%%i
+  )
+
+  if "!CONTAINER_RUNNING!"=="" (
+    echo Database container is not running. Starting it now...
+    if exist mvnw.cmd (
+      mvnw.cmd process-resources -Pdb-start
+    ) else (
+      mvn process-resources -Pdb-start
+    )
   )
 
   :: Create a temporary SQL file

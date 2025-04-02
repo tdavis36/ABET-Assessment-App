@@ -9,6 +9,19 @@
     <version>0.0.1</version>
     <packaging>war</packaging>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <jetty.version>11.0.24</jetty.version>
+        <jakarta.servlet.version>5.0.0</jakarta.servlet.version>
+        <mockito.version>5.15.2</mockito.version>
+        <jacoco.argLine/>
+        <bytebuddy.argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar</bytebuddy.argLine>
+        <docker.compose.executable>docker-compose</docker.compose.executable>
+        <docker.compose.executable.windows>C:\Program Files\Docker\Docker\resources\bin\docker-compose.exe</docker.compose.executable.windows>
+    </properties>
+
     <profiles>
         <profile>
             <id>dev</id>
@@ -43,8 +56,9 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>docker-compose</executable>
+                                    <executable>C:\Program Files\Docker\Docker\resources\bin\docker.exe</executable>
                                     <arguments>
+                                        <argument>compose</argument>
                                         <argument>up</argument>
                                         <argument>-d</argument>
                                     </arguments>
@@ -72,8 +86,9 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>docker-compose</executable>
+                                    <executable>docker</executable>
                                     <arguments>
+                                        <argument>compose</argument>
                                         <argument>down</argument>
                                     </arguments>
                                 </configuration>
@@ -176,17 +191,6 @@
             </build>
         </profile>
     </profiles>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <jetty.version>11.0.24</jetty.version>
-        <jakarta.servlet.version>5.0.0</jakarta.servlet.version>
-        <mockito.version>5.15.2</mockito.version>
-        <jacoco.argLine/>
-        <bytebuddy.argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar</bytebuddy.argLine>
-    </properties>
 
     <dependencies>
         <!-- MySQL Connector -->
