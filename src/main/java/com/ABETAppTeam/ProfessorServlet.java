@@ -210,12 +210,26 @@ public class ProfessorServlet extends HttpServlet {
                 }
             }
 
-            // Set status and store FCAR
-            fcar.setStatus("Submitted");
+            // Check if this is a save or submit action
+            String saveAction = request.getParameter("saveAction");
+
+            if ("submit".equals(saveAction)) {
+                // Set status to Submitted
+                fcar.setStatus("Submitted");
+            } else {
+                // Set status to Draft for save and exit
+                fcar.setStatus("Draft");
+            }
+
+            // Store FCAR
             controller.updateFCAR(fcar);
 
             // Redirect back to professor dashboard
-            response.sendRedirect(request.getContextPath() + "/ProfessorServlet?action=viewFCARs");
+            if ("submit".equals(saveAction)) {
+                response.sendRedirect(request.getContextPath() + "/ProfessorServlet?action=viewFCARs");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
+            }
         } else if ("submitFCARStatus".equals(action)) {
             // Get the FCAR ID
             String fcarId = request.getParameter("fcarId");

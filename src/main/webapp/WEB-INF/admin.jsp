@@ -44,11 +44,13 @@
 </head>
 <body>
     <div class="dashboard" id="adminDashboard">
-        <h1>Welcome, Dr. [Admin Name]</h1>
-        <a href="${pageContext.request.contextPath}/" class="btn">Logout</a>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1>Welcome, Dr. [Admin Name]</h1>
+            <a href="${pageContext.request.contextPath}/" class="btn" style="margin-left: 20px;">Logout</a>
+        </div>
 
         <!-- Action Buttons -->
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 20px; margin-bottom: 20px;">
             <form action="${pageContext.request.contextPath}/ViewFCARServlet" method="get">
                 <input type="hidden" name="action" value="viewAll"/>
                 <button type="submit" class="btn">View FCARs</button>

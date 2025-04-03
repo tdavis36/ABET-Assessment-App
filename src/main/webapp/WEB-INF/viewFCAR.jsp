@@ -128,26 +128,22 @@
                             <c:if test="${not empty fcar.assessmentMethods['level4']}">
                                 <div class="fcar-section">
                                     <h3>Achievement Levels</h3>
-                                    <table class="achievement-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Exemplary (4)</th>
-                                                <th>Satisfactory (3)</th>
-                                                <th>Developing (2)</th>
-                                                <th>Unsatisfactory (1)</th>
-                                                <th>Not Applicable (0)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>${fcar.assessmentMethods['level4']}</td>
-                                                <td>${fcar.assessmentMethods['level3']}</td>
-                                                <td>${fcar.assessmentMethods['level2']}</td>
-                                                <td>${fcar.assessmentMethods['level1']}</td>
-                                                <td>${fcar.assessmentMethods['level0']}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <table class="achievement-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Exceeds Expectations</th>
+                                            <th>Meets Expectations</th>
+                                            <th>Below Expectations</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>${fcar.assessmentMethods['level3']}</td>
+                                            <td>${fcar.assessmentMethods['level2']}</td>
+                                            <td>${fcar.assessmentMethods['level1']}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                                 </div>
                             </c:if>
                             
