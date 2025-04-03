@@ -131,10 +131,114 @@
                         <input type="number" id="year" name="year" min="2020" max="2030" value="2025" required />
                     </div>
                     
+                    <!-- Outcome and Indicator Section -->
+                    <div class="form-group">
+                        <label for="outcome">Student Learning Outcome:</label>
+                        <select id="outcome" name="outcome" required onchange="updateIndicators()">
+                            <option value="">Select an outcome</option>
+                            <option value="outcome1">Analyze a complex computing problem and to apply principles of computing and other relevant disciplines to identify solutions.</option>
+                            <option value="outcome2">Design, implement, and evaluate a computing-based solution to meet a given set of computing requirements in the context of the program's discipline.</option>
+                            <option value="outcome3">Communicate effectively in a variety of professional contexts.</option>
+                            <option value="outcome4">Recognize professional responsibilities and make informed judgments in computing practice based on legal and ethical principles.</option>
+                            <option value="outcome5">Function effectively as a member or leader of a team engaged in activities appropriate to the program's discipline.</option>
+                            <option value="outcome6">Apply computer science theory and software development fundamentals to produce computing-based solutions.</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="indicator">Performance Indicator:</label>
+                        <select id="indicator" name="indicator" required>
+                            <option value="">Select an outcome first</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="targetGoal">Target Goal (%):</label>
+                        <input type="number" id="targetGoal" name="targetGoal" min="0" max="100" value="70" required />
+                    </div>
+                    
                     <button type="submit" class="btn-submit">Create FCAR</button>
                 </form>
             </div>
         </div>
     </div>
+<script>
+    // Define the indicators for each outcome based on the CSV file
+    const indicators = {
+        outcome1: [
+            "Student can correctly interpret a computational problem and define its parameters",
+            "Student can analyze a computational problem in order to choose mathematical and algorithmic principles that can be applied to solve the problem",
+            "Student can define a solution to a computational problem",
+            "Student can effectively collect and document system requirements",
+            "Student can effectively analyze and model a problem domain",
+            "Student can identify the relative efficiency of different algorithms using asymptotic notation"
+        ],
+        outcome2: [
+            "Student can identify and evaluate appropriate technologies to be used in a system",
+            "Student can effectively construct a design model of a system",
+            "Student can effectively incorporate requirements outside the problem domain (e.g., a user interface) into the design model",
+            "Student can plan and implement a testing strategy to ensure that system meets its quality goal",
+            "Student can collect and analyze runtime benchmark data to characterize the efficiency of an algorithm or data structure",
+            "Student can specify appropriate security concerns and requirements for a component or system",
+            "Student can evaluate a component or system to identify security characteristics and identify vulnerabilities"
+        ],
+        outcome3: [
+            "Student can write a clear and well-organized technical report",
+            "Student can create and present a clear and well-organized technical presentation using appropriate visual, textual, and spoken content",
+            "Student can communicate technical content to peers",
+            "Student can communicate technical content to general audiences"
+        ],
+        outcome4: [
+            "Student can analyze and explain the ethical issues surrounding a particular computing topic (for example, peer-to-peer file sharing)",
+            "Student demonstrates recognition of his or her professional responsibilities as a member of the computing profession"
+        ],
+        outcome5: [
+            "Student demonstrates an ability to participate in and implement processes for team communication and coordination",
+            "Student demonstrates an ability to work closely with other students to solve technical problems"
+        ],
+        outcome6: [
+            "Student is proficient in a current programming language",
+            "Student can create user interfaces using current platforms",
+            "Student can write programs that use concurrency",
+            "Student can implement automated tests to satisfy the goals of a testing strategy",
+            "Student can use appropriate implementation techniques and practices to meet security requirements and/or mitigate discovered vulnerabilities"
+        ]
+    };
+
+    // Function to update indicators dropdown based on selected outcome
+    function updateIndicators() {
+        const outcomeSelect = document.getElementById('outcome');
+        const indicatorSelect = document.getElementById('indicator');
+        
+        // Clear existing options
+        indicatorSelect.innerHTML = '';
+        
+        // Get selected outcome
+        const selectedOutcome = outcomeSelect.value;
+        
+        if (selectedOutcome) {
+            // Add default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select an indicator';
+            indicatorSelect.appendChild(defaultOption);
+            
+            // Add indicators for the selected outcome
+            const outcomeIndicators = indicators[selectedOutcome];
+            outcomeIndicators.forEach((indicator, index) => {
+                const option = document.createElement('option');
+                option.value = `${selectedOutcome}_indicator${index + 1}`;
+                option.textContent = indicator;
+                indicatorSelect.appendChild(option);
+            });
+        } else {
+            // If no outcome selected, show default message
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Select an outcome first';
+            indicatorSelect.appendChild(option);
+        }
+    }
+</script>
 </body>
 </html>

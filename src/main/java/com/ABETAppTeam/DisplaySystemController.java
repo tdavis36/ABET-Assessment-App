@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * DisplaySystemController class for the ABET Assessment Application
+ * 
  * This class is responsible for managing the display of data in the system,
  * including FCAR reports, user information, and course data. It serves as an
  * intermediary between the data models and the UI.
@@ -16,13 +17,13 @@ public class DisplaySystemController {
     private static DisplaySystemController instance;
 
     // Reference to the FCAR controller
-    private final FCARController fcarController;
+    private FCARController fcarController;
 
     // Cache for users
-    private final Map<String, User> userCache;
+    private Map<String, User> userCache;
 
     // Cache for courses
-    private final Map<String, Course> courseCache;
+    private Map<String, Course> courseCache;
 
     /**
      * Private constructor for singleton pattern
@@ -146,7 +147,8 @@ public class DisplaySystemController {
 
         dashboardData.put("user", user);
 
-        if (user instanceof Professor professor) {
+        if (user instanceof Professor) {
+            Professor professor = (Professor) user;
             List<Course> courses = new ArrayList<>();
 
             // Get courses for the professor
@@ -162,6 +164,7 @@ public class DisplaySystemController {
             // Get FCARs for the professor
             List<FCAR> fcars = fcarController.getFCARsByProfessor(userId);
             dashboardData.put("fcars", fcars);
+            dashboardData.put("assignedFCARs", fcars); // For compatibility with existing JSPs
 
             // Count FCARs by status
             Map<String, Integer> fcarStatusCounts = new HashMap<>();
@@ -181,12 +184,9 @@ public class DisplaySystemController {
             dashboardData.put("courses", courseCache.values());
 
             // Get all FCARs
-            List<FCAR> allFcars = new ArrayList<>();
-            for (Course course : courseCache.values()) {
-                allFcars.addAll(fcarController.getFCARsForCourse(course.getCourseId()));
-            }
-
+            List<FCAR> allFcars = fcarController.getAllFCARs();
             dashboardData.put("fcars", allFcars);
+            dashboardData.put("allFCARs", allFcars); // For compatibility with existing JSPs
 
             // Count FCARs by status
             Map<String, Integer> fcarStatusCounts = new HashMap<>();
@@ -220,6 +220,46 @@ public class DisplaySystemController {
 
             dashboardData.put("userCounts", userCounts);
         }
+
+        return dashboardData;
+    }
+
+    /**
+     * Generate a dashboard data object for a professor
+     * This is a convenience method for servlets
+     * 
+     * @param professorId ID of the professor
+     * @return Map containing dashboard data
+     */
+    public Map<String, Object> generateProfessorDashboard(String professorId) {
+        Map<String, Object> dashboardData = new HashMap<>();
+
+        // Get all FCARs for this professor
+        List<FCAR> professorFCARs = fcarController.getFCARsByProfessor(professorId);
+
+        // Add FCARs to the dashboard data with different attribute names for
+        // compatibility
+        dashboardData.put("fcars", professorFCARs);
+        dashboardData.put("assignedFCARs", professorFCARs);
+        dashboardData.put("allFCARs", professorFCARs); // For viewFCAR.jsp
+
+        return dashboardData;
+    }
+
+    /**
+     * Generate a dashboard data object for an admin
+     * This is a convenience method for servlets
+     * 
+     * @return Map containing dashboard data with all FCARs
+     */
+    public Map<String, Object> generateAdminDashboard() {
+        // For admin dashboard, we don't need a specific user ID
+        // We just need to return all FCARs
+        Map<String, Object> dashboardData = new HashMap<>();
+
+        // Get all FCARs
+        List<FCAR> allFcars = fcarController.getAllFCARs();
+        dashboardData.put("allFCARs", allFcars);
 
         return dashboardData;
     }

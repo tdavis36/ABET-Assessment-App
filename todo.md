@@ -1,63 +1,5 @@
 
 
-## Issue #3: Centralize dashboard data generation to eliminate duplication
-
-**Labels:** refactoring, code-quality
-
-**Description:**
-There's redundant functionality for generating dashboard data:
-- `DisplaySystemController.generateDashboardData()` creates comprehensive dashboards
-- `ProfessorServlet` and `AdminServlet` also contain similar code that manually gathers FCAR data
-
-This duplication makes maintenance difficult and increases the risk of inconsistent behavior across different parts of the application.
-
-**Steps to reproduce:**
-Examine the dashboard generation logic in:
-- `DisplaySystemController.java`
-- `ProfessorServlet.java`
-- `AdminServlet.java`
-
-**Proposed solution:**
-1. Move all dashboard data generation to `DisplaySystemController`
-2. Modify servlets to use `DisplaySystemController` for retrieving dashboard data
-3. Add any missing functionality from servlets to `DisplaySystemController` methods
-
-**Priority:** Medium
-
-**Status:** Not implemented
-
----
-
-## Issue #4: Streamline FCAR submission process to eliminate redundant implementations
-
-**Labels:** refactoring, code-quality
-
-**Description:**
-The FCAR submission process is implemented in multiple places:
-- In `FCAR` class with methods like `submit()`, `approve()`, etc.
-- In `FCARController` with wrapper methods like `submitFCAR()`, `approveFCAR()`, etc.
-- In `ProfessorServlet` with its own FCAR submission logic
-
-This creates confusion about the correct way to submit FCARs and increases the risk of inconsistent behavior.
-
-**Steps to reproduce:**
-Examine the submission logic in:
-- `FCAR.java`
-- `FCARController.java`
-- `ProfessorServlet.java`
-
-**Proposed solution:**
-1. Keep the state transition logic in the `FCAR` class
-2. Ensure all submissions go through the `FCARController`
-3. Update servlets to only use the `FCARController` methods
-4. Remove redundant submission logic from servlets
-
-**Priority:** Medium
-
-**Status:** Not implemented
-
----
-
 ## Issue #5: Implement proper centralized authentication system
 
 **Labels:** enhancement, security
@@ -136,39 +78,14 @@ Compare:
 
 ---
 
-## Issue #8: Integrate Task Management system with FCAR workflow
 
-**Labels:** enhancement, feature
-
-**Description:**
-The `TaskController` and related code appears to be disconnected from the rest of the application. It contains functionality for managing tasks but this isn't integrated with the FCAR or user management systems.
-
-This creates a situation where task management exists as an isolated feature with no connection to the core functionality of the application.
-
-**Steps to reproduce:**
-Examine:
-- `Task.java`
-- `TaskController.java`
-- The lack of references to these classes in FCAR-related code
-
-**Proposed solution:**
-1. Define clear relationships between tasks and FCARs
-2. Update the data models to reflect these relationships
-3. Integrate task management into the FCAR workflow
-4. Add task-related UI elements to the FCAR management pages
-
-**Priority:** Medium
-
-**Status:** Not implemented
-
----
 
 ## Issue #9: Create database schema for FCAR management system
 
 **Labels:** enhancement, database, feature
 
 **Description:**
-The application currently stores all FCARs in memory using `fcarMap` in `FCARFactory`, which means data is lost when the application restarts. We need to implement proper database persistence for FCARs.
+The application currently stores all FCARs in memory using `fcarMap` in `SessionStorageHander`, which means data is lost when the application restarts. We need to implement proper database persistence for FCARs.
 
 The database schema should support:
 - FCAR records with all existing fields
@@ -177,7 +94,7 @@ The database schema should support:
 - Relationships between these entities
 
 **Steps to reproduce:**
-1. Examine current in-memory storage in `FCARFactory.java`
+1. Examine current in-memory storage in `SessionStorageHander.java`
 2. Note the lack of database persistence for FCARs
 
 **Proposed solution:**
@@ -469,5 +386,91 @@ Either:
 3. Or modify `SessionStorageHandler` to serve as a cache that delegates to `FCARFactory` for all operations
 
 **Priority:** High
+
+---
+
+
+## Issue #3: Centralize dashboard data generation to eliminate duplication
+
+**Labels:** refactoring, code-quality
+
+**Description:**
+There's redundant functionality for generating dashboard data:
+- `DisplaySystemController.generateDashboardData()` creates comprehensive dashboards
+- `ProfessorServlet` and `AdminServlet` also contain similar code that manually gathers FCAR data
+
+This duplication makes maintenance difficult and increases the risk of inconsistent behavior across different parts of the application.
+
+**Steps to reproduce:**
+Examine the dashboard generation logic in:
+- `DisplaySystemController.java`
+- `ProfessorServlet.java`
+- `AdminServlet.java`
+
+**Proposed solution:**
+1. Move all dashboard data generation to `DisplaySystemController`
+2. Modify servlets to use `DisplaySystemController` for retrieving dashboard data
+3. Add any missing functionality from servlets to `DisplaySystemController` methods
+
+**Priority:** Medium
+
+**Status:** Not implemented
+
+---
+
+## Issue #4: Streamline FCAR submission process to eliminate redundant implementations
+
+**Labels:** refactoring, code-quality
+
+**Description:**
+The FCAR submission process is implemented in multiple places:
+- In `FCAR` class with methods like `submit()`, `approve()`, etc.
+- In `FCARController` with wrapper methods like `submitFCAR()`, `approveFCAR()`, etc.
+- In `ProfessorServlet` with its own FCAR submission logic
+
+This creates confusion about the correct way to submit FCARs and increases the risk of inconsistent behavior.
+
+**Steps to reproduce:**
+Examine the submission logic in:
+- `FCAR.java`
+- `FCARController.java`
+- `ProfessorServlet.java`
+
+**Proposed solution:**
+1. Keep the state transition logic in the `FCAR` class
+2. Ensure all submissions go through the `FCARController`
+3. Update servlets to only use the `FCARController` methods
+4. Remove redundant submission logic from servlets
+
+**Priority:** Medium
+
+**Status:** Not implemented
+
+---
+
+## Issue #8: Integrate Task Management system with FCAR workflow
+
+**Labels:** enhancement, feature
+
+**Description:**
+The `TaskController` and related code appears to be disconnected from the rest of the application. It contains functionality for managing tasks but this isn't integrated with the FCAR or user management systems.
+
+This creates a situation where task management exists as an isolated feature with no connection to the core functionality of the application.
+
+**Steps to reproduce:**
+Examine:
+- `Task.java`
+- `TaskController.java`
+- The lack of references to these classes in FCAR-related code
+
+**Proposed solution:**
+1. Define clear relationships between tasks and FCARs
+2. Update the data models to reflect these relationships
+3. Integrate task management into the FCAR workflow
+4. Add task-related UI elements to the FCAR management pages
+
+**Priority:** Medium
+
+**Status:** Not implemented
 
 ---

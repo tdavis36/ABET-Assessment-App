@@ -1,7 +1,7 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,6 +13,15 @@ import jakarta.servlet.http.HttpSession;
 @WebServlet("/AdminServlet")
 public class AdminServlet extends HttpServlet {
 
+    // Get the controllers
+    private FCARController getFCARController() {
+        return FCARController.getInstance();
+    }
+
+    private DisplaySystemController getDisplayController() {
+        return DisplaySystemController.getInstance();
+    }
+
     /**
      * Handles GET requests: just forwards to admin.jsp
      */
@@ -22,10 +31,14 @@ public class AdminServlet extends HttpServlet {
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
 
-        // Always fetch all FCARs for the admin to see
-        FCARController controller = FCARController.getInstance();
-        List<FCAR> allFCARs = controller.getAllFCARs();
-        request.setAttribute("allFCARs", allFCARs);
+        // Use DisplaySystemController to get dashboard data
+        DisplaySystemController displayController = getDisplayController();
+        Map<String, Object> dashboardData = displayController.generateAdminDashboard();
+
+        // Add all attributes from the dashboard data to the request
+        for (Map.Entry<String, Object> entry : dashboardData.entrySet()) {
+            request.setAttribute(entry.getKey(), entry.getValue());
+        }
 
         if ("viewFCARs".equals(action)) {
             request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
@@ -35,6 +48,7 @@ public class AdminServlet extends HttpServlet {
             String fcarId = request.getParameter("fcarId");
 
             // Get the FCAR from the controller
+            FCARController controller = getFCARController();
             FCAR fcar = controller.getFCAR(fcarId);
 
             if (fcar != null) {
@@ -68,11 +82,25 @@ public class AdminServlet extends HttpServlet {
             String semester = request.getParameter("semester");
             int year = Integer.parseInt(request.getParameter("year"));
 
+            // Get outcome and indicator
+            String outcome = request.getParameter("outcome");
+            String indicator = request.getParameter("indicator");
+            String targetGoal = request.getParameter("targetGoal");
+
             // Create a new FCAR and assign it to the professor
-            FCARController controller = FCARController.getInstance();
+            FCARController controller = getFCARController();
             String fcarId = controller.createFCAR(courseId, professorId, semester, year);
 
             if (fcarId != null) {
+                // Get the FCAR and add outcome and indicator
+                FCAR fcar = controller.getFCAR(fcarId);
+                if (fcar != null) {
+                    fcar.addAssessmentMethod("outcome", outcome);
+                    fcar.addAssessmentMethod("indicator", indicator);
+                    fcar.addAssessmentMethod("targetGoal", targetGoal);
+                    controller.updateFCAR(fcar);
+                }
+
                 // Success - redirect back to admin page
                 response.sendRedirect(request.getContextPath() + "/AdminServlet?fcarCreated=true");
             } else {

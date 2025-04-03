@@ -1,8 +1,7 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
-import java.io.Serial;
-import java.util.List;
+import java.util.Map;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,12 +12,15 @@ import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/ProfessorServlet")
 public class ProfessorServlet extends HttpServlet {
-    @Serial
     private static final long serialVersionUID = 1L;
 
-    // Get the FCARController instance
+    // Get the controllers
     private FCARController getFCARController() {
         return FCARController.getInstance();
+    }
+
+    private DisplaySystemController getDisplayController() {
+        return DisplaySystemController.getInstance();
     }
 
     public ProfessorServlet() {
@@ -32,14 +34,25 @@ public class ProfessorServlet extends HttpServlet {
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
 
-        if ("createFCARForm".equals(action)) {
-            // Forward to FCAR creation form
-            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
-            return;
-        } else if ("viewFCARs".equals(action)) {
-            // Pass stored FCARs to view
-            FCARController controller = getFCARController();
-            request.setAttribute("allFCARs", controller.getAllFCARs());
+        // Removed ability for professors to create FCARs
+
+        if ("viewFCARs".equals(action)) {
+            // Get professor ID
+            String professorId = (String) session.getAttribute("professorName");
+            if (professorId == null) {
+                professorId = "Smith"; // Default for testing
+                session.setAttribute("professorName", professorId);
+            }
+
+            // Use DisplaySystemController to get dashboard data for this professor
+            DisplaySystemController displayController = getDisplayController();
+            Map<String, Object> dashboardData = displayController.generateProfessorDashboard(professorId);
+
+            // Add all attributes from the dashboard data to the request
+            for (Map.Entry<String, Object> entry : dashboardData.entrySet()) {
+                request.setAttribute(entry.getKey(), entry.getValue());
+            }
+
             request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
             return;
         } else if ("editFCAR".equals(action)) {
@@ -68,16 +81,21 @@ public class ProfessorServlet extends HttpServlet {
             return;
         }
 
-        // Default: Show professor dashboard with all FCARs
+        // Default: Show professor dashboard
         String professorId = (String) session.getAttribute("professorName");
         if (professorId == null) {
             professorId = "Smith"; // Default for testing
             session.setAttribute("professorName", professorId);
         }
 
-        // Get all FCARs, not just the ones assigned to this professor
-        List<FCAR> allFCARs = getFCARController().getAllFCARs();
-        request.setAttribute("assignedFCARs", allFCARs);
+        // Use DisplaySystemController to get dashboard data
+        DisplaySystemController displayController = getDisplayController();
+        Map<String, Object> dashboardData = displayController.generateProfessorDashboard(professorId);
+
+        // Add all attributes from the dashboard data to the request
+        for (Map.Entry<String, Object> entry : dashboardData.entrySet()) {
+            request.setAttribute(entry.getKey(), entry.getValue());
+        }
 
         // Forward to professor.jsp
         request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
@@ -151,7 +169,8 @@ public class ProfessorServlet extends HttpServlet {
             String improvementActions = request.getParameter("improvementActions");
 
             // Store additional data in the FCAR
-            // In a real implementation, you would extend the FCAR class to include these fields
+            // In a real implementation, you would extend the FCAR class to include these
+            // fields
             // For now we'll store them as assessment methods and improvement actions
             fcar.addAssessmentMethod("outcome", outcome);
             fcar.addAssessmentMethod("indicator", indicator);
@@ -213,16 +232,13 @@ public class ProfessorServlet extends HttpServlet {
             // Check if this is a save or submit action
             String saveAction = request.getParameter("saveAction");
 
-            if ("submit".equals(saveAction)) {
-                // Set status to Submitted
-                fcar.setStatus("Submitted");
-            } else {
-                // Set status to Draft for save and exit
-                fcar.setStatus("Draft");
-            }
-
-            // Store FCAR
+            // Store FCAR first
             controller.updateFCAR(fcar);
+
+            if ("submit".equals(saveAction)) {
+                // Submit the FCAR using the controller
+                controller.submitFCAR(fcar.getFcarId());
+            }
 
             // Redirect back to professor dashboard
             if ("submit".equals(saveAction)) {

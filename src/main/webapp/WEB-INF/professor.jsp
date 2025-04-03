@@ -1,5 +1,4 @@
 <%@ page import="java.util.List" %>
-<%@ page import="com.ABETAppTeam.Task" %>
 <%@ page import="jakarta.servlet.http.HttpSession" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
@@ -16,9 +15,9 @@
         .submitted { color: blue; }
         .completed { color: green; }
 
-        .task-box { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
-        .task-item { display: flex; justify-content: space-between; padding: 8px; }
-        .task-actions button { margin-left: 5px; }
+        .fcar-box { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+        .fcar-item { display: flex; justify-content: space-between; padding: 8px; }
+        .fcar-actions button { margin-left: 5px; }
     </style>
 </head>
 <body>
@@ -40,11 +39,6 @@
     <div class="section">
         <h2>Faculty Course Assessment Reports (FCARs)</h2>
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get" style="margin-right: 20px;">
-                <input type="hidden" name="action" value="createFCARForm"/>
-                <button type="submit" class="btn">Create FCAR</button>
-            </form>
-            
             <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get">
                 <input type="hidden" name="action" value="viewFCARs"/>
                 <button type="submit" class="btn">View FCARs</button>
@@ -56,11 +50,11 @@
     <!-- All FCARs Section -->
     <div class="section">
         <h2>All FCARs</h2>
-        <div class="task-box">
+        <div class="fcar-box">
             <c:choose>
                 <c:when test="${not empty assignedFCARs}">
                     <c:forEach var="fcar" items="${assignedFCARs}">
-                        <div class="task-item">
+                        <div class="fcar-item">
                             <div>
                                 <span class="status ${fcar.status}"></span>
                                 <strong>Professor:</strong> <c:out value="${fcar.professorId}"/> -
@@ -68,7 +62,7 @@
                                 <strong>Semester:</strong> <c:out value="${fcar.semester}"/> <c:out value="${fcar.year}"/> -
                                 <strong>Status:</strong> <c:out value="${fcar.status}"/>
                             </div>
-                            <div class="task-actions">
+                            <div class="fcar-actions">
                                 <form method="get" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
                                     <input type="hidden" name="action" value="editFCAR"/>
                                     <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>
