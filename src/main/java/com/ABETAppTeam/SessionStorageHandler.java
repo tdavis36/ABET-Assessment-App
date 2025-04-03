@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpSession;
 
 /**
  * SessionStorageHandler for managing session-based FCAR data.
- *
  * This class provides methods to store, retrieve, and clear FCAR data in the
  * session.
  *

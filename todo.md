@@ -26,6 +26,8 @@ Use only `FCARController` as the single access point for all FCAR operations:
 
 **Priority:** High
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #2: Unify FCAR storage mechanisms to prevent data inconsistencies
@@ -50,6 +52,8 @@ Either:
 3. Or modify `SessionStorageHandler` to serve as a cache that delegates to `FCARFactory` for all operations
 
 **Priority:** High
+
+**Status:** Not implemented
 
 ---
 
@@ -76,6 +80,8 @@ Examine the dashboard generation logic in:
 3. Add any missing functionality from servlets to `DisplaySystemController` methods
 
 **Priority:** Medium
+
+**Status:** Not implemented
 
 ---
 
@@ -105,6 +111,8 @@ Examine the submission logic in:
 
 **Priority:** Medium
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #5: Implement proper centralized authentication system
@@ -132,6 +140,8 @@ Examine:
 
 **Priority:** High
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #6: Consolidate duplicated database scripts for Windows and Unix
@@ -156,6 +166,8 @@ Compare:
 
 **Priority:** Low
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #7: Consolidate duplicated Git hooks setup scripts
@@ -176,6 +188,8 @@ Compare:
 3. Consider implementing the hooks directly in JavaScript or a language that's more platform-independent
 
 **Priority:** Low
+
+**Status:** Not implemented
 
 ---
 
@@ -201,6 +215,8 @@ Examine:
 4. Add task-related UI elements to the FCAR management pages
 
 **Priority:** Medium
+
+**Status:** Not implemented
 
 ---
 
@@ -235,6 +251,8 @@ The database schema should support:
 
 **Priority:** High
 
+**Status:** Not implemented
+
 ---
 
 ## ~~Issue #10: Configure database connection pooling for improved performance~~
@@ -261,6 +279,10 @@ The application is set up to use MariaDB but lacks proper connection pooling con
 
 **Priority:** Medium
 
+**Status:** ✅ Implemented
+- HikariCP has been added as a dependency in pom.xml
+- DataSourceFactory.java implements connection pooling with HikariCP
+
 ---
 
 ## Issue #11: Establish proper database migration strategy using Flyway
@@ -283,6 +305,8 @@ While the project includes Flyway for database migrations, there's no clear stra
 6. Implement version tracking in the application to ensure compatibility
 
 **Priority:** High
+
+**Status:** Not implemented
 
 ---
 
@@ -307,6 +331,8 @@ N/A - Feature is missing
 6. Add monitoring for backup job success/failure
 
 **Priority:** Medium
+
+**Status:** Not implemented
 
 ---
 
@@ -333,6 +359,11 @@ N/A - Feature is missing
 
 **Priority:** High
 
+**Status:** ✅ Partially Implemented
+- FCARRepository interface created
+- JdbcFCARRepository implementation added
+- Still missing repositories for other entities and integration with controllers
+
 ---
 
 ## Issue #14: Optimize database performance with proper indexing
@@ -358,6 +389,8 @@ N/A - Feature is missing
 
 **Priority:** Medium
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #15: Enhance database security with best practices implementation
@@ -382,6 +415,8 @@ The current database setup in `docker-compose.yml` lacks comprehensive security 
 8. Create security documentation and guidelines
 
 **Priority:** High
+
+**Status:** Not implemented
 
 ---
 
@@ -411,6 +446,8 @@ N/A - Feature is missing
 
 **Priority:** Medium
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #17: Configure database for different deployment environments (Partially implemented)
@@ -436,3 +473,290 @@ The database configuration is currently hardcoded for a single environment. We n
 
 **Priority:** Medium
 
+**Status:** Not implemented
+
+---
+
+## Issue #18: Clarify FCAR Factory and Controller Responsibilities
+
+**Labels:** refactoring, code-quality
+
+**Description:**
+There are overlapping responsibilities between `FCARFactory` and `FCARController` classes, with nearly identical methods in both. Since both classes need to be maintained, their responsibilities need to be clearly separated.
+
+**Steps to reproduce:**
+1. Examine `FCARFactory.java` and `FCARController.java`
+2. Note the duplicated methods like `createFCAR()`, `getFCAR()`, `updateFCAR()`, etc.
+
+**Proposed solution:**
+1. Clarify different responsibilities:
+   - `FCARFactory`: Focus solely on creating and providing FCAR objects
+   - `FCARController`: Handle business logic, workflows, and state transitions
+2. Make `FCARController` depend on `FCARFactory` rather than duplicating functionality
+3. Update both to use the new `FCARRepository` for actual data persistence
+4. Update test classes to reflect these clarified responsibilities
+
+**Priority:** High
+
+**Status:** Not implemented
+
+---
+
+## Issue #19: Refactor DisplaySystemController to Eliminate Redundancy
+
+**Labels:** refactoring, code-quality
+
+**Description:**
+`DisplaySystemController` duplicates functionality from `FCARController`, maintaining its own caches and providing similar methods for FCAR retrieval. This creates maintenance challenges and potential inconsistencies.
+
+**Steps to reproduce:**
+1. Examine `DisplaySystemController.java`
+2. Note duplicate methods that overlap with `FCARController` like `getFCAR()`, `getFCARsForCourse()`, etc.
+
+**Proposed solution:**
+1. Refactor `DisplaySystemController` to delegate all FCAR management to `FCARController`
+2. Focus the display controller on view-related logic like building dashboard data objects
+3. Remove duplicated methods for FCAR retrieval
+4. Ensure proper coordination between controllers to maintain consistency
+
+**Priority:** Medium
+
+**Status:** Not implemented
+
+---
+
+## Issue #20: Integrate Session Storage Handler with Servlets
+
+**Labels:** enhancement, code-quality
+
+**Description:**
+The `SessionStorageHandler` class is well-designed but appears to be unused in servlet classes, leading to potential state management issues across requests.
+
+**Steps to reproduce:**
+1. Examine `SessionStorageHandler.java`
+2. Search for references to this class in servlet code
+3. Note the absence of session storage usage in key servlets
+
+**Proposed solution:**
+1. Integrate `SessionStorageHandler` into servlet classes (`AdminServlet`, `ProfessorServlet`, etc.)
+2. Use it to maintain session state across requests, particularly for in-progress FCARs
+3. Document the session storage approach to ensure consistent usage
+
+**Priority:** Medium
+
+**Status:** Not implemented
+
+---
+
+## Issue #21: Implement Front Controller Pattern for Servlet Architecture
+
+**Labels:** enhancement, architecture
+
+**Description:**
+The servlet architecture doesn't follow a clear pattern, with multiple servlets handling different aspects of FCAR operations. This leads to code duplication and makes it difficult to maintain consistent behavior.
+
+**Steps to reproduce:**
+1. Examine the servlet classes (`AdminServlet`, `ProfessorServlet`, `ViewFCARServlet`, etc.)
+2. Note duplicated request handling logic across these classes
+
+**Proposed solution:**
+1. Implement a Front Controller pattern with a main dispatcher servlet
+2. Create action handlers for specific operations that can be reused across user roles
+3. Simplify URL structure and routing logic
+4. Update web.xml to reflect the new servlet architecture
+
+**Priority:** High
+
+**Status:** Not implemented
+
+---
+
+## Issue #22: Create a Proper Data Access Layer
+
+**Labels:** enhancement, architecture, database
+
+**Description:**
+The code currently uses in-memory maps to store data where a database would normally be used. This approach won't scale and doesn't persist data between application restarts.
+
+**Steps to reproduce:**
+1. Examine how data is stored in controllers (e.g., `private final Map<String, FCAR> fcarMap = new HashMap<>()`)
+2. Note the lack of persistence beyond application lifetime
+
+**Proposed solution:**
+1. Create a proper Data Access Object (DAO) layer
+2. Add interfaces like `FCARDao`, `UserDao`, `CourseDao` that could be implemented for different data sources
+3. Implement concrete classes for in-memory storage initially, but design for easy replacement with database implementations
+4. Add proper transaction management
+
+**Priority:** High
+
+**Status:** ✅ Partially Implemented
+- Basic repository pattern established with FCARRepository interface
+- JdbcFCARRepository implemented for FCAR persistence
+- DataSourceFactory created for connection pooling
+- Still needs integration with existing controllers and expansion to other entities
+
+---
+
+## Issue #23: Standardize Controller Patterns Across the Application
+
+**Labels:** refactoring, architecture
+
+**Description:**
+Different controllers in the application follow inconsistent patterns. For example, `TaskController` uses a singleton pattern but operates independently from the main FCAR workflow.
+
+**Steps to reproduce:**
+1. Compare `TaskController.java` with other controllers
+2. Note the inconsistent approaches and lack of integration
+
+**Proposed solution:**
+1. Standardize controller patterns across the application
+2. Consider a unified controller interface that all controllers implement
+3. Integrate `Task` model with `FCAR` more clearly if they're related
+4. Create clear documentation for the controller architecture
+
+**Priority:** Medium
+
+**Status:** Not implemented
+
+---
+
+## Issue #24: Extract and Standardize JavaScript in JSP Files
+
+**Labels:** refactoring, frontend
+
+**Description:**
+The JSP files contain embedded JavaScript with duplicated functionality. There's no separation of concerns between display and logic, making maintenance difficult.
+
+**Steps to reproduce:**
+1. Examine `fcarForm.jsp` and `viewFCAR.jsp`
+2. Note similar JavaScript functions for calculating statistics and manipulating the DOM
+
+**Proposed solution:**
+1. Extract JavaScript to separate .js files
+2. Create a common utility library for shared functionality
+3. Use modern front-end practices like modules
+4. Implement a proper front-end build process if needed
+
+**Priority:** Low
+
+**Status:** Not implemented
+
+---
+
+## Issue #25: Consolidate Database Management Scripts
+
+**Labels:** refactoring, devops
+
+**Description:**
+There are multiple database configuration scripts and utilities spread across the codebase, making it difficult to understand the database setup and management process.
+
+**Steps to reproduce:**
+1. Examine `docker-compose.yml`, `01-init.sql`, `db-maven.sh`, and `db-maven.bat`
+2. Note the fragmentation of database management functionality
+
+**Proposed solution:**
+1. Consolidate the database scripts into a unified database management module
+2. Document the relationship between these scripts more clearly
+3. Add integration tests to verify that the scripts work correctly together
+4. Create a comprehensive database setup and management guide
+
+**Priority:** Low
+
+**Status:** Not implemented
+
+---
+
+## Issue #26: Complete Test Coverage
+
+**Labels:** testing, quality-assurance
+
+**Description:**
+There are test classes for some components but not others, and the existing tests focus primarily on unit testing rather than integration or end-to-end tests.
+
+**Steps to reproduce:**
+1. Examine test classes like `AdminTest`, `FCARTest`, etc.
+2. Note the absence of tests for many key components and workflows
+
+**Proposed solution:**
+1. Complete the test suite to cover all major classes
+2. Add integration tests for critical workflows
+3. Implement Mockito tests for servlets that properly mock HTTP requests/responses
+4. Set up a CI pipeline to run tests automatically
+
+**Priority:** Medium
+
+**Status:** Not implemented
+
+---
+
+## Issue #27: Implement Consistent Error Handling
+
+**Labels:** enhancement, reliability
+
+**Description:**
+Error handling is inconsistent across the codebase, with some methods returning boolean success indicators, others using try/catch blocks with minimal error information, and limited web-facing error handling.
+
+**Steps to reproduce:**
+1. Examine error handling approaches across different classes
+2. Note the inconsistency in how errors are reported and handled
+
+**Proposed solution:**
+1. Implement a consistent error handling strategy
+2. Consider using custom exceptions for different error types
+3. Add proper error pages and user-friendly error messages for the web interface
+4. Implement logging for errors to assist in troubleshooting
+
+**Priority:** Medium
+
+**Status:** Not implemented
+
+---
+
+## Issue #28: Enhance Web.xml Configuration
+
+**Labels:** enhancement, security
+
+**Description:**
+The `web.xml` file has basic servlet mappings but lacks error page configurations, security constraints, and session configuration.
+
+**Steps to reproduce:**
+1. Examine `web.xml`
+2. Note the minimal configuration beyond basic servlet mappings
+
+**Proposed solution:**
+1. Update `web.xml` with comprehensive configuration:
+   - Add custom error pages
+   - Configure security constraints (especially for admin pages)
+   - Set appropriate session timeout values
+2. Add servlet filters for cross-cutting concerns like authentication
+3. Configure appropriate welcome files and default error pages
+
+**Priority:** Medium
+
+**Status:** Not implemented
+
+---
+
+## Issue #29: Implement Comprehensive User Authentication System
+
+**Labels:** enhancement, security
+
+**Description:**
+The `User` class has a simple `authenticate()` method, but there's no complete authentication system with proper password hashing, login/logout flow, or session management.
+
+**Steps to reproduce:**
+1. Examine `User.java` and note the basic authentication method
+2. Review servlet code and note the absence of login/logout handling
+
+**Proposed solution:**
+1. Implement proper authentication with secure password storage (bcrypt or similar)
+2. Add login/logout servlets
+3. Use sessions to track authenticated users
+4. Consider using standard security frameworks rather than building custom solutions
+5. Add password reset functionality
+6. Implement role-based access control
+
+**Priority:** High
+
+**Status:** Not implemented

@@ -8,14 +8,12 @@ import java.util.UUID;
 
 /**
  * FCARController class for the ABET Assessment Application
- * 
  * This class serves as a controller for FCAR (Faculty Course Assessment Report)
  * operations. It provides methods for creating, retrieving, updating, and
  * managing FCARs, acting as an intermediary between the UI and the FCAR data.
- * 
  * This class combines the functionality of the previous FCARController and
  * FCARFactory
- * to eliminate redundancy.
+ * to remove redundancy.
  */
 public class FCARController {
     // Singleton instance
@@ -29,7 +27,7 @@ public class FCARController {
     private final Map<String, FCAR> fcarCache;
 
     /**
-     * Private constructor for singleton pattern
+     * Private constructor for a singleton pattern
      */
     private FCARController() {
         this.fcarMap = new HashMap<>();
@@ -60,7 +58,7 @@ public class FCARController {
     public String createFCAR(String courseId, String professorId, String semester, int year) {
         try {
             // Generate a unique ID for the FCAR
-            String fcarId = "FCAR-" + UUID.randomUUID().toString();
+            String fcarId = "FCAR-" + UUID.randomUUID();
 
             // Create a new FCAR object
             FCAR fcar = new FCAR(fcarId, courseId, professorId, semester, year);
@@ -91,7 +89,7 @@ public class FCARController {
             return this.fcarCache.get(fcarId);
         }
 
-        // If not in cache, get from main storage
+        // If not in cache, get from the main storage
         FCAR fcar = this.fcarMap.get(fcarId);
 
         // If found, add to cache
@@ -230,15 +228,14 @@ public class FCARController {
 
     /**
      * Return an FCAR to draft status
-     * 
+     *
      * @param fcarId ID of the FCAR to return to draft
-     * @return true if the operation was successful, false otherwise
      */
-    public boolean returnFCARToDraft(String fcarId) {
+    public void returnFCARToDraft(String fcarId) {
         FCAR fcar = this.getFCAR(fcarId);
 
         if (fcar == null) {
-            return false;
+            return;
         }
 
         boolean result = fcar.returnToDraft();
@@ -248,7 +245,6 @@ public class FCARController {
             this.updateFCAR(fcar);
         }
 
-        return result;
     }
 
     /**

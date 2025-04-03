@@ -7,7 +7,6 @@ import java.util.Map;
 
 /**
  * DisplaySystemController class for the ABET Assessment Application
- * 
  * This class is responsible for managing the display of data in the system,
  * including FCAR reports, user information, and course data. It serves as an
  * intermediary between the data models and the UI.
@@ -17,13 +16,13 @@ public class DisplaySystemController {
     private static DisplaySystemController instance;
 
     // Reference to the FCAR controller
-    private FCARController fcarController;
+    private final FCARController fcarController;
 
     // Cache for users
-    private Map<String, User> userCache;
+    private final Map<String, User> userCache;
 
     // Cache for courses
-    private Map<String, Course> courseCache;
+    private final Map<String, Course> courseCache;
 
     /**
      * Private constructor for singleton pattern
@@ -147,8 +146,7 @@ public class DisplaySystemController {
 
         dashboardData.put("user", user);
 
-        if (user instanceof Professor) {
-            Professor professor = (Professor) user;
+        if (user instanceof Professor professor) {
             List<Course> courses = new ArrayList<>();
 
             // Get courses for the professor
