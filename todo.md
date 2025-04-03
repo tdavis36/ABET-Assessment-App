@@ -237,7 +237,7 @@ The database schema should support:
 
 ---
 
-## Issue #10: Configure database connection pooling for improved performance
+## ~~Issue #10: Configure database connection pooling for improved performance~~
 
 **Labels:** enhancement, database, performance
 
@@ -310,7 +310,7 @@ N/A - Feature is missing
 
 ---
 
-## Issue #13: Create database access layer using repository pattern
+## ~~Issue #13: Create database access layer using repository pattern~~
 
 **Labels:** enhancement, database, architecture
 
@@ -413,7 +413,7 @@ N/A - Feature is missing
 
 ---
 
-## Issue #17: Configure database for different deployment environments
+## Issue #17: Configure database for different deployment environments (Partially implemented)
 
 **Labels:** enhancement, database, devops
 
