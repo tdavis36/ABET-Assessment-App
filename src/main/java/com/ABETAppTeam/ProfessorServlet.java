@@ -1,6 +1,7 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.util.List;
 
 import jakarta.servlet.ServletException;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/ProfessorServlet")
 public class ProfessorServlet extends HttpServlet {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     // Get the FCARController instance
@@ -149,9 +151,8 @@ public class ProfessorServlet extends HttpServlet {
             String improvementActions = request.getParameter("improvementActions");
 
             // Store additional data in the FCAR
-            // In a real implementation, you would extend the FCAR class to include these
-            // fields
-            // For now, we'll store them as assessment methods and improvement actions
+            // In a real implementation, you would extend the FCAR class to include these fields
+            // For now we'll store them as assessment methods and improvement actions
             fcar.addAssessmentMethod("outcome", outcome);
             fcar.addAssessmentMethod("indicator", indicator);
             fcar.addAssessmentMethod("targetGoal", targetGoal);

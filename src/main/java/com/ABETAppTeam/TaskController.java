@@ -7,7 +7,6 @@ import java.util.Map;
 
 /**
  * TaskController manages Task creation and retrieval.
- * 
  * This class follows the singleton pattern for consistency with other
  * controllers
  * in the application.
@@ -20,7 +19,7 @@ public class TaskController {
     private final Map<String, Task> tasks;
 
     /**
-     * Private constructor for singleton pattern
+     * Private constructor for a singleton pattern
      */
     private TaskController() {
         this.tasks = new HashMap<>();

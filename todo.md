@@ -24,6 +24,8 @@ Examine the dashboard generation logic in:
 
 **Priority:** Medium
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #4: Streamline FCAR submission process to eliminate redundant implementations
@@ -52,6 +54,8 @@ Examine the submission logic in:
 
 **Priority:** Medium
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #5: Implement proper centralized authentication system
@@ -79,6 +83,8 @@ Examine:
 
 **Priority:** High
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #6: Consolidate duplicated database scripts for Windows and Unix
@@ -103,6 +109,8 @@ Compare:
 
 **Priority:** Low
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #7: Consolidate duplicated Git hooks setup scripts
@@ -123,6 +131,8 @@ Compare:
 3. Consider implementing the hooks directly in JavaScript or a language that's more platform-independent
 
 **Priority:** Low
+
+**Status:** Not implemented
 
 ---
 
@@ -148,6 +158,8 @@ Examine:
 4. Add task-related UI elements to the FCAR management pages
 
 **Priority:** Medium
+
+**Status:** Not implemented
 
 ---
 
@@ -182,6 +194,8 @@ The database schema should support:
 
 **Priority:** High
 
+**Status:** Not implemented
+
 ---
 
 ## ~~Issue #10: Configure database connection pooling for improved performance~~
@@ -208,6 +222,10 @@ The application is set up to use MariaDB but lacks proper connection pooling con
 
 **Priority:** Medium
 
+**Status:** ✅ Implemented
+- HikariCP has been added as a dependency in pom.xml
+- DataSourceFactory.java implements connection pooling with HikariCP
+
 ---
 
 ## Issue #11: Establish proper database migration strategy using Flyway
@@ -230,6 +248,8 @@ While the project includes Flyway for database migrations, there's no clear stra
 6. Implement version tracking in the application to ensure compatibility
 
 **Priority:** High
+
+**Status:** Not implemented
 
 ---
 
@@ -254,6 +274,8 @@ N/A - Feature is missing
 6. Add monitoring for backup job success/failure
 
 **Priority:** Medium
+
+**Status:** Not implemented
 
 ---
 
@@ -280,6 +302,11 @@ N/A - Feature is missing
 
 **Priority:** High
 
+**Status:** ✅ Partially Implemented
+- FCARRepository interface created
+- JdbcFCARRepository implementation added
+- Still missing repositories for other entities and integration with controllers
+
 ---
 
 ## Issue #14: Optimize database performance with proper indexing
@@ -305,6 +332,8 @@ N/A - Feature is missing
 
 **Priority:** Medium
 
+**Status:** Not implemented
+
 ---
 
 ## Issue #15: Enhance database security with best practices implementation
@@ -329,6 +358,8 @@ The current database setup in `docker-compose.yml` lacks comprehensive security 
 8. Create security documentation and guidelines
 
 **Priority:** High
+
+**Status:** Not implemented
 
 ---
 
@@ -357,6 +388,8 @@ N/A - Feature is missing
 5. Add reporting capabilities for audit data
 
 **Priority:** Medium
+
+**Status:** Not implemented
 
 ---
 
