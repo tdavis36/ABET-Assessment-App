@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * FCARController class for the ABET Assessment Application
@@ -11,10 +12,18 @@ import java.util.Map;
  * This class serves as a controller for FCAR (Faculty Course Assessment Report)
  * operations. It provides methods for creating, retrieving, updating, and
  * managing FCARs, acting as an intermediary between the UI and the FCAR data.
+ * 
+ * This class combines the functionality of the previous FCARController and
+ * FCARFactory
+ * to eliminate redundancy.
  */
 public class FCARController {
     // Singleton instance
     private static FCARController instance;
+
+    // Store created FCARs in memory (in a real application, this would be a
+    // database)
+    private final Map<String, FCAR> fcarMap;
 
     // Cache for recently accessed FCARs
     private final Map<String, FCAR> fcarCache;
@@ -23,6 +32,7 @@ public class FCARController {
      * Private constructor for singleton pattern
      */
     private FCARController() {
+        this.fcarMap = new HashMap<>();
         this.fcarCache = new HashMap<>();
     }
 
@@ -49,9 +59,19 @@ public class FCARController {
      */
     public String createFCAR(String courseId, String professorId, String semester, int year) {
         try {
-            FCAR fcar = FCARFactory.createFCAR(courseId, professorId, semester, year);
-            this.fcarCache.put(fcar.getFcarId(), fcar);
-            return fcar.getFcarId();
+            // Generate a unique ID for the FCAR
+            String fcarId = "FCAR-" + UUID.randomUUID().toString();
+
+            // Create a new FCAR object
+            FCAR fcar = new FCAR(fcarId, courseId, professorId, semester, year);
+
+            // Store the FCAR in the map
+            this.fcarMap.put(fcarId, fcar);
+
+            // Also store in cache
+            this.fcarCache.put(fcarId, fcar);
+
+            return fcarId;
         } catch (Exception e) {
             // Log the error
             System.err.println("Error creating FCAR: " + e.getMessage());
@@ -71,8 +91,8 @@ public class FCARController {
             return this.fcarCache.get(fcarId);
         }
 
-        // If not in cache, get from factory
-        FCAR fcar = FCARFactory.getFCAR(fcarId);
+        // If not in cache, get from main storage
+        FCAR fcar = this.fcarMap.get(fcarId);
 
         // If found, add to cache
         if (fcar != null) {
@@ -83,21 +103,29 @@ public class FCARController {
     }
 
     /**
-     * Update an FCAR
+     * Update an existing FCAR
      * 
      * @param fcar The FCAR object to update
      * @return true if the update was successful, false otherwise
      */
     public boolean updateFCAR(FCAR fcar) {
         try {
-            boolean result = FCARFactory.updateFCAR(fcar);
-
-            // Update the cache if successful
-            if (result) {
-                this.fcarCache.put(fcar.getFcarId(), fcar);
+            if (fcar == null || fcar.getFcarId() == null) {
+                return false;
             }
 
-            return result;
+            // Check if the FCAR exists
+            if (!this.fcarMap.containsKey(fcar.getFcarId())) {
+                return false;
+            }
+
+            // Update the FCAR in the map
+            this.fcarMap.put(fcar.getFcarId(), fcar);
+
+            // Update the cache
+            this.fcarCache.put(fcar.getFcarId(), fcar);
+
+            return true;
         } catch (Exception e) {
             // Log the error
             System.err.println("Error updating FCAR: " + e.getMessage());
@@ -106,21 +134,24 @@ public class FCARController {
     }
 
     /**
-     * Delete an FCAR
+     * Delete an FCAR by its ID
      * 
      * @param fcarId ID of the FCAR to delete
      * @return true if the deletion was successful, false otherwise
      */
     public boolean deleteFCAR(String fcarId) {
         try {
-            boolean result = FCARFactory.deleteFCAR(fcarId);
-
-            // Remove from cache if successful
-            if (result) {
-                this.fcarCache.remove(fcarId);
+            if (fcarId == null || !this.fcarMap.containsKey(fcarId)) {
+                return false;
             }
 
-            return result;
+            // Remove the FCAR from the map
+            this.fcarMap.remove(fcarId);
+
+            // Remove from cache
+            this.fcarCache.remove(fcarId);
+
+            return true;
         } catch (Exception e) {
             // Log the error
             System.err.println("Error deleting FCAR: " + e.getMessage());
@@ -284,12 +315,18 @@ public class FCARController {
      * @return List of FCARs for the course
      */
     public List<FCAR> getFCARsForCourse(String courseId) {
-        Map<String, FCAR> fcars = FCARFactory.getFCARsForCourse(courseId);
+        Map<String, FCAR> result = new HashMap<>();
+
+        for (Map.Entry<String, FCAR> entry : this.fcarMap.entrySet()) {
+            if (entry.getValue().getCourseId().equals(courseId)) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
 
         // Update the cache with the retrieved FCARs
-        this.fcarCache.putAll(fcars);
+        this.fcarCache.putAll(result);
 
-        return new ArrayList<>(fcars.values());
+        return new ArrayList<>(result.values());
     }
 
     /**
@@ -299,12 +336,18 @@ public class FCARController {
      * @return List of FCARs created by the professor
      */
     public List<FCAR> getFCARsByProfessor(String professorId) {
-        Map<String, FCAR> fcars = FCARFactory.getFCARsByProfessor(professorId);
+        Map<String, FCAR> result = new HashMap<>();
+
+        for (Map.Entry<String, FCAR> entry : this.fcarMap.entrySet()) {
+            if (entry.getValue().getProfessorId().equals(professorId)) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
 
         // Update the cache with the retrieved FCARs
-        this.fcarCache.putAll(fcars);
+        this.fcarCache.putAll(result);
 
-        return new ArrayList<>(fcars.values());
+        return new ArrayList<>(result.values());
     }
 
     /**
@@ -315,12 +358,28 @@ public class FCARController {
      * @return List of FCARs for the semester and year
      */
     public List<FCAR> getFCARsBySemester(String semester, int year) {
-        Map<String, FCAR> fcars = FCARFactory.getFCARsBySemester(semester, year);
+        Map<String, FCAR> result = new HashMap<>();
+
+        for (Map.Entry<String, FCAR> entry : this.fcarMap.entrySet()) {
+            FCAR fcar = entry.getValue();
+            if (fcar.getSemester().equals(semester) && fcar.getYear() == year) {
+                result.put(entry.getKey(), fcar);
+            }
+        }
 
         // Update the cache with the retrieved FCARs
-        this.fcarCache.putAll(fcars);
+        this.fcarCache.putAll(result);
 
-        return new ArrayList<>(fcars.values());
+        return new ArrayList<>(result.values());
+    }
+
+    /**
+     * Get all FCARs
+     * 
+     * @return List of all FCAR objects
+     */
+    public List<FCAR> getAllFCARs() {
+        return new ArrayList<>(this.fcarMap.values());
     }
 
     /**

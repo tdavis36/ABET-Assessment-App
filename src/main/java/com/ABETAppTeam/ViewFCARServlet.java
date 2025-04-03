@@ -28,14 +28,9 @@ public class ViewFCARServlet extends HttpServlet {
 
         // If fcarId is provided, show details for that FCAR
         if (fcarId != null && !fcarId.isEmpty()) {
-            // Find the FCAR by ID
-            FCAR selectedFCAR = null;
-            for (FCAR fcar : ProfessorServlet.getAllFCARs()) {
-                if (fcar.getFcarId().equals(fcarId)) {
-                    selectedFCAR = fcar;
-                    break;
-                }
-            }
+            // Get the FCAR directly from the controller
+            FCARController controller = FCARController.getInstance();
+            FCAR selectedFCAR = controller.getFCAR(fcarId);
 
             // Send FCAR details to JSP
             if (selectedFCAR != null) {

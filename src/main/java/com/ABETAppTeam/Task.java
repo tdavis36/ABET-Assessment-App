@@ -14,7 +14,7 @@ public class Task {
         this.taskId = UUID.randomUUID().toString();
         this.taskName = taskName;
         this.description = description;
-        this.assignedProfessorId = (assignedProfessorId != null) ? assignedProfessorId : "Unassigned";  // ✅ FIXED
+        this.assignedProfessorId = (assignedProfessorId != null) ? assignedProfessorId : "Unassigned"; // ✅ FIXED
         this.status = "Not Started";
     }
 
@@ -30,9 +30,11 @@ public class Task {
     public void setTaskName(String taskName) {
         this.taskName = taskName;
     }
+
     public void setFcarId(String fcarId) {
         this.fcarId = fcarId;
     }
+
     public String getFcarId() {
         return fcarId;
     }

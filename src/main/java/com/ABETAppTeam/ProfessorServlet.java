@@ -1,7 +1,6 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.servlet.ServletException;
@@ -18,14 +17,7 @@ public class ProfessorServlet extends HttpServlet {
     // Method to return all stored FCARs
     public static List<FCAR> getAllFCARs() {
         FCARController controller = FCARController.getInstance();
-        List<FCAR> fcars = new ArrayList<>();
-
-        // Get all FCARs from the factory
-        for (FCAR fcar : FCARFactory.getAllFCARs().values()) {
-            fcars.add(fcar);
-        }
-
-        return fcars;
+        return controller.getAllFCARs();
     }
 
     public ProfessorServlet() {
@@ -107,14 +99,16 @@ public class ProfessorServlet extends HttpServlet {
             String fcarId = request.getParameter("fcarId");
             FCAR fcar;
 
+            FCARController controller = FCARController.getInstance();
+
             if (fcarId != null && !fcarId.isEmpty()) {
                 // Get the existing FCAR
-                FCARController controller = FCARController.getInstance();
                 fcar = controller.getFCAR(fcarId);
 
                 if (fcar == null) {
                     // FCAR not found, create a new one
-                    fcar = FCARFactory.createFCAR(courseId, professorId, semester, year);
+                    String newFcarId = controller.createFCAR(courseId, professorId, semester, year);
+                    fcar = controller.getFCAR(newFcarId);
                 } else {
                     // Update the existing FCAR
                     fcar.setCourseId(courseId);
@@ -124,7 +118,8 @@ public class ProfessorServlet extends HttpServlet {
                 }
             } else {
                 // Create a new FCAR
-                fcar = FCARFactory.createFCAR(courseId, professorId, semester, year);
+                String newFcarId = controller.createFCAR(courseId, professorId, semester, year);
+                fcar = controller.getFCAR(newFcarId);
             }
 
             // Get outcome and indicator
@@ -216,7 +211,7 @@ public class ProfessorServlet extends HttpServlet {
 
             // Set status and store FCAR
             fcar.setStatus("Submitted");
-            FCARFactory.updateFCAR(fcar);
+            controller.updateFCAR(fcar);
 
             // Redirect back to professor dashboard
             response.sendRedirect(request.getContextPath() + "/ProfessorServlet?action=viewFCARs");

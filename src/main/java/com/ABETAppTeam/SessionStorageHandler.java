@@ -1,22 +1,28 @@
 package com.ABETAppTeam;
 
-import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.Map;
+
+import jakarta.servlet.http.HttpSession;
 
 /**
  * SessionStorageHandler for managing session-based FCAR data.
  *
- * This class provides methods to store, retrieve, and clear FCAR data in the session.
+ * This class provides methods to store, retrieve, and clear FCAR data in the
+ * session.
  *
- * <p>Usage Example in a Servlet:
+ * <p>
+ * Usage Example in a Servlet:
+ * 
  * <pre>
- *   // Store a newly created FCAR in session
- *   FCAR fcar = FCARFactory.createFCAR("CS320", "Prof01", "Spring", 2025);
- *   SessionStorageHandler.storeFCAR(request.getSession(), fcar.getFcarId(), fcar);
+ * // Store a newly created FCAR in session
+ * FCARController controller = FCARController.getInstance();
+ * String fcarId = controller.createFCAR("CS320", "Prof01", "Spring", 2025);
+ * FCAR fcar = controller.getFCAR(fcarId);
+ * SessionStorageHandler.storeFCAR(request.getSession(), fcarId, fcar);
  *
- *   // Retrieve the FCAR by ID
- *   FCAR retrieved = SessionStorageHandler.getFCAR(request.getSession(), fcar.getFcarId());
+ * // Retrieve the FCAR by ID
+ * FCAR retrieved = SessionStorageHandler.getFCAR(request.getSession(), fcarId);
  * </pre>
  */
 public class SessionStorageHandler {

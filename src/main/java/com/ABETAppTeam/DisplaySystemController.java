@@ -123,6 +123,15 @@ public class DisplaySystemController {
     }
 
     /**
+     * Get all FCARs in the system
+     * 
+     * @return List of all FCARs
+     */
+    public List<FCAR> getAllFCARs() {
+        return fcarController.getAllFCARs();
+    }
+
+    /**
      * Generate a dashboard data object for a user
      * 
      * @param userId ID of the user
