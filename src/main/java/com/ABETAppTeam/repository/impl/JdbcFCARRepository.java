@@ -18,6 +18,16 @@ public class JdbcFCARRepository implements FCARRepository {
         this.dataSource = DataSourceFactory.getDataSource();
     }
 
+    /**
+     * Retrieves an FCAR object by its unique identifier from the data source.
+     * Executes a query to find the matching record in the database, maps the
+     * result to an FCAR instance, and returns it. If no match is found,
+     * returns null.
+     *
+     * @param id The unique identifier of the FCAR to retrieve.
+     * @return The FCAR object corresponding to the given ID, or null if no
+     *         matching record is found.
+     */
     @Override
     public FCAR findById(String id) {
         String query = "SELECT * FROM fcar WHERE fcar_id = ?";
