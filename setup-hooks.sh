@@ -8,7 +8,7 @@ NC='\033[0m' # No Color
 
 # Get project root
 PROJECT_ROOT=$(git rev-parse --show-toplevel)
-cd "$PROJECT_ROOT"
+cd "$PROJECT_ROOT" || exit
 
 # Create hooks directory if it doesn't exist
 mkdir -p .git/hooks
