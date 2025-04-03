@@ -33,5 +33,5 @@ FLUSH PRIVILEGES;
 SELECT 'DEBUG: Privileges flushed - initialization complete' as message;
 
 -- Show current users for verification
-SELECT User, Host FROM mysql.user WHERE User = '${MARIADB_USER}';
+SELECT User, Host FROM '${MARIADB_DATABASE}'.user WHERE User = '${MARIADB_USER}';
 SELECT 'DEBUG: Above shows all host entries for this user' as message;
