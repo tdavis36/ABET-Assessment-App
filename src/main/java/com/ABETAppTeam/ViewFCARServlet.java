@@ -20,7 +20,8 @@ public class ViewFCARServlet extends HttpServlet {
 
         // If action is viewAll, show all FCARs
         if ("viewAll".equals(action)) {
-            List<FCAR> allFCARs = ProfessorServlet.getAllFCARs();
+            FCARController controller = FCARController.getInstance();
+            List<FCAR> allFCARs = controller.getAllFCARs();
             request.setAttribute("allFCARs", allFCARs);
             request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
             return;
@@ -43,7 +44,8 @@ public class ViewFCARServlet extends HttpServlet {
         }
 
         // Default: show all FCARs
-        List<FCAR> allFCARs = ProfessorServlet.getAllFCARs();
+        FCARController controller = FCARController.getInstance();
+        List<FCAR> allFCARs = controller.getAllFCARs();
         request.setAttribute("allFCARs", allFCARs);
         request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
     }

@@ -14,10 +14,9 @@ import jakarta.servlet.http.HttpSession;
 public class ProfessorServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    // Method to return all stored FCARs
-    public static List<FCAR> getAllFCARs() {
-        FCARController controller = FCARController.getInstance();
-        return controller.getAllFCARs();
+    // Get the FCARController instance
+    private FCARController getFCARController() {
+        return FCARController.getInstance();
     }
 
     public ProfessorServlet() {
@@ -37,7 +36,8 @@ public class ProfessorServlet extends HttpServlet {
             return;
         } else if ("viewFCARs".equals(action)) {
             // Pass stored FCARs to view
-            request.setAttribute("allFCARs", getAllFCARs());
+            FCARController controller = getFCARController();
+            request.setAttribute("allFCARs", controller.getAllFCARs());
             request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
             return;
         } else if ("editFCAR".equals(action)) {
@@ -74,7 +74,7 @@ public class ProfessorServlet extends HttpServlet {
         }
 
         // Get all FCARs, not just the ones assigned to this professor
-        List<FCAR> allFCARs = getAllFCARs();
+        List<FCAR> allFCARs = getFCARController().getAllFCARs();
         request.setAttribute("assignedFCARs", allFCARs);
 
         // Forward to professor.jsp

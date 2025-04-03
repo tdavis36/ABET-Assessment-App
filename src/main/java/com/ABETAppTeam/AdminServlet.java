@@ -23,7 +23,8 @@ public class AdminServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         // Always fetch all FCARs for the admin to see
-        List<FCAR> allFCARs = ProfessorServlet.getAllFCARs();
+        FCARController controller = FCARController.getInstance();
+        List<FCAR> allFCARs = controller.getAllFCARs();
         request.setAttribute("allFCARs", allFCARs);
 
         if ("viewFCARs".equals(action)) {
@@ -34,7 +35,6 @@ public class AdminServlet extends HttpServlet {
             String fcarId = request.getParameter("fcarId");
 
             // Get the FCAR from the controller
-            FCARController controller = FCARController.getInstance();
             FCAR fcar = controller.getFCAR(fcarId);
 
             if (fcar != null) {

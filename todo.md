@@ -1,57 +1,4 @@
-## Issue #1: Consolidate duplicate FCAR retrieval methods
 
-**Labels:** refactoring, code-quality
-
-**Description:**
-Currently, there are overlapping methods for retrieving FCARs across different classes in the codebase:
-
-- `FCARController` has `getFCAR()`, `getFCARsForCourse()`, and `getFCARsByProfessor()`
-- `FCARFactory` has nearly identical methods with the same names
-- `ProfessorServlet` contains a static `getAllFCARs()` method that bypasses the controller
-
-This creates code duplication and violates the architecture's separation of concerns, especially in `ProfessorServlet.getAllFCARs()` which directly accesses `FCARFactory.getAllFCARs()`.
-
-**Steps to reproduce:**
-Examine the following files:
-- `FCARController.java`
-- `FCARFactory.java`
-- `ProfessorServlet.java`
-
-**Proposed solution:**
-Use only `FCARController` as the single access point for all FCAR operations:
-1. Keep the implementation details in `FCARFactory`
-2. Have `FCARController` methods delegate to `FCARFactory`
-3. Update all servlets to use `FCARController` methods instead of directly accessing `FCARFactory`
-4. Remove the static `getAllFCARs()` method from `ProfessorServlet`
-
-**Priority:** High
-
----
-
-## Issue #2: Unify FCAR storage mechanisms to prevent data inconsistencies
-
-**Labels:** refactoring, bug-risk
-
-**Description:**
-The application currently has two separate mechanisms for storing FCARs:
-1. Primary storage in `FCARFactory` with in-memory `fcarMap`
-2. Secondary storage in `SessionStorageHandler` for session-based FCAR data
-
-These two storage systems aren't synchronized, which could lead to data inconsistencies where changes made through one system aren't reflected in the other.
-
-**Steps to reproduce:**
-1. Examine `FCARFactory.java` and `SessionStorageHandler.java`
-2. Note that updates made to FCARs through `FCARFactory` aren't automatically reflected in session storage and vice versa
-
-**Proposed solution:**
-Either:
-1. Remove `SessionStorageHandler` entirely and use only `FCARFactory`
-2. Or implement proper synchronization between the two systems
-3. Or modify `SessionStorageHandler` to serve as a cache that delegates to `FCARFactory` for all operations
-
-**Priority:** High
-
----
 
 ## Issue #3: Centralize dashboard data generation to eliminate duplication
 
@@ -436,3 +383,58 @@ The database configuration is currently hardcoded for a single environment. We n
 
 **Priority:** Medium
 
+RESOLVED
+## Issue #1: Consolidate duplicate FCAR retrieval methods
+
+**Labels:** refactoring, code-quality
+
+**Description:**
+Currently, there are overlapping methods for retrieving FCARs across different classes in the codebase:
+
+- `FCARController` has `getFCAR()`, `getFCARsForCourse()`, and `getFCARsByProfessor()`
+- `FCARFactory` has nearly identical methods with the same names
+- `ProfessorServlet` contains a static `getAllFCARs()` method that bypasses the controller
+
+This creates code duplication and violates the architecture's separation of concerns, especially in `ProfessorServlet.getAllFCARs()` which directly accesses `FCARFactory.getAllFCARs()`.
+
+**Steps to reproduce:**
+Examine the following files:
+- `FCARController.java`
+- `FCARFactory.java`
+- `ProfessorServlet.java`
+
+**Proposed solution:**
+Use only `FCARController` as the single access point for all FCAR operations:
+1. Keep the implementation details in `FCARFactory`
+2. Have `FCARController` methods delegate to `FCARFactory`
+3. Update all servlets to use `FCARController` methods instead of directly accessing `FCARFactory`
+4. Remove the static `getAllFCARs()` method from `ProfessorServlet`
+
+**Priority:** High
+
+---
+
+## Issue #2: Unify FCAR storage mechanisms to prevent data inconsistencies
+
+**Labels:** refactoring, bug-risk
+
+**Description:**
+The application currently has two separate mechanisms for storing FCARs:
+1. Primary storage in `FCARFactory` with in-memory `fcarMap`
+2. Secondary storage in `SessionStorageHandler` for session-based FCAR data
+
+These two storage systems aren't synchronized, which could lead to data inconsistencies where changes made through one system aren't reflected in the other.
+
+**Steps to reproduce:**
+1. Examine `FCARFactory.java` and `SessionStorageHandler.java`
+2. Note that updates made to FCARs through `FCARFactory` aren't automatically reflected in session storage and vice versa
+
+**Proposed solution:**
+Either:
+1. Remove `SessionStorageHandler` entirely and use only `FCARFactory`
+2. Or implement proper synchronization between the two systems
+3. Or modify `SessionStorageHandler` to serve as a cache that delegates to `FCARFactory` for all operations
+
+**Priority:** High
+
+---
