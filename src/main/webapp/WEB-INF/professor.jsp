@@ -23,8 +23,10 @@
 </head>
 <body>
 <div class="dashboard">
-    <h1>Welcome, Dr. <c:out value="${sessionScope.professorName}"/></h1>
-    <a href="${pageContext.request.contextPath}/" class="btn">Logout</a>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>Welcome, Dr. <c:out value="${sessionScope.professorName}"/></h1>
+        <a href="${pageContext.request.contextPath}/" class="btn" style="margin-left: 20px;">Logout</a>
+    </div>
 
     <!-- Status Key -->
     <div class="status-key">
@@ -38,7 +40,7 @@
     <div class="section">
         <h2>Faculty Course Assessment Reports (FCARs)</h2>
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get">
+            <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get" style="margin-right: 20px;">
                 <input type="hidden" name="action" value="createFCARForm"/>
                 <button type="submit" class="btn">Create FCAR</button>
             </form>
@@ -73,11 +75,13 @@
                                     <button class="btn" type="submit">Open/Edit</button>
                                 </form>
 
-                                <form method="post" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
-                                    <input type="hidden" name="action" value="submitFCARStatus"/>
-                                    <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>
-                                    <button class="btn" type="submit">Submit</button>
-                                </form>
+                                <c:if test="${fcar.status != 'Submitted' && fcar.status != 'Approved'}">
+                                    <form method="post" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
+                                        <input type="hidden" name="action" value="submitFCARStatus"/>
+                                        <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>
+                                        <button class="btn" type="submit">Submit</button>
+                                    </form>
+                                </c:if>
                             </div>
                         </div>
                     </c:forEach>

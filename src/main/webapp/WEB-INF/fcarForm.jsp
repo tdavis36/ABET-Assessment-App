@@ -93,8 +93,9 @@
 <h1>Faculty Course Assessment Report (FCAR)</h1>
     <p>Complete the assessment form below for the course.</p>
     
-    <form action="${pageContext.request.contextPath}/ProfessorServlet" method="post">
+    <form action="${pageContext.request.contextPath}/ProfessorServlet" method="post" id="fcarForm">
         <input type="hidden" name="action" value="submitFCAR"/>
+        <input type="hidden" name="saveAction" id="saveActionInput" value="submit"/>
         
         <!-- Basic Information Section -->
         <div class="form-section">
@@ -181,23 +182,23 @@
             <table class="achievement-table">
                 <thead>
                     <tr>
-                        <th>Exemplary (4)</th>
-                        <th>Satisfactory (3)</th>
-                        <th>Developing (2)</th>
-                        <th>Unsatisfactory (1)</th>
-                        <th>Not Applicable (0)</th>
+                        <th>Exceeds Expectations</th>
+                        <th>Meets Expectations</th>
+                        <th>Below Expectations</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><input type="number" name="level4" min="0" value="${not empty fcar.assessmentMethods['level4'] ? fcar.assessmentMethods['level4'] : '0'}" required /></td>
                         <td><input type="number" name="level3" min="0" value="${not empty fcar.assessmentMethods['level3'] ? fcar.assessmentMethods['level3'] : '0'}" required /></td>
                         <td><input type="number" name="level2" min="0" value="${not empty fcar.assessmentMethods['level2'] ? fcar.assessmentMethods['level2'] : '0'}" required /></td>
                         <td><input type="number" name="level1" min="0" value="${not empty fcar.assessmentMethods['level1'] ? fcar.assessmentMethods['level1'] : '0'}" required /></td>
-                        <td><input type="number" name="level0" min="0" value="${not empty fcar.assessmentMethods['level0'] ? fcar.assessmentMethods['level0'] : '0'}" required /></td>
                     </tr>
                 </tbody>
             </table>
+            
+            <!-- Hidden fields to maintain backward compatibility -->
+            <input type="hidden" name="level4" value="0" />
+            <input type="hidden" name="level0" value="0" />
             
             <div class="form-group" style="margin-top: 15px;">
                 <label>
@@ -269,7 +270,10 @@
             </div>
         </div>
         
-        <button type="submit" class="btn-submit">Submit FCAR</button>
+        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+            <button type="submit" class="btn-submit" onclick="setAction('submit')">Submit FCAR</button>
+            <button type="button" class="btn-submit" onclick="saveAndExit()" style="background-color: #2196F3;">Save and Exit</button>
+        </div>
     </form>
 </div>
 
@@ -434,6 +438,26 @@
     document.getElementsByName('level1')[0].addEventListener('input', calculateResults);
     document.getElementsByName('level0')[0].addEventListener('input', calculateResults);
     document.getElementById('targetGoal').addEventListener('input', calculateResults);
+    
+    // Function to set the save action
+    function setAction(action) {
+        document.getElementById('saveActionInput').value = action;
+    }
+    
+    // Function to save and exit without validation
+    function saveAndExit() {
+        // Set the action to 'save'
+        setAction('save');
+        
+        // Remove required attributes from all form elements
+        const requiredElements = document.querySelectorAll('[required]');
+        requiredElements.forEach(element => {
+            element.removeAttribute('required');
+        });
+        
+        // Submit the form
+        document.getElementById('fcarForm').submit();
+    }
     
     // Initialize the form
     document.addEventListener('DOMContentLoaded', function() {
