@@ -8,42 +8,32 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
-public class JdbcFCARRepository implements FCARRepository {
+public class JdbcFCARRepository extends FCARRepository {
 
     private final DataSource dataSource;
 
     public JdbcFCARRepository() {
-        // This uses the DataSourceFactory to provide the right DataSource
+        // Use the DataSourceFactory to get the proper DataSource
         this.dataSource = DataSourceFactory.getDataSource();
     }
 
-    /**
-     * Retrieves an FCAR object by its unique identifier from the data source.
-     * Executes a query to find the matching record in the database, maps the
-     * result to an FCAR instance, and returns it. If no match is found,
-     * returns null.
-     *
-     * @param id The unique identifier of the FCAR to retrieve.
-     * @return The FCAR object corresponding to the given ID, or null if no
-     *         matching record is found.
-     */
     @Override
-    public FCAR findById(String id) {
+    public FCAR findById(int fcarId) {
         String query = "SELECT * FROM fcar WHERE fcar_id = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, id);
+            stmt.setInt(1, fcarId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    // Map your result set to an FCAR object
-                    // For example:
                     String courseId = rs.getString("course_id");
                     String professorId = rs.getString("professor_id");
                     String semester = rs.getString("semester");
                     int year = rs.getInt("year");
                     String status = rs.getString("status");
-                    FCAR fcar = new FCAR(id, courseId, professorId, semester, year);
+                    FCAR fcar = new FCAR(String.valueOf(fcarId), courseId, professorId, semester, year);
                     fcar.setStatus(status);
                     return fcar;
                 }
@@ -55,24 +45,113 @@ public class JdbcFCARRepository implements FCARRepository {
     }
 
     @Override
-    public void save(FCAR fcar) {
-        String query = "INSERT INTO fcar (fcar_id, course_id, professor_id, semester, year, status) VALUES (?, ?, ?, ?, ?, ?)";
+    public List<FCAR> findAll() {
+        List<FCAR> fcars = new ArrayList<>();
+        String query = "SELECT * FROM fcar";
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, fcar.getFcarId());
-            stmt.setString(2, fcar.getCourseId());
-            stmt.setString(3, fcar.getProfessorId());
-            stmt.setString(4, fcar.getSemester());
-            stmt.setInt(5, fcar.getYear());
-            stmt.setString(6, fcar.getStatus());
-            stmt.executeUpdate();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                int fcarId = rs.getInt("fcar_id");
+                String courseId = rs.getString("course_id");
+                String professorId = rs.getString("professor_id");
+                String semester = rs.getString("semester");
+                int year = rs.getInt("year");
+                String status = rs.getString("status");
+                FCAR fcar = new FCAR(String.valueOf(fcarId), courseId, professorId, semester, year);
+                fcar.setStatus(status);
+                fcars.add(fcar);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return fcars;
     }
 
     @Override
-    public void update(FCAR fcar) {
+    public List<FCAR> findByCourseCode(String courseCode) {
+        List<FCAR> fcars = new ArrayList<>();
+        String query = "SELECT * FROM fcar WHERE course_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, courseCode);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int fcarId = rs.getInt("fcar_id");
+                    String courseId = rs.getString("course_id");
+                    String professorId = rs.getString("professor_id");
+                    String semester = rs.getString("semester");
+                    int year = rs.getInt("year");
+                    String status = rs.getString("status");
+                    FCAR fcar = new FCAR(String.valueOf(fcarId), courseId, professorId, semester, year);
+                    fcar.setStatus(status);
+                    fcars.add(fcar);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return fcars;
+    }
+
+    @Override
+    public List<FCAR> findByInstructorId(int instructorId) {
+        List<FCAR> fcars = new ArrayList<>();
+        String query = "SELECT * FROM fcar WHERE professor_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            // Assuming professor_id is stored as an integer in the database.
+            stmt.setInt(1, instructorId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int fcarId = rs.getInt("fcar_id");
+                    String courseId = rs.getString("course_id");
+                    String professorId = rs.getString("professor_id");
+                    String semester = rs.getString("semester");
+                    int year = rs.getInt("year");
+                    String status = rs.getString("status");
+                    FCAR fcar = new FCAR(String.valueOf(fcarId), courseId, professorId, semester, year);
+                    fcar.setStatus(status);
+                    fcars.add(fcar);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return fcars;
+    }
+
+    @Override
+    public FCAR save(FCAR fcar) {
+        // This method handles inserting a new FCAR.
+        String query = "INSERT INTO fcar (course_id, professor_id, semester, year, status) VALUES (?, ?, ?, ?, ?)";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, fcar.getCourseId());
+            stmt.setString(2, fcar.getProfessorId());
+            stmt.setString(3, fcar.getSemester());
+            stmt.setInt(4, fcar.getYear());
+            stmt.setString(5, fcar.getStatus());
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new Exception("Creating FCAR failed, no rows affected.");
+            }
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    fcar.setFcarId(String.valueOf(generatedKeys.getInt(1)));
+                } else {
+                    throw new Exception("Creating FCAR failed, no ID obtained.");
+                }
+            }
+            return fcar;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public boolean update(FCAR fcar) {
         String query = "UPDATE fcar SET course_id = ?, professor_id = ?, semester = ?, year = ?, status = ? WHERE fcar_id = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -81,22 +160,26 @@ public class JdbcFCARRepository implements FCARRepository {
             stmt.setString(3, fcar.getSemester());
             stmt.setInt(4, fcar.getYear());
             stmt.setString(5, fcar.getStatus());
-            stmt.setString(6, fcar.getFcarId());
-            stmt.executeUpdate();
+            stmt.setInt(6, Integer.parseInt(fcar.getFcarId()));
+            int affectedRows = stmt.executeUpdate();
+            return affectedRows > 0;
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return false;
     }
 
     @Override
-    public void delete(String id) {
+    public boolean delete(int fcarId) {
         String query = "DELETE FROM fcar WHERE fcar_id = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, id);
-            stmt.executeUpdate();
+            stmt.setInt(1, fcarId);
+            int affectedRows = stmt.executeUpdate();
+            return affectedRows > 0;
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return false;
     }
 }
