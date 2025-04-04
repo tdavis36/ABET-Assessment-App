@@ -28,16 +28,16 @@ public class IndicatorRepository {
     /**
      * Find an indicator by ID
      *
-     * @param id Indicator ID
+     * @param indicatorId Indicator ID
      * @return Indicator or null if not found
      */
-    public Indicator findById(int id) {
+    public Indicator findById(int indicatorId) {
         String sql = "SELECT * FROM Indicator WHERE indicator_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, id);
+            stmt.setInt(1, indicatorId);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -151,7 +151,7 @@ public class IndicatorRepository {
             stmt.setInt(1, indicator.getOutcomeId());
             stmt.setInt(2, indicator.getNumber());
             stmt.setString(3, indicator.getDescription());
-            stmt.setInt(4, indicator.getId());
+            stmt.setInt(4, indicator.getIndicatorId());
 
             int affectedRows = stmt.executeUpdate();
             return affectedRows > 0;
@@ -168,13 +168,13 @@ public class IndicatorRepository {
      * @param id Indicator ID
      * @return true if deleted successfully, false otherwise
      */
-    public boolean delete(int id) {
+    public boolean delete(int indicatorId) {
         String sql = "DELETE FROM Indicator WHERE indicator_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, id);
+            stmt.setInt(1, indicatorId);
 
             int affectedRows = stmt.executeUpdate();
             return affectedRows > 0;

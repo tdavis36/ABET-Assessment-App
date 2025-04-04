@@ -4,7 +4,7 @@ package com.ABETAppTeam.model;
  * Model class for Student Learning Outcomes
  */
 public class Outcome {
-    private int id;
+    private int outcomeId;
     private String description;
 
     /**
@@ -16,11 +16,11 @@ public class Outcome {
     /**
      * Constructor with parameters
      *
-     * @param id Outcome ID
+     * @param outcomeId Outcome ID
      * @param description Outcome description
      */
-    public Outcome(int id, String description) {
-        this.id = id;
+    public Outcome(int outcomeId, String description) {
+        this.outcomeId = outcomeId;
         this.description = description;
     }
 
@@ -30,16 +30,16 @@ public class Outcome {
      * @return Outcome ID
      */
     public int getId() {
-        return id;
+        return outcomeId;
     }
 
     /**
      * Set the outcome ID
      *
-     * @param id Outcome ID
+     * @param outcomeId Outcome ID
      */
-    public void setId(int id) {
-        this.id = id;
+    public void setId(int outcomeId) {
+        this.outcomeId = outcomeId;
     }
 
     /**
@@ -62,6 +62,6 @@ public class Outcome {
 
     @Override
     public String toString() {
-        return "Outcome [id=" + id + ", description=" + description + "]";
+        return "Outcome [id=" + outcomeId + ", description=" + description + "]";
     }
 }

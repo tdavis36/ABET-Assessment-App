@@ -4,9 +4,9 @@ package com.ABETAppTeam.model;
  * Model class for outcome indicators
  */
 public class Indicator {
-    private int id;
+    private int indicatorId;
     private int outcomeId;
-    private int number;
+    private int indicatorNumber;
     private String description;
 
     /**
@@ -23,10 +23,10 @@ public class Indicator {
      * @param number Indicator number within the outcome (e.g., 1 for indicator 1.1)
      * @param description Indicator description
      */
-    public Indicator(int id, int outcomeId, int number, String description) {
-        this.id = id;
+    public Indicator(int indicatorId, int outcomeId, int indicatorNumber, String description) {
+        this.indicatorId = indicatorId;
         this.outcomeId = outcomeId;
-        this.number = number;
+        this.indicatorNumber = indicatorNumber;
         this.description = description;
     }
 
@@ -38,17 +38,17 @@ public class Indicator {
      *
      * @return Indicator ID
      */
-    public int getId() {
-        return id;
+    public int getIndicatorId() {
+        return indicatorId;
     }
 
     /**
      * Set the indicator ID
      *
-     * @param id Indicator ID
+     * @param indicatorId Indicator ID
      */
-    public void setId(int id) {
-        this.id = id;
+    public void setId(int indicatorId) {
+        this.indicatorId = indicatorId;
     }
 
     /**
@@ -75,7 +75,7 @@ public class Indicator {
      * @return Indicator number
      */
     public int getNumber() {
-        return number;
+        return indicatorNumber;
     }
 
     /**
@@ -83,8 +83,8 @@ public class Indicator {
      *
      * @param number Indicator number
      */
-    public void setNumber(int number) {
-        this.number = number;
+    public void setNumber(int indicatorNumber) {
+        this.indicatorNumber = indicatorNumber;
     }
 
     /**
@@ -107,10 +107,6 @@ public class Indicator {
 
     @Override
     public String toString() {
-        return "Indicator [id=" + id + ", outcomeId=" + outcomeId + ", number=" + number + ", description=" + description + "]";
-    }
-
-    public Integer getIndicatorId() {
-        return id;
+        return "Indicator [id=" + indicatorId + ", outcomeId=" + outcomeId + ", number=" + indicatorNumber + ", description=" + description + "]";
     }
 }

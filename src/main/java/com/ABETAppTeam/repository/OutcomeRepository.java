@@ -30,16 +30,16 @@ public class OutcomeRepository {
     /**
      * Find an outcome by ID
      *
-     * @param id Outcome ID
+     * @param outcomeId Outcome ID
      * @return Outcome or null if not found
      */
-    public Outcome findById(int id) {
+    public Outcome findById(int outcomeId) {
         String sql = "SELECT * FROM Outcome WHERE outcome_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, id);
+            stmt.setInt(1, outcomeId);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -196,13 +196,13 @@ public class OutcomeRepository {
      * @param id Outcome ID
      * @return true if deleted successfully, false otherwise
      */
-    public boolean delete(int id) {
+    public boolean delete(int outcomeId) {
         String sql = "DELETE FROM Outcome WHERE outcome_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, id);
+            stmt.setInt(1, outcomeId);
 
             int affectedRows = stmt.executeUpdate();
             return affectedRows > 0;
