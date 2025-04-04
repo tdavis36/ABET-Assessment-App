@@ -15,15 +15,22 @@
         <maven.compiler.target>17</maven.compiler.target>
         <jetty.version>11.0.24</jetty.version>
         <jakarta.servlet.version>5.0.0</jakarta.servlet.version>
-        <mockito.version>5.15.2</mockito.version>
-        <jacoco.argLine/>
-        <bytebuddy.argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar</bytebuddy.argLine>
-        <docker.compose.executable>docker-compose</docker.compose.executable>
-        <docker.compose.executable.windows>C:\Program Files\Docker\Docker\resources\bin\docker-compose.exe</docker.compose.executable.windows>
         <hikaricp.version>5.1.0</hikaricp.version>
+        <flyway.version>11.5.0</flyway.version>
+        <mariadb.version>3.4.1</mariadb.version>
+
+        <!-- Database properties with defaults, can be overridden -->
+        <db.name>abetapp</db.name>
+        <db.username>root</db.username>
+        <db.password>pass</db.password>
+        <db.url>jdbc:mariadb://localhost:3306/${db.name}</db.url>
+
+        <!-- App configuration -->
+        <app.port>8081</app.port>
     </properties>
 
     <profiles>
+        <!-- Environment profiles -->
         <profile>
             <id>dev</id>
             <properties>
@@ -41,27 +48,35 @@
             </properties>
         </profile>
 
+        <!-- Database management profiles -->
         <profile>
-            <id>db-start</id>
+            <id>db-manage</id>
+            <properties>
+                <!-- These can be overridden via command line:
+                     mvn -P db-manage -Ddb.action=migrate|info|start|stop process-resources -->
+                <db.action>info</db.action>
+            </properties>
             <build>
                 <plugins>
+                    <!-- Unified DB management plugin that handles all db operations -->
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>3.1.0</version>
                         <executions>
                             <execution>
-                                <id>start-database</id>
+                                <id>db-action</id>
                                 <phase>process-resources</phase>
                                 <goals>
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>C:\Program Files\Docker\Docker\resources\bin\docker.exe</executable>
+                                    <executable>${project.basedir}/scripts/db-action.sh</executable>
                                     <arguments>
-                                        <argument>compose</argument>
-                                        <argument>up</argument>
-                                        <argument>-d</argument>
+                                        <argument>${db.action}</argument>
+                                        <argument>${db.url}</argument>
+                                        <argument>${db.username}</argument>
+                                        <argument>${db.password}</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
@@ -69,201 +84,36 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <profile>
-            <id>db-stop</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>3.1.0</version>
-                        <executions>
-                            <execution>
-                                <id>stop-database</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>docker</executable>
-                                    <arguments>
-                                        <argument>compose</argument>
-                                        <argument>down</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <!-- Database schema sync -->
-        <profile>
-            <id>db-sync</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.flywaydb</groupId>
-                        <artifactId>flyway-maven-plugin</artifactId>
-                        <version>11.5.0</version>
-                        <configuration>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <url>jdbc:mariadb://localhost:3306/${DB_NAME}</url>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <user>${DB_USERNAME}</user>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <password>${DB_PASSWORD}</password>
-                            <locations>
-                                <location>classpath:db/migration</location>
-                            </locations>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>migrate</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>db-migrate</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.flywaydb</groupId>
-                        <artifactId>flyway-maven-plugin</artifactId>
-                        <version>11.5.0</version>
-                        <configuration>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <url>jdbc:mariadb://localhost:3306/${DB_NAME}</url>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <user>${DB_USERNAME}</user>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <password>${DB_PASSWORD}</password>
-                            <locations>
-                                <location>classpath:db/migration</location>
-                            </locations>
-                            <mixed>true</mixed>
-                            <baselineOnMigrate>true</baselineOnMigrate>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>migrate-database</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>migrate</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>db-info</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.flywaydb</groupId>
-                        <artifactId>flyway-maven-plugin</artifactId>
-                        <version>11.5.0</version>
-                        <configuration>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <url>jdbc:mariadb://localhost:3306/${DB_NAME}</url>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <user>${DB_USERNAME}</user>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <password>${DB_PASSWORD}</password>
-                            <locations>
-                                <location>classpath:db/migration</location>
-                            </locations>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>migration-info</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>info</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>testcontainers</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <dependencies>
-                <!-- Core Testcontainers library -->
-                <dependency>
-                    <groupId>org.testcontainers</groupId>
-                    <artifactId>testcontainers</artifactId>
-                    <version>1.20.6</version>
-                    <scope>test</scope>
-                </dependency>
-
-                <!-- Testcontainers module for MariaDB -->
-                <dependency>
-                    <groupId>org.testcontainers</groupId>
-                    <artifactId>mariadb</artifactId>
-                    <version>1.20.6</version>
-                    <scope>test</scope>
-                </dependency>
-
-                <!-- JUnit 5 integration for Testcontainers -->
-                <dependency>
-                    <groupId>org.testcontainers</groupId>
-                    <artifactId>junit-jupiter</artifactId>
-                    <version>1.20.6</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
 
     <dependencies>
-        <!-- MySQL Connector -->
+        <!-- Database dependencies -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>3.4.1</version>
+            <version>${mariadb.version}</version>
         </dependency>
 
-        <!-- HikariCP connection pool -->
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${hikaricp.version}</version>
         </dependency>
 
-        <!-- Flyway Core -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>11.5.0</version>
+            <version>${flyway.version}</version>
         </dependency>
 
-        <!-- Flyway MySQL -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-mysql</artifactId>
-            <version>11.5.0</version>
+            <version>${flyway.version}</version>
         </dependency>
 
-        <!-- Servlet API is provided by Jetty -->
+        <!-- Jakarta EE dependencies -->
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
@@ -271,6 +121,7 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Testing dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -281,46 +132,21 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
+            <version>5.15.2</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- Core Testcontainers library -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
-            <version>1.20.6</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Specified to prevent vulnerability -->
+        <!-- Security fixes -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
             <version>1.26.2</version>
         </dependency>
-
-
-        <!-- Testcontainers module for MariaDB -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>mariadb</artifactId>
-            <version>1.20.6</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- JUnit 5 integration for Testcontainers -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>1.20.6</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Maven Compiler Plugin -->
+            <!-- Core build plugins -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -331,7 +157,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Maven WAR Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
@@ -341,7 +166,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Maven .env plugin -->
+            <!-- .env file loader -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>properties-maven-plugin</artifactId>
@@ -356,25 +181,30 @@
                             <files>
                                 <file>.env</file>
                             </files>
+                            <quiet>true</quiet>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
 
-            <!-- Flyway Plugin -->
+            <!-- Standalone Flyway plugin for direct use -->
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
-                <version>11.5.0</version>
+                <version>${flyway.version}</version>
                 <configuration>
+                    <url>${db.url}</url>
+                    <user>${db.username}</user>
+                    <password>${db.password}</password>
                     <locations>
                         <location>classpath:db/migration</location>
                     </locations>
                     <mixed>true</mixed>
+                    <baselineOnMigrate>true</baselineOnMigrate>
                 </configuration>
             </plugin>
 
-            <!-- Jetty Maven Plugin with JSP Support -->
+            <!-- Jetty development server -->
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
@@ -384,7 +214,7 @@
                         <contextPath>/</contextPath>
                     </webApp>
                     <httpConnector>
-                        <port>8081</port>
+                        <port>${app.port}</port>
                     </httpConnector>
                     <modules>
                         <module>jsp</module>
@@ -400,7 +230,13 @@
                 </dependencies>
             </plugin>
 
-            <!-- Jacoco Plugin -->
+            <!-- Testing and coverage -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -408,7 +244,6 @@
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
-                        <phase>initialize</phase>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
@@ -419,39 +254,6 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Surefire Plugin with two executions -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
-                <executions>
-                    <!-- First execution: normal tests with Byte Buddy -->
-                    <execution>
-                        <id>inline-tests</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <argLine>${jacoco.argLine} ${bytebuddy.argLine}</argLine>
-                            <!-- any other configuration specific to inline tests -->
-                        </configuration>
-                    </execution>
-                    <!-- Second execution: coverage tests without Byte Buddy -->
-                    <execution>
-                        <id>coverage-tests</id>
-                        <phase>integration-test</phase>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <argLine>${jacoco.argLine}</argLine>
-                            <!-- You might disable tests that depend on inline mocking if needed -->
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
