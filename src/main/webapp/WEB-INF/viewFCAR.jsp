@@ -105,13 +105,132 @@
                         </div>
                         
                         <div id="fcar-${status.index}" class="fcar-details" style="display: none;">
-                            <!-- Outcome and Indicator Section -->
-                            <c:if test="${not empty fcar.assessmentMethods['outcome']}">
+                            <!-- Outcomes and Indicators Section -->
+                            <c:if test="${not empty fcar.assessmentMethods['selectedOutcomes']}">
                                 <div class="fcar-section">
-                                    <h3>Outcome and Indicator</h3>
-                                    <p><strong>Outcome:</strong> ${fcar.assessmentMethods['outcome']}</p>
-                                    <p><strong>Indicator:</strong> ${fcar.assessmentMethods['indicator']}</p>
+                                    <h3>Outcomes and Indicators</h3>
                                     <p><strong>Target Goal:</strong> ${fcar.assessmentMethods['targetGoal']}%</p>
+                                    
+                                    <c:forEach var="outcomeId" items="${fcar.assessmentMethods['selectedOutcomes'].split(',')}" varStatus="status">
+                                        <div style="margin-top: 15px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;">
+                                            <div style="font-weight: bold; margin-bottom: 10px;">
+                                                <c:choose>
+                                                    <c:when test="${outcomeId == '1'}">
+                                                        <strong>Outcome 1:</strong> Analyze a complex computing problem and to apply principles of computing and other relevant disciplines to identify solutions.
+                                                    </c:when>
+                                                    <c:when test="${outcomeId == '2'}">
+                                                        <strong>Outcome 2:</strong> Design, implement, and evaluate a computing-based solution to meet a given set of computing requirements in the context of the program's discipline.
+                                                    </c:when>
+                                                    <c:when test="${outcomeId == '3'}">
+                                                        <strong>Outcome 3:</strong> Communicate effectively in a variety of professional contexts.
+                                                    </c:when>
+                                                    <c:when test="${outcomeId == '4'}">
+                                                        <strong>Outcome 4:</strong> Recognize professional responsibilities and make informed judgments in computing practice based on legal and ethical principles.
+                                                    </c:when>
+                                                    <c:when test="${outcomeId == '5'}">
+                                                        <strong>Outcome 5:</strong> Function effectively as a member or leader of a team engaged in activities appropriate to the program's discipline.
+                                                    </c:when>
+                                                    <c:when test="${outcomeId == '6'}">
+                                                        <strong>Outcome 6:</strong> Apply computer science theory and software development fundamentals to produce computing-based solutions.
+                                                    </c:when>
+                                                </c:choose>
+                                            </div>
+                                            
+                                            <!-- Display indicators for this outcome -->
+                                            <div style="margin-left: 20px;">
+                                                <strong>Indicators:</strong>
+                                                <ul>
+                                                <c:forEach var="entry" items="${fcar.assessmentMethods}">
+                                                    <c:if test="${entry.key.startsWith('indicator_') && entry.key.contains(outcomeId)}">
+                                                        <c:set var="indicatorValue" value="${entry.key.substring(entry.key.indexOf('_') + 1)}" />
+                                                        <li>
+                                                            <c:choose>
+                                                                <c:when test="${indicatorValue == '1.1'}">
+                                                                    1.1 Student can correctly interpret a computational problem and define its parameters
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '1.2'}">
+                                                                    1.2 Student can analyze a computational problem in order to choose mathematical and algorithmic principles that can be applied to solve the problem
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '1.3'}">
+                                                                    1.3 Student can define a solution to a computational problem
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '1.4'}">
+                                                                    1.4 Student can effectively collect and document system requirements
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '1.5'}">
+                                                                    1.5 Student can effectively analyze and model a problem domain
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '1.6'}">
+                                                                    1.6 Student can identify the relative efficiency of different algorithms using asymptotic notation
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '2.1'}">
+                                                                    2.1 Student can identify and evaluate appropriate technologies to be used in a system
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '2.2'}">
+                                                                    2.2 Student can effectively construct a design model of a system
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '2.3'}">
+                                                                    2.3 Student can effectively incorporate requirements outside the problem domain (e.g., a user interface) into the design model
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '2.4'}">
+                                                                    2.4 Student can plan and implement a testing strategy to ensure that system meets its quality goal
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '2.5'}">
+                                                                    2.5 Student can collect and analyze runtime benchmark data to characterize the efficiency of an algorithm or data structure
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '2.6'}">
+                                                                    2.6 Student can specify appropriate security concerns and requirements for a component or system
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '2.7'}">
+                                                                    2.7 Student can evaluate a component or system to identify security characteristics and identify vulnerabilities
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '3.1'}">
+                                                                    3.1 Student can write a clear and well-organized technical report
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '3.2'}">
+                                                                    3.2 Student can create and present a clear and well-organized technical presentation using appropriate visual, textual, and spoken content
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '3.3'}">
+                                                                    3.3 Student can communicate technical content to peers
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '3.4'}">
+                                                                    3.4 Student can communicate technical content to general audiences
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '4.1'}">
+                                                                    4.1 Student can analyze and explain the ethical issues surrounding a particular computing topic (for example, peer-to-peer file sharing)
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '4.2'}">
+                                                                    4.2 Student demonstrates recognition of his or her professional responsibilities as a member of the computing profession
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '5.1'}">
+                                                                    5.1 Student demonstrates an ability to participate in and implement processes for team communication and coordination
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '5.2'}">
+                                                                    5.2 Student demonstrates an ability to work closely with other students to solve technical problems
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '6.1'}">
+                                                                    6.1 Student is proficient in a current programming language
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '6.2'}">
+                                                                    6.2 Student can create user interfaces using current platforms
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '6.3'}">
+                                                                    6.3 Student can write programs that use concurrency
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '6.4'}">
+                                                                    6.4 Student can implement automated tests to satisfy the goals of a testing strategy
+                                                                </c:when>
+                                                                <c:when test="${indicatorValue == '6.5'}">
+                                                                    6.5 Student can use appropriate implementation techniques and practices to meet security requirements and/or mitigate discovered vulnerabilities
+                                                                </c:when>
+                                                            </c:choose>
+                                                        </li>
+                                                    </c:if>
+                                                </c:forEach>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </c:forEach>
                                 </div>
                             </c:if>
                             

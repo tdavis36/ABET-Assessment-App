@@ -47,9 +47,8 @@ public class AdminServlet extends HttpServlet {
             // Get the FCAR ID
             String fcarId = request.getParameter("fcarId");
 
-            // Get the FCAR from the controller
-            FCARController controller = getFCARController();
-            FCAR fcar = controller.getFCAR(fcarId);
+            // Get the FCAR using DisplaySystemController
+            FCAR fcar = displayController.getFCAR(fcarId);
 
             if (fcar != null) {
                 // Pass the FCAR to the form
@@ -81,23 +80,40 @@ public class AdminServlet extends HttpServlet {
             String professorId = request.getParameter("professorId");
             String semester = request.getParameter("semester");
             int year = Integer.parseInt(request.getParameter("year"));
-
-            // Get outcome and indicator
-            String outcome = request.getParameter("outcome");
-            String indicator = request.getParameter("indicator");
             String targetGoal = request.getParameter("targetGoal");
+
+            // Get selected outcomes
+            String selectedOutcomes = request.getParameter("selectedOutcomes");
 
             // Create a new FCAR and assign it to the professor
             FCARController controller = getFCARController();
+            DisplaySystemController displayController = getDisplayController();
             String fcarId = controller.createFCAR(courseId, professorId, semester, year);
 
             if (fcarId != null) {
-                // Get the FCAR and add outcome and indicator
-                FCAR fcar = controller.getFCAR(fcarId);
+                // Get the FCAR using DisplaySystemController
+                FCAR fcar = displayController.getFCAR(fcarId);
                 if (fcar != null) {
-                    fcar.addAssessmentMethod("outcome", outcome);
-                    fcar.addAssessmentMethod("indicator", indicator);
+                    // Store the target goal
                     fcar.addAssessmentMethod("targetGoal", targetGoal);
+
+                    // Store the selected outcomes
+                    fcar.addAssessmentMethod("selectedOutcomes", selectedOutcomes);
+
+                    // Process all selected indicators
+                    java.util.Enumeration<String> paramNames = request.getParameterNames();
+                    while (paramNames.hasMoreElements()) {
+                        String paramName = paramNames.nextElement();
+                        if (paramName.startsWith("indicator_")) {
+                            String indicatorValue = request.getParameter(paramName);
+                            if (indicatorValue != null && !indicatorValue.isEmpty()) {
+                                // Store the indicator as selected
+                                fcar.addAssessmentMethod("indicator_" + indicatorValue, "selected");
+                            }
+                        }
+                    }
+
+                    // Update the FCAR
                     controller.updateFCAR(fcar);
                 }
 

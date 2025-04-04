@@ -232,16 +232,50 @@ public class DisplaySystemController {
      * @return Map containing dashboard data
      */
     public Map<String, Object> generateProfessorDashboard(String professorId) {
-        Map<String, Object> dashboardData = new HashMap<>();
+        // Get the professor user
+        User user = getUser(professorId);
+        if (user == null || !(user instanceof Professor)) {
+            // Return empty dashboard if user not found or not a professor
+            return new HashMap<>();
+        }
 
-        // Get all FCARs for this professor
+        Map<String, Object> dashboardData = new HashMap<>();
+        dashboardData.put("user", user);
+
+        Professor professor = (Professor) user;
+        List<Course> courses = new ArrayList<>();
+
+        // Get courses for the professor
+        for (String courseId : professor.getCourseIds()) {
+            Course course = getCourse(courseId);
+            if (course != null) {
+                courses.add(course);
+            }
+        }
+        dashboardData.put("courses", courses);
+
+        // Get FCARs for this professor
         List<FCAR> professorFCARs = fcarController.getFCARsByProfessor(professorId);
 
         // Add FCARs to the dashboard data with different attribute names for
-        // compatibility
+        // compatibility with different JSPs
         dashboardData.put("fcars", professorFCARs);
         dashboardData.put("assignedFCARs", professorFCARs);
         dashboardData.put("allFCARs", professorFCARs); // For viewFCAR.jsp
+
+        // Count FCARs by status
+        Map<String, Integer> fcarStatusCounts = new HashMap<>();
+        fcarStatusCounts.put("Draft", 0);
+        fcarStatusCounts.put("Submitted", 0);
+        fcarStatusCounts.put("Approved", 0);
+        fcarStatusCounts.put("Rejected", 0);
+
+        for (FCAR fcar : professorFCARs) {
+            String status = fcar.getStatus();
+            fcarStatusCounts.put(status, fcarStatusCounts.getOrDefault(status, 0) + 1);
+        }
+
+        dashboardData.put("fcarStatusCounts", fcarStatusCounts);
 
         return dashboardData;
     }
@@ -253,13 +287,47 @@ public class DisplaySystemController {
      * @return Map containing dashboard data with all FCARs
      */
     public Map<String, Object> generateAdminDashboard() {
-        // For admin dashboard, we don't need a specific user ID
-        // We just need to return all FCARs
         Map<String, Object> dashboardData = new HashMap<>();
 
         // Get all FCARs
         List<FCAR> allFcars = fcarController.getAllFCARs();
+        dashboardData.put("fcars", allFcars);
         dashboardData.put("allFCARs", allFcars);
+
+        // Include all courses
+        dashboardData.put("courses", courseCache.values());
+
+        // Count FCARs by status
+        Map<String, Integer> fcarStatusCounts = new HashMap<>();
+        fcarStatusCounts.put("Draft", 0);
+        fcarStatusCounts.put("Submitted", 0);
+        fcarStatusCounts.put("Approved", 0);
+        fcarStatusCounts.put("Rejected", 0);
+
+        for (FCAR fcar : allFcars) {
+            String status = fcar.getStatus();
+            fcarStatusCounts.put(status, fcarStatusCounts.getOrDefault(status, 0) + 1);
+        }
+
+        dashboardData.put("fcarStatusCounts", fcarStatusCounts);
+
+        // Count users by type
+        int professorCount = 0;
+        int adminCount = 0;
+
+        for (User u : userCache.values()) {
+            if (u instanceof Professor) {
+                professorCount++;
+            } else if (u instanceof Admin) {
+                adminCount++;
+            }
+        }
+
+        Map<String, Integer> userCounts = new HashMap<>();
+        userCounts.put("Professor", professorCount);
+        userCounts.put("Admin", adminCount);
+
+        dashboardData.put("userCounts", userCounts);
 
         return dashboardData;
     }

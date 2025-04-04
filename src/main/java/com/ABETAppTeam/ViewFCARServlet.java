@@ -1,7 +1,7 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -11,31 +11,48 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @WebServlet("/ViewFCARServlet")
 public class ViewFCARServlet extends HttpServlet {
+
+    // Get the display controller
+    private DisplaySystemController getDisplayController() {
+        return DisplaySystemController.getInstance();
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String fcarId = request.getParameter("fcarId");
         String action = request.getParameter("action");
+        DisplaySystemController displayController = getDisplayController();
 
         // If action is viewAll, show all FCARs
         if ("viewAll".equals(action)) {
-            FCARController controller = FCARController.getInstance();
-            List<FCAR> allFCARs = controller.getAllFCARs();
-            request.setAttribute("allFCARs", allFCARs);
+            // Use DisplaySystemController to get dashboard data with all FCARs
+            Map<String, Object> dashboardData = displayController.generateAdminDashboard();
+
+            // Add all attributes from the dashboard data to the request
+            for (Map.Entry<String, Object> entry : dashboardData.entrySet()) {
+                request.setAttribute(entry.getKey(), entry.getValue());
+            }
+
             request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
             return;
         }
 
         // If fcarId is provided, show details for that FCAR
         if (fcarId != null && !fcarId.isEmpty()) {
-            // Get the FCAR directly from the controller
-            FCARController controller = FCARController.getInstance();
-            FCAR selectedFCAR = controller.getFCAR(fcarId);
+            // Use DisplaySystemController to get FCAR report data
+            Map<String, Object> reportData = displayController.generateFCARReportData(fcarId);
 
-            // Send FCAR details to JSP
-            if (selectedFCAR != null) {
-                request.setAttribute("selectedFCAR", selectedFCAR);
+            if (!reportData.isEmpty() && reportData.containsKey("fcar")) {
+                // Add all attributes from the report data to the request
+                for (Map.Entry<String, Object> entry : reportData.entrySet()) {
+                    request.setAttribute(entry.getKey(), entry.getValue());
+                }
+
+                // For backward compatibility
+                request.setAttribute("selectedFCAR", reportData.get("fcar"));
+
                 request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
             } else {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "FCAR not found");
@@ -44,9 +61,13 @@ public class ViewFCARServlet extends HttpServlet {
         }
 
         // Default: show all FCARs
-        FCARController controller = FCARController.getInstance();
-        List<FCAR> allFCARs = controller.getAllFCARs();
-        request.setAttribute("allFCARs", allFCARs);
+        Map<String, Object> dashboardData = displayController.generateAdminDashboard();
+
+        // Add all attributes from the dashboard data to the request
+        for (Map.Entry<String, Object> entry : dashboardData.entrySet()) {
+            request.setAttribute(entry.getKey(), entry.getValue());
+        }
+
         request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
     }
 }

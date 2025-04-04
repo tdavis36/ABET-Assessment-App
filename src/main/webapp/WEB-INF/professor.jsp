@@ -1,6 +1,7 @@
 <%@ page import="java.util.List" %>
 <%@ page import="jakarta.servlet.http.HttpSession" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -9,12 +10,6 @@
     <title>Professor Dashboard</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
     <style>
-        /* Status Colors */
-        .not-started { color: gray; }
-        .in-progress { color: yellow; }
-        .submitted { color: blue; }
-        .completed { color: green; }
-
         .fcar-box { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
         .fcar-item { display: flex; justify-content: space-between; padding: 8px; }
         .fcar-actions button { margin-left: 5px; }
@@ -29,10 +24,10 @@
 
     <!-- Status Key -->
     <div class="status-key">
-        <div><span class="status not-started"></span> Not Started</div>
-        <div><span class="status in-progress"></span> In Progress</div>
+        <div><span class="status draft"></span> Draft</div>
         <div><span class="status submitted"></span> Submitted</div>
-        <div><span class="status completed"></span> Completed</div>
+        <div><span class="status approved"></span> Approved</div>
+        <div><span class="status rejected"></span> Rejected</div>
     </div>
 
     <!-- FCAR Section -->
@@ -47,17 +42,16 @@
         <p>Use the FCAR form to enter detailed assessment data for student outcomes and indicators.</p>
     </div>
 
-    <!-- All FCARs Section -->
+    <!-- Assigned FCARs Section -->
     <div class="section">
-        <h2>All FCARs</h2>
+        <h2>Your Assigned FCARs</h2>
         <div class="fcar-box">
             <c:choose>
                 <c:when test="${not empty assignedFCARs}">
                     <c:forEach var="fcar" items="${assignedFCARs}">
                         <div class="fcar-item">
                             <div>
-                                <span class="status ${fcar.status}"></span>
-                                <strong>Professor:</strong> <c:out value="${fcar.professorId}"/> -
+                                <span class="status ${fn:toLowerCase(fcar.status)}"></span>
                                 <strong>Course:</strong> <c:out value="${fcar.courseId}"/> - 
                                 <strong>Semester:</strong> <c:out value="${fcar.semester}"/> <c:out value="${fcar.year}"/> -
                                 <strong>Status:</strong> <c:out value="${fcar.status}"/>
@@ -81,7 +75,7 @@
                     </c:forEach>
                 </c:when>
                 <c:otherwise>
-                    <p>No FCARs available.</p>
+                    <p>No FCARs assigned to you.</p>
                 </c:otherwise>
             </c:choose>
         </div>

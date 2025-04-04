@@ -68,8 +68,11 @@ body {
 }
 .not-started { background-color: gray; }
 .in-progress { background-color: yellow; }
+.draft { background-color: yellow; }
 .submitted { background-color: blue; }
+.approved { background-color: green; }
 .completed { background-color: green; }
+.rejected { background-color: red; }
 .task-box {
     background: rgba(230, 249, 240, 0.8);
     border: 1px solid #008350;
@@ -98,4 +101,39 @@ body {
     border: 1px solid #ccc;
     background: #f9f9f9;
     border-radius: 5px;
+}
+.form-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+.btn-submit {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.btn-submit:hover {
+    background-color: #45a049;
 }

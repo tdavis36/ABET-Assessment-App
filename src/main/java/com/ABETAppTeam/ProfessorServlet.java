@@ -59,16 +59,18 @@ public class ProfessorServlet extends HttpServlet {
             // Get the FCAR ID
             String fcarId = request.getParameter("fcarId");
 
-            // Get the FCAR from the controller
-            FCARController controller = FCARController.getInstance();
-            FCAR fcar = controller.getFCAR(fcarId);
+            // Get the FCAR using DisplaySystemController
+            DisplaySystemController displayController = getDisplayController();
+            FCAR fcar = displayController.getFCAR(fcarId);
 
             if (fcar != null) {
                 // Ensure the FCAR is in draft status if it's not already
                 if (!fcar.getStatus().equals("Draft")) {
+                    // For status changes, we still need to use FCARController
+                    FCARController controller = getFCARController();
                     controller.returnFCARToDraft(fcarId);
-                    // Refresh the FCAR after status change
-                    fcar = controller.getFCAR(fcarId);
+                    // Refresh the FCAR after status change using DisplaySystemController
+                    fcar = displayController.getFCAR(fcarId);
                 }
 
                 // Pass the FCAR to the form
@@ -119,16 +121,17 @@ public class ProfessorServlet extends HttpServlet {
             String fcarId = request.getParameter("fcarId");
             FCAR fcar;
 
-            FCARController controller = FCARController.getInstance();
+            DisplaySystemController displayController = getDisplayController();
+            FCARController controller = getFCARController();
 
             if (fcarId != null && !fcarId.isEmpty()) {
-                // Get the existing FCAR
-                fcar = controller.getFCAR(fcarId);
+                // Get the existing FCAR using DisplaySystemController
+                fcar = displayController.getFCAR(fcarId);
 
                 if (fcar == null) {
                     // FCAR not found, create a new one
                     String newFcarId = controller.createFCAR(courseId, professorId, semester, year);
-                    fcar = controller.getFCAR(newFcarId);
+                    fcar = displayController.getFCAR(newFcarId);
                 } else {
                     // Update the existing FCAR
                     fcar.setCourseId(courseId);
@@ -139,12 +142,10 @@ public class ProfessorServlet extends HttpServlet {
             } else {
                 // Create a new FCAR
                 String newFcarId = controller.createFCAR(courseId, professorId, semester, year);
-                fcar = controller.getFCAR(newFcarId);
+                fcar = displayController.getFCAR(newFcarId);
             }
 
-            // Get outcome and indicator
-            String outcome = request.getParameter("outcome");
-            String indicator = request.getParameter("indicator");
+            // Get target goal
             String targetGoal = request.getParameter("targetGoal");
 
             // Get assessment method details
@@ -168,12 +169,26 @@ public class ProfessorServlet extends HttpServlet {
             String summary = request.getParameter("summary");
             String improvementActions = request.getParameter("improvementActions");
 
-            // Store additional data in the FCAR
-            // In a real implementation, you would extend the FCAR class to include these
-            // fields
-            // For now we'll store them as assessment methods and improvement actions
-            fcar.addAssessmentMethod("outcome", outcome);
-            fcar.addAssessmentMethod("indicator", indicator);
+            // Store selected outcomes (preserve from admin creation)
+            String selectedOutcomes = request.getParameter("selectedOutcomes");
+            if (selectedOutcomes != null && !selectedOutcomes.isEmpty()) {
+                fcar.addAssessmentMethod("selectedOutcomes", selectedOutcomes);
+            }
+
+            // Preserve all indicator selections (from admin creation)
+            java.util.Enumeration<String> paramNames = request.getParameterNames();
+            while (paramNames.hasMoreElements()) {
+                String paramName = paramNames.nextElement();
+                if (paramName.startsWith("indicator_")) {
+                    String indicatorValue = request.getParameter(paramName);
+                    if (indicatorValue != null && !indicatorValue.isEmpty()) {
+                        // Store the indicator as selected
+                        fcar.addAssessmentMethod(paramName, indicatorValue);
+                    }
+                }
+            }
+
+            // Store assessment method details
             fcar.addAssessmentMethod("targetGoal", targetGoal);
             fcar.addAssessmentMethod("workUsed", workUsed);
             fcar.addAssessmentMethod("assessmentDescription", assessmentDescription);
@@ -187,6 +202,7 @@ public class ProfessorServlet extends HttpServlet {
             fcar.addAssessmentMethod("percentageMetTarget", String.format("%.2f", percentageMetTarget));
             fcar.addAssessmentMethod("targetMet", String.valueOf(targetMet));
 
+            // Store improvement actions
             fcar.addImprovementAction("summary", summary);
             if (improvementActions != null && !improvementActions.isEmpty()) {
                 fcar.addImprovementAction("actions", improvementActions);
