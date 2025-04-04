@@ -114,4 +114,7 @@ public class Professor extends User {
         this.fcarIds.remove(fcarId);
     }
 
+    public void setId(int i) {
+        super.setUserId(String.valueOf(i));
+    }
 }

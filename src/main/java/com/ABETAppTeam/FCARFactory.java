@@ -10,7 +10,7 @@ import java.util.List;
  * If you want to keep the "factory" name, it now just delegates to the repository
  * for all persistence. Otherwise, you can remove it if it's no longer necessary.
  */
-public class FCARFactory {
+public abstract class FCARFactory {
     // Reference the repository (could also be injected?)
     private static final IFCARRepository repository = new FCARRepository();
 
@@ -67,5 +67,7 @@ public class FCARFactory {
             return List.of();
         }
     }
+
+    protected abstract IFCARRepository getRepository();
     //  Add more here as necessary
 }

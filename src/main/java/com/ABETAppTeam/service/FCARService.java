@@ -16,11 +16,11 @@ import java.util.Map;
 public class FCARService {
 
     // Typically you'd use IFCARRepository if you have the interface:
-    private final FCARRepository fcarRepository;
+    FCARRepository fcarRepository;
     // Or: private final IFCARRepository fcarRepository;
 
     // If you have an interface for user repository, use that. Otherwise, keep it as is:
-    private final UserRepository userRepository;
+    UserRepository userRepository;
 
     /**
      * Constructor
