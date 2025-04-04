@@ -1,7 +1,6 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.servlet.ServletException;
@@ -15,19 +14,6 @@ import jakarta.servlet.http.HttpSession;
 public class ProfessorServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    // Method to return all stored FCARs
-    public static List<FCAR> getAllFCARs() {
-        FCARController controller = FCARController.getInstance();
-        List<FCAR> fcars = new ArrayList<>();
-
-        // Get all FCARs from the factory
-        for (FCAR fcar : FCARFactory.getAllFCARs().values()) {
-            fcars.add(fcar);
-        }
-
-        return fcars;
-    }
-
     public ProfessorServlet() {
         super();
     }
@@ -35,66 +21,60 @@ public class ProfessorServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
+        FCARController controller = FCARController.getInstance();
 
         if ("createFCARForm".equals(action)) {
-            // Forward to FCAR creation form
+            // Forward to the FCAR creation form
             request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
             return;
         } else if ("viewFCARs".equals(action)) {
-            // Pass stored FCARs to view
-            request.setAttribute("allFCARs", getAllFCARs());
+            // Retrieve all FCARs using the controller
+            List<FCAR> allFCARs = controller.getAllFCARs();
+            request.setAttribute("allFCARs", allFCARs);
             request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
             return;
         } else if ("editFCAR".equals(action)) {
-            // Get the FCAR ID
+            // Retrieve the FCAR ID from the request
             String fcarId = request.getParameter("fcarId");
-
-            // Get the FCAR from the controller
-            FCARController controller = FCARController.getInstance();
             FCAR fcar = controller.getFCAR(fcarId);
 
             if (fcar != null) {
-                // Ensure the FCAR is in draft status if it's not already
-                if (!fcar.getStatus().equals("Draft")) {
+                // Ensure the FCAR is in draft status
+                if (!"Draft".equals(fcar.getStatus())) {
                     controller.returnFCARToDraft(fcarId);
                     // Refresh the FCAR after status change
                     fcar = controller.getFCAR(fcarId);
                 }
-
-                // Pass the FCAR to the form
                 request.setAttribute("fcar", fcar);
                 request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
             } else {
-                // FCAR not found
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "FCAR not found.");
             }
             return;
         }
 
-        // Default: Show professor dashboard with all FCARs
+        // Default: show the professor dashboard
+        // For demonstration, we assume professor's name is stored in session.
         String professorId = (String) session.getAttribute("professorName");
         if (professorId == null) {
-            professorId = "Smith"; // Default for testing
+            professorId = "Smith"; // Default for testing purposes
             session.setAttribute("professorName", professorId);
         }
 
-        // Get all FCARs, not just the ones assigned to this professor
-        List<FCAR> allFCARs = getAllFCARs();
-        request.setAttribute("assignedFCARs", allFCARs);
-
-        // Forward to professor.jsp
+        // Retrieve all FCARs (or you could filter by professor if desired)
+        List<FCAR> assignedFCARs = controller.getAllFCARs();
+        request.setAttribute("assignedFCARs", assignedFCARs);
         request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
+        FCARController controller = FCARController.getInstance();
 
         if ("submitFCAR".equals(action)) {
             // Retrieve basic form inputs
@@ -106,57 +86,49 @@ public class ProfessorServlet extends HttpServlet {
             // Check if this is an edit of an existing FCAR
             String fcarId = request.getParameter("fcarId");
             FCAR fcar;
-
             if (fcarId != null && !fcarId.isEmpty()) {
-                // Get the existing FCAR
-                FCARController controller = FCARController.getInstance();
+                // Retrieve the existing FCAR using the controller
                 fcar = controller.getFCAR(fcarId);
-
                 if (fcar == null) {
-                    // FCAR not found, create a new one
-                    fcar = FCARFactory.createFCAR(courseId, professorId, semester, year);
+                    // If not found, create a new one through the controller
+                    String newFcarId = controller.createFCAR(courseId, professorId, semester, year);
+                    fcar = controller.getFCAR(newFcarId);
                 } else {
-                    // Update the existing FCAR
+                    // Update the existing FCAR's basic information
                     fcar.setCourseId(courseId);
                     fcar.setProfessorId(professorId);
                     fcar.setSemester(semester);
                     fcar.setYear(year);
                 }
             } else {
-                // Create a new FCAR
-                fcar = FCARFactory.createFCAR(courseId, professorId, semester, year);
+                // Create a new FCAR via the controller
+                String newFcarId = controller.createFCAR(courseId, professorId, semester, year);
+                fcar = controller.getFCAR(newFcarId);
             }
 
-            // Get outcome and indicator
+            // Retrieve additional parameters for outcomes, assessment, and improvement actions
             String outcome = request.getParameter("outcome");
             String indicator = request.getParameter("indicator");
             String targetGoal = request.getParameter("targetGoal");
 
-            // Get assessment method details
             String workUsed = request.getParameter("workUsed");
             String assessmentDescription = request.getParameter("assessmentDescription");
 
-            // Get achievement levels
             int level4 = Integer.parseInt(request.getParameter("level4"));
             int level3 = Integer.parseInt(request.getParameter("level3"));
             int level2 = Integer.parseInt(request.getParameter("level2"));
             int level1 = Integer.parseInt(request.getParameter("level1"));
             int level0 = Integer.parseInt(request.getParameter("level0"));
 
-            // Calculate results
             int totalStudents = level4 + level3 + level2 + level1 + level0;
             int studentsMetTarget = level4 + level3;
             double percentageMetTarget = totalStudents > 0 ? (double) studentsMetTarget / totalStudents * 100 : 0;
             boolean targetMet = percentageMetTarget >= Double.parseDouble(targetGoal);
 
-            // Get summary and improvement actions
             String summary = request.getParameter("summary");
             String improvementActions = request.getParameter("improvementActions");
 
-            // Store additional data in the FCAR
-            // In a real implementation, you would extend the FCAR class to include these
-            // fields
-            // For now, we'll store them as assessment methods and improvement actions
+            // Store assessment details in the FCAR (using keys to distinguish each field)
             fcar.addAssessmentMethod("outcome", outcome);
             fcar.addAssessmentMethod("indicator", indicator);
             fcar.addAssessmentMethod("targetGoal", targetGoal);
@@ -172,15 +144,15 @@ public class ProfessorServlet extends HttpServlet {
             fcar.addAssessmentMethod("percentageMetTarget", String.format("%.2f", percentageMetTarget));
             fcar.addAssessmentMethod("targetMet", String.valueOf(targetMet));
 
+            // Store improvement action details
             fcar.addImprovementAction("summary", summary);
             if (improvementActions != null && !improvementActions.isEmpty()) {
                 fcar.addImprovementAction("actions", improvementActions);
             }
 
-            // Check if breakdown by major was selected
+            // Process major breakdown if selected
             String breakdownByMajor = request.getParameter("breakdownByMajor");
             if (breakdownByMajor != null && breakdownByMajor.equals("on")) {
-                // Get major breakdown data
                 String[] majors = request.getParameterValues("major[]");
                 String[] majorLevel4s = request.getParameterValues("majorLevel4[]");
                 String[] majorLevel3s = request.getParameterValues("majorLevel3[]");
@@ -193,7 +165,6 @@ public class ProfessorServlet extends HttpServlet {
                         if (majors[i] != null && !majors[i].isEmpty()) {
                             String majorPrefix = "major_" + i + "_";
                             fcar.addAssessmentMethod(majorPrefix + "name", majors[i]);
-
                             if (majorLevel4s != null && i < majorLevel4s.length) {
                                 fcar.addAssessmentMethod(majorPrefix + "level4", majorLevel4s[i]);
                             }
@@ -214,25 +185,19 @@ public class ProfessorServlet extends HttpServlet {
                 }
             }
 
-            // Set status and store FCAR
+            // Set FCAR status to Submitted and update via the controller
             fcar.setStatus("Submitted");
-            FCARFactory.updateFCAR(fcar);
+            controller.updateFCAR(fcar);
 
-            // Redirect back to professor dashboard
+            // Redirect back to the professor dashboard
             response.sendRedirect(request.getContextPath() + "/ProfessorServlet?action=viewFCARs");
         } else if ("submitFCARStatus".equals(action)) {
-            // Get the FCAR ID
+            // Submit FCAR status using the controller
             String fcarId = request.getParameter("fcarId");
-
-            // Submit the FCAR
-            FCARController controller = FCARController.getInstance();
             boolean success = controller.submitFCAR(fcarId);
-
             if (success) {
-                // Success - redirect back to professor dashboard
                 response.sendRedirect(request.getContextPath() + "/ProfessorServlet?fcarSubmitted=true");
             } else {
-                // Error submitting FCAR
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to submit FCAR.");
             }
         } else {

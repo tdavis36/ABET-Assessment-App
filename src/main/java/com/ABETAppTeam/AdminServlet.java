@@ -14,7 +14,7 @@ import jakarta.servlet.http.HttpSession;
 public class AdminServlet extends HttpServlet {
 
     /**
-     * Handles GET requests: just forwards to admin.jsp
+     * Handles GET requests: forwards to admin.jsp with FCAR data.
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -22,8 +22,9 @@ public class AdminServlet extends HttpServlet {
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
 
-        // Always fetch all FCARs for the admin to see
-        List<FCAR> allFCARs = ProfessorServlet.getAllFCARs();
+        // Fetch all FCARs for the admin via the controller
+        FCARController controller = FCARController.getInstance();
+        List<FCAR> allFCARs = controller.getAllFCARs(); // Ensure this method exists in FCARController
         request.setAttribute("allFCARs", allFCARs);
 
         if ("viewFCARs".equals(action)) {
@@ -33,16 +34,13 @@ public class AdminServlet extends HttpServlet {
             // Get the FCAR ID
             String fcarId = request.getParameter("fcarId");
 
-            // Get the FCAR from the controller
-            FCARController controller = FCARController.getInstance();
+            // Retrieve the FCAR from the controller
             FCAR fcar = controller.getFCAR(fcarId);
 
             if (fcar != null) {
-                // Pass the FCAR to the form
                 request.setAttribute("fcar", fcar);
                 request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
             } else {
-                // FCAR not found
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "FCAR not found.");
             }
             return;
@@ -53,7 +51,7 @@ public class AdminServlet extends HttpServlet {
     }
 
     /**
-     * Handles POST requests: create FCARs
+     * Handles POST requests: creates new FCARs.
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -62,25 +60,24 @@ public class AdminServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         if ("createFCAR".equals(action)) {
-            // Get form data
+            // Retrieve form data
             String courseId = request.getParameter("courseId");
             String professorId = request.getParameter("professorId");
             String semester = request.getParameter("semester");
             int year = Integer.parseInt(request.getParameter("year"));
 
-            // Create a new FCAR and assign it to the professor
+            // Create a new FCAR using the controller
             FCARController controller = FCARController.getInstance();
             String fcarId = controller.createFCAR(courseId, professorId, semester, year);
 
             if (fcarId != null) {
-                // Success - redirect back to admin page
+                // Success: redirect back to admin page
                 response.sendRedirect(request.getContextPath() + "/AdminServlet?fcarCreated=true");
             } else {
-                // Error creating FCAR
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to create FCAR.");
             }
         } else {
-            // Default: forward to admin.jsp
+            // Default action: delegate to doGet
             doGet(request, response);
         }
     }

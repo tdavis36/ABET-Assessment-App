@@ -1,86 +1,83 @@
 package com.ABETAppTeam;
 
+import java.util.List;
 import jakarta.servlet.http.HttpSession;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Map;
 
-/**
- * SessionStorageHandler for managing session-based FCAR data.
- *
- * This class provides methods to store, retrieve, and clear FCAR data in the session.
- *
- * <p>Usage Example in a Servlet:
- * <pre>
- *   // Store a newly created FCAR in session
- *   FCAR fcar = FCARFactory.createFCAR("CS320", "Prof01", "Spring", 2025);
- *   SessionStorageHandler.storeFCAR(request.getSession(), fcar.getFcarId(), fcar);
- *
- *   // Retrieve the FCAR by ID
- *   FCAR retrieved = SessionStorageHandler.getFCAR(request.getSession(), fcar.getFcarId());
- * </pre>
- */
 public class SessionStorageHandler {
 
-    private static final String FCAR_SESSION_KEY = "fcarData";
+    // Key used to store the FCAR cache in the session.
+    private static final String FCAR_CACHE_SESSION_KEY = "fcarCache";
 
     /**
-     * Stores FCAR data in the session.
+     * Retrieves FCARs from the session cache.
+     * If the cache is missing, it loads FCARs from FCARFactory,
+     * converts the result to a List, and caches it.
      *
-     * @param session The HttpSession object
-     * @param fcarId  The FCAR ID
-     * @param fcar    The FCAR object to store
+     * @param session the current HttpSession.
+     * @return a List of FCAR objects.
      */
-    public static void storeFCAR(HttpSession session, String fcarId, FCAR fcar) {
-        Map<String, FCAR> fcarData = getStoredFCARs(session);
-        fcarData.put(fcarId, fcar);
-        session.setAttribute(FCAR_SESSION_KEY, fcarData);
-    }
-
-    /**
-     * Retrieves an FCAR from the session by its ID.
-     *
-     * @param session The HttpSession object
-     * @param fcarId  The FCAR ID
-     * @return The retrieved FCAR object, or null if not found
-     */
-    public static FCAR getFCAR(HttpSession session, String fcarId) {
-        Map<String, FCAR> fcarData = getStoredFCARs(session);
-        return fcarData.get(fcarId);
-    }
-
-    /**
-     * Retrieves all stored FCARs from the session.
-     *
-     * @param session The HttpSession object
-     * @return A map of FCAR IDs to FCAR objects
-     */
-    @SuppressWarnings("unchecked")
-    public static Map<String, FCAR> getStoredFCARs(HttpSession session) {
-        Object data = session.getAttribute(FCAR_SESSION_KEY);
-        if (data instanceof Map) {
-            return (Map<String, FCAR>) data;
+    public List<FCAR> getFCARs(HttpSession session) {
+        @SuppressWarnings("unchecked")
+        List<FCAR> cachedFCARs = (List<FCAR>) session.getAttribute(FCAR_CACHE_SESSION_KEY);
+        if (cachedFCARs == null) {
+            // Load FCARs from primary storage (FCARFactory)
+            cachedFCARs = FCARFactory.getAllFCARsAsList();
+            session.setAttribute(FCAR_CACHE_SESSION_KEY, cachedFCARs);
         }
-        return new HashMap<>();
+        return cachedFCARs;
     }
 
     /**
-     * Removes an FCAR from the session.
+     * Saves a new FCAR using FCARFactory and invalidates the session cache.
      *
-     * @param session The HttpSession object
-     * @param fcarId  The FCAR ID to remove
+     * @param session the current HttpSession.
+     * @param fcar    the FCAR to save.
+     * @return the saved FCAR.
      */
-    public static void removeFCAR(HttpSession session, String fcarId) {
-        Map<String, FCAR> fcarData = getStoredFCARs(session);
-        fcarData.remove(fcarId);
-        session.setAttribute(FCAR_SESSION_KEY, fcarData);
+    public FCAR saveFCAR(HttpSession session, FCAR fcar) {
+        FCAR savedFCAR = FCARFactory.save(fcar);
+        invalidateCache(session);
+        return savedFCAR;
     }
 
     /**
-     * Clears all FCAR data from the session.
+     * Updates an existing FCAR using FCARFactory and invalidates the session cache.
      *
-     * @param session The HttpSession object
+     * @param session the current HttpSession.
+     * @param fcar    the FCAR to update.
+     * @return true if update succeeded, false otherwise.
      */
-    public static void clearAllFCARs(HttpSession session) {
-        session.removeAttribute(FCAR_SESSION_KEY);
+    public boolean updateFCAR(HttpSession session, FCAR fcar) {
+        boolean success = FCARFactory.update(fcar);
+        if (success) {
+            invalidateCache(session);
+        }
+        return success;
+    }
+
+    /**
+     * Deletes an FCAR using FCARFactory and invalidates the session cache.
+     *
+     * @param session the current HttpSession.
+     * @param fcarId  the ID of the FCAR to delete.
+     * @return true if deletion succeeded, false otherwise.
+     */
+    public boolean deleteFCAR(HttpSession session, int fcarId) {
+        boolean success = FCARFactory.delete(String.valueOf(fcarId));
+        if (success) {
+            invalidateCache(session);
+        }
+        return success;
+    }
+
+    /**
+     * Invalidates the session cache by removing the cached FCAR list.
+     *
+     * @param session the current HttpSession.
+     */
+    public void invalidateCache(HttpSession session) {
+        session.removeAttribute(FCAR_CACHE_SESSION_KEY);
     }
 }

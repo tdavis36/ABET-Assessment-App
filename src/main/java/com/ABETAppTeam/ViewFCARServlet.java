@@ -2,7 +2,6 @@ package com.ABETAppTeam;
 
 import java.io.IOException;
 import java.util.List;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -18,26 +17,21 @@ public class ViewFCARServlet extends HttpServlet {
         String fcarId = request.getParameter("fcarId");
         String action = request.getParameter("action");
 
-        // If action is viewAll, show all FCARs
+        // Get the FCARController instance to access all FCAR operations
+        FCARController controller = FCARController.getInstance();
+
+        // If action is viewAll, retrieve all FCARs via the controller
         if ("viewAll".equals(action)) {
-            List<FCAR> allFCARs = ProfessorServlet.getAllFCARs();
+            List<FCAR> allFCARs = controller.getAllFCARs();
             request.setAttribute("allFCARs", allFCARs);
             request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
             return;
         }
 
-        // If fcarId is provided, show details for that FCAR
+        // If an fcarId is provided, retrieve the corresponding FCAR using the controller
         if (fcarId != null && !fcarId.isEmpty()) {
-            // Find the FCAR by ID
-            FCAR selectedFCAR = null;
-            for (FCAR fcar : ProfessorServlet.getAllFCARs()) {
-                if (fcar.getFcarId().equals(fcarId)) {
-                    selectedFCAR = fcar;
-                    break;
-                }
-            }
+            FCAR selectedFCAR = controller.getFCAR(fcarId);
 
-            // Send FCAR details to JSP
             if (selectedFCAR != null) {
                 request.setAttribute("selectedFCAR", selectedFCAR);
                 request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
@@ -48,7 +42,7 @@ public class ViewFCARServlet extends HttpServlet {
         }
 
         // Default: show all FCARs
-        List<FCAR> allFCARs = ProfessorServlet.getAllFCARs();
+        List<FCAR> allFCARs = controller.getAllFCARs();
         request.setAttribute("allFCARs", allFCARs);
         request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
     }
