@@ -19,38 +19,28 @@ public class DataSourceFactory {
         HikariConfig config = new HikariConfig();
 
         // First try to load from environment variables
+        String dbHost = System.getenv("DB_HOST");
+        String dbPort = System.getenv("DB_PORT");
         String dbName = System.getenv("DB_NAME");
         String dbUsername = System.getenv("DB_USERNAME");
         String dbPassword = System.getenv("DB_PASSWORD");
 
-        // If not found in environment, try to load from properties file
-        if (dbName == null || dbUsername == null || dbPassword == null) {
-            Properties props = new Properties();
-            try (InputStream input = DataSourceFactory.class.getClassLoader().getResourceAsStream("database.properties")) {
-                if (input != null) {
-                    props.load(input);
-                    dbName = props.getProperty("db.name");
-                    dbUsername = props.getProperty("db.username");
-                    dbPassword = props.getProperty("db.password");
-                }
-            } catch (IOException ex) {
-                System.err.println("Failed to load database properties: " + ex.getMessage());
-                ex.printStackTrace();
-            }
-        }
-
-        // If still not set, use defaults
+        // Default values if not set
+        dbHost = (dbHost != null) ? dbHost : "localhost";
+        dbPort = (dbPort != null) ? dbPort : "3306";
         dbName = (dbName != null) ? dbName : "abetapp";
-        dbUsername = (dbUsername != null) ? dbUsername : "root";
-        dbPassword = (dbPassword != null) ? dbPassword : "";
+        dbUsername = (dbUsername != null) ? dbUsername : "user"; // Changed from 'root' to match setup.py defaults
+        dbPassword = (dbPassword != null) ? dbPassword : "pass"; // Make sure to read password correctly
 
         // Set up the JDBC URL
-        String jdbcUrl = "jdbc:mariadb://localhost:3306/" + dbName;
+        String jdbcUrl = "jdbc:mariadb://" + dbHost + ":" + dbPort + "/" + dbName;
+
+        System.out.println("Connecting to database: " + jdbcUrl + " as user: " + dbUsername);
 
         // Configure Hikari connection pool
         config.setJdbcUrl(jdbcUrl);
         config.setUsername(dbUsername);
-        config.setPassword(dbPassword);
+        config.setPassword(dbPassword); // Ensure the password is being passed
         config.setDriverClassName("org.mariadb.jdbc.Driver");
 
         // Pool configuration
