@@ -278,7 +278,8 @@ public class FCARRepository {
      * @return The mapped FCAR object
      * @throws SQLException If an error occurs during mapping
      */
-    private FCAR mapResultSetToFCAR(ResultSet rs) throws SQLException {
+    private FCAR mapResultSetToFCAR(ResultSet rs) throws SQLException
+    {
         int fcarId = rs.getInt("fcar_id");
         String courseCode = rs.getString("course_code");
         String courseName = rs.getString("course_name");
@@ -338,3 +339,5 @@ public class FCARRepository {
         fcar.setStatus("Draft"); // Default status
 
         return fcar;
+    };
+}
