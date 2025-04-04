@@ -20,6 +20,11 @@
                 <input type="hidden" name="action" value="viewAll"/>
                 <button type="submit" class="btn">View FCARs</button>
             </form>
+            <!-- New View Reports button -->
+            <form action="${pageContext.request.contextPath}/ReportsServlet" method="get">
+                <input type="hidden" name="action" value="viewReports"/>
+                <button type="submit" class="btn">View Reports</button>
+            </form>
         </div>
 
         <!-- View FCARs Section -->
