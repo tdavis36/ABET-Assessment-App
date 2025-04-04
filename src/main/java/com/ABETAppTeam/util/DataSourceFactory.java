@@ -3,9 +3,7 @@ package com.ABETAppTeam.util;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
-import javax.sql.DataSource;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Properties;
 
 /**
@@ -25,22 +23,55 @@ public class DataSourceFactory {
         String dbUsername = System.getenv("DB_USERNAME");
         String dbPassword = System.getenv("DB_PASSWORD");
 
-        // Default values if not set
+        // Load from .env file if environment variables are not set
+        if (dbHost == null || dbPort == null || dbName == null || dbUsername == null || dbPassword == null) {
+            Properties envProps = new Properties();
+            File envFile = new File(".env");
+            if (envFile.exists()) {
+                try (FileInputStream fis = new FileInputStream(envFile)) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (!line.startsWith("#") && line.contains("=")) {
+                            String[] parts = line.split("=", 2);
+                            if (parts.length == 2) {
+                                envProps.setProperty(parts[0].trim(), parts[1].trim());
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error reading .env file: " + e.getMessage());
+                }
+            }
+
+            if (dbHost == null) dbHost = envProps.getProperty("DB_HOST", "localhost");
+            if (dbPort == null) dbPort = envProps.getProperty("DB_PORT", "3306");
+            if (dbName == null) dbName = envProps.getProperty("DB_NAME", "abetapp");
+            if (dbUsername == null) dbUsername = envProps.getProperty("DB_USERNAME", "user");
+            if (dbPassword == null) dbPassword = envProps.getProperty("DB_PASSWORD", "");
+        }
+
+        // Default values if still not set
         dbHost = (dbHost != null) ? dbHost : "localhost";
         dbPort = (dbPort != null) ? dbPort : "3306";
         dbName = (dbName != null) ? dbName : "abetapp";
-        dbUsername = (dbUsername != null) ? dbUsername : "user"; // Changed from 'root' to match setup.py defaults
-        dbPassword = (dbPassword != null) ? dbPassword : "pass"; // Make sure to read password correctly
+        dbUsername = (dbUsername != null) ? dbUsername : "user";
+        dbPassword = (dbPassword != null) ? dbPassword : "";
 
-        // Set up the JDBC URL
-        String jdbcUrl = "jdbc:mariadb://" + dbHost + ":" + dbPort + "/" + dbName;
+        // Set up the JDBC URL with allowPublicKeyRetrieval=true to avoid SSL issues
+        String jdbcUrl = "jdbc:mariadb://" + dbHost + ":" + dbPort + "/" + dbName +
+                "?allowPublicKeyRetrieval=true&useSSL=false";
 
-        System.out.println("Connecting to database: " + jdbcUrl + " as user: " + dbUsername);
+        // Debug output
+        System.out.println("Database connection info:");
+        System.out.println("URL: " + jdbcUrl);
+        System.out.println("User: " + dbUsername);
+        System.out.println("Password provided: " + !dbPassword.isEmpty());
 
         // Configure Hikari connection pool
         config.setJdbcUrl(jdbcUrl);
         config.setUsername(dbUsername);
-        config.setPassword(dbPassword); // Ensure the password is being passed
+        config.setPassword(dbPassword);
         config.setDriverClassName("org.mariadb.jdbc.Driver");
 
         // Pool configuration
@@ -50,11 +81,22 @@ public class DataSourceFactory {
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1800000);
 
-        // Create the data source
-        dataSource = new HikariDataSource(config);
+        try {
+            dataSource = new HikariDataSource(config);
+            System.out.println("Database connection pool initialized successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to initialize database connection pool: " + e.getMessage());
+            e.printStackTrace();
+            // Rethrow the exception but don't terminate the app yet
+            throw new RuntimeException("Database connection failed", e);
+        }
 
         // Initialize the database schema if needed
-        initializeDatabase();
+        try {
+            initializeDatabase();
+        } catch (Exception e) {
+            System.err.println("Failed to initialize database schema: " + e.getMessage());
+        }
     }
 
     /**
