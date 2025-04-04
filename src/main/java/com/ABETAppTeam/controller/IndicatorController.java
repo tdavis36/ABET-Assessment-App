@@ -1,4 +1,6 @@
-package com.ABETAppTeam;
+package com.ABETAppTeam.controller;
+
+import com.ABETAppTeam.model.Indicator;
 
 import java.util.HashMap;
 import java.util.Map;

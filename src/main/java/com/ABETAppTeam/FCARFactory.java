@@ -3,6 +3,7 @@ package com.ABETAppTeam;
 import com.ABETAppTeam.repository.IFCARRepository;
 import com.ABETAppTeam.repository.FCARRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -66,6 +67,35 @@ public abstract class FCARFactory {
         } catch (NumberFormatException e) {
             return List.of();
         }
+    }
+
+    /**
+     * Get FCARs for a specific semester and year
+     *
+     * @param semester The semester (e.g., "Fall", "Spring", "Summer")
+     * @param year The year
+     * @return List of FCARs for the specified semester and year
+     */
+    public static List<FCAR> getFCARsBySemester(String semester, int year) {
+        List<FCAR> allFCARs = getAllFCARs();
+        List<FCAR> semesterFCARs = new ArrayList<>();
+
+        for (FCAR fcar : allFCARs) {
+            if (fcar.getSemester().equals(semester) && fcar.getYear() == year) {
+                semesterFCARs.add(fcar);
+            }
+        }
+
+        return semesterFCARs;
+    }
+
+    /**
+     * Get all FCARs as a list (alias for getAllFCARs for compatibility)
+     *
+     * @return List of all FCARs
+     */
+    public static List<FCAR> getAllFCARsAsList() {
+        return getAllFCARs();
     }
 
     protected abstract IFCARRepository getRepository();

@@ -1,10 +1,13 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
+import com.ABETAppTeam.controller.OutcomeController;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -24,6 +27,10 @@ public class AdminServlet extends HttpServlet {
         return DisplaySystemController.getInstance();
     }
 
+    private OutcomeController getOutcomeController() {
+        return OutcomeController.getInstance();
+    }
+
     /**
      * Handles GET requests: just forwards to admin.jsp
      */
@@ -37,10 +44,32 @@ public class AdminServlet extends HttpServlet {
         DisplaySystemController displayController = getDisplayController();
         Map<String, Object> dashboardData = displayController.generateAdminDashboard();
 
+        // Convert courses to a List if it's not already
+        Object coursesObj = dashboardData.get("courses");
+        if (!(coursesObj instanceof List)) {
+            List<Course> courseList = new ArrayList<>();
+
+            if (coursesObj instanceof java.util.Collection<?>) {
+                // Convert any Collection (like HashMap$Values) to a List<Course>
+                for (Object obj : (java.util.Collection<?>) coursesObj) {
+                    if (obj instanceof Course) {
+                        courseList.add((Course) obj);
+                    }
+                }
+            }
+
+            // Replace with our new List
+            dashboardData.put("courses", courseList);
+        }
+
         // Add all attributes from the dashboard data to the request
         for (Map.Entry<String, Object> entry : dashboardData.entrySet()) {
             request.setAttribute(entry.getKey(), entry.getValue());
         }
+
+        // Add outcome data from OutcomeController for JavaScript
+        OutcomeController outcomeController = getOutcomeController();
+        request.setAttribute("outcomeData", outcomeController.getOutcomeDataAsJson());
 
         if ("viewFCARs".equals(action)) {
             request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
@@ -124,6 +153,42 @@ public class AdminServlet extends HttpServlet {
             } else {
                 // Error creating FCAR
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to create FCAR.");
+            }
+        } else if ("approveFCAR".equals(action)) {
+            // Get the FCAR ID
+            String fcarId = request.getParameter("fcarId");
+
+            // Approve the FCAR
+            FCARController controller = getFCARController();
+            boolean success = controller.approveFCAR(fcarId);
+
+            if (success) {
+                // Success - redirect back to admin page
+                response.sendRedirect(request.getContextPath() + "/AdminServlet?fcarApproved=true");
+            } else {
+                // Error approving FCAR
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to approve FCAR.");
+            }
+        } else if ("rejectFCAR".equals(action)) {
+            // Get the FCAR ID
+            String fcarId = request.getParameter("fcarId");
+
+            // Get feedback if provided
+            String feedback = request.getParameter("feedback");
+            if (feedback == null) {
+                feedback = "FCAR rejected by administrator.";
+            }
+
+            // Reject the FCAR
+            FCARController controller = getFCARController();
+            boolean success = controller.rejectFCAR(fcarId, feedback);
+
+            if (success) {
+                // Success - redirect back to admin page
+                response.sendRedirect(request.getContextPath() + "/AdminServlet?fcarRejected=true");
+            } else {
+                // Error rejecting FCAR
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to reject FCAR.");
             }
         } else {
             // Default: forward to admin.jsp

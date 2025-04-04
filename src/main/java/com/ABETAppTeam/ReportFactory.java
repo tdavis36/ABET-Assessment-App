@@ -34,8 +34,8 @@ public class ReportFactory {
         report.setYear(year);
 
         // 1. Retrieve all FCARs for the given semester/year
-        Map<String, FCAR> fcarMap = FCARFactory.getFCARsBySemester(semester, year);
-        // 2. Convert map values to a list and set them on the report
+        Map<String, FCAR> fcarMap = (Map<String, FCAR>) FCARFactory.getFCARsBySemester(semester, year);
+        // 2. Convert map values to a list and set them in the report
         List<FCAR> fcarList = new ArrayList<>(fcarMap.values());
         report.setFcarList(fcarList);
 
