@@ -10,9 +10,6 @@ import java.util.List;
  * submit FCAR reports, and view assessment data.
  */
 public class Professor extends User {
-    private String department;
-    private String officeLocation;
-    private String phoneNumber;
     private List<String> courseIds;
     private List<String> fcarIds;
 
@@ -34,72 +31,11 @@ public class Professor extends User {
      * @param email          Professor's email address
      * @param firstName      Professor's first name
      * @param lastName       Professor's last name
-     * @param department     Department the professor belongs to
-     * @param officeLocation Professor's office location
-     * @param phoneNumber    Professor's phone number
      */
-    public Professor(String userId, String username, String password, String email, String firstName, String lastName,
-            String department, String officeLocation, String phoneNumber) {
+    public Professor(String userId, String username, String password, String email, String firstName, String lastName) {
         super(userId, username, password, email, firstName, lastName);
-        this.department = department;
-        this.officeLocation = officeLocation;
-        this.phoneNumber = phoneNumber;
         this.courseIds = new ArrayList<>();
         this.fcarIds = new ArrayList<>();
-    }
-
-    /**
-     * Get the department the professor belongs to
-     * 
-     * @return Department name
-     */
-    public String getDepartment() {
-        return department;
-    }
-
-    /**
-     * Set the department the professor belongs to
-     * 
-     * @param department Department name
-     */
-    public void setDepartment(String department) {
-        this.department = department;
-    }
-
-    /**
-     * Get the professor's office location
-     * 
-     * @return Office location
-     */
-    public String getOfficeLocation() {
-        return officeLocation;
-    }
-
-    /**
-     * Set the professor's office location
-     * 
-     * @param officeLocation Office location
-     */
-    public void setOfficeLocation(String officeLocation) {
-        this.officeLocation = officeLocation;
-    }
-
-    /**
-     * Get the professor's phone number
-     * 
-     * @return Phone number
-     */
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    /**
-     * Set the professor's phone number
-     * 
-     * @param phoneNumber Phone number
-     */
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
     }
 
     /**
@@ -178,30 +114,4 @@ public class Professor extends User {
         this.fcarIds.remove(fcarId);
     }
 
-    /**
-     * Create a new FCAR for a course
-     * 
-     * @param courseId Course ID to create the FCAR for
-     * @param semester Semester (e.g., "Fall 2024")
-     * @return ID of the created FCAR, or null if creation failed
-     */
-    public String createFCAR(String courseId, String semester) {
-        // Implementation would connect to the FCAR system
-        // For now, just return a dummy FCAR ID
-        String fcarId = "FCAR-" + courseId + "-" + semester.replace(" ", "");
-        this.addFcarId(fcarId);
-        return fcarId;
-    }
-
-    /**
-     * Submit an FCAR for review
-     * 
-     * @param fcarId ID of the FCAR to submit
-     * @return true if submission was successful, false otherwise
-     */
-    public boolean submitFCAR(String fcarId) {
-        // Implementation would connect to the FCAR system
-        // For now, just return true to indicate success
-        return this.fcarIds.contains(fcarId);
-    }
 }

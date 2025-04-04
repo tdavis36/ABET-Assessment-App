@@ -183,44 +183,6 @@ public class Course {
     }
 
     /**
-     * Get the list of student IDs
-     * 
-     * @return List of student IDs
-     */
-    public List<String> getStudentIds() {
-        return studentIds;
-    }
-
-    /**
-     * Set the list of student IDs
-     * 
-     * @param studentIds List of student IDs
-     */
-    public void setStudentIds(List<String> studentIds) {
-        this.studentIds = studentIds;
-    }
-
-    /**
-     * Add a student ID to the course
-     * 
-     * @param studentId Student ID to add
-     */
-    public void addStudentId(String studentId) {
-        if (!this.studentIds.contains(studentId)) {
-            this.studentIds.add(studentId);
-        }
-    }
-
-    /**
-     * Remove a student ID from the course
-     * 
-     * @param studentId Student ID to remove
-     */
-    public void removeStudentId(String studentId) {
-        this.studentIds.remove(studentId);
-    }
-
-    /**
      * Get the list of FCAR IDs
      * 
      * @return List of FCAR IDs

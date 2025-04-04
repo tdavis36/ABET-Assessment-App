@@ -2,32 +2,37 @@ package com.ABETAppTeam.service;
 
 import com.ABETAppTeam.FCAR;
 import com.ABETAppTeam.Professor;
-import com.ABETAppTeam.repository.FCARRepository;
-import com.ABETAppTeam.repository.UserRepository;
-
+import com.ABETAppTeam.repository.FCARRepository;  // The final JDBC-based repository
+import com.ABETAppTeam.repository.UserRepository;  // For professor lookups
+import com.ABETAppTeam.repository.IFCARRepository; // (If you have an interface)
+// import com.ABETAppTeam.repository.IUserRepository; // Need to implement
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Service class for handling FCAR business logic
+ * FCARService class for handling FCAR business logic
  */
 public class FCARService {
+
+    // Typically you'd use IFCARRepository if you have the interface:
     private final FCARRepository fcarRepository;
+    // Or: private final IFCARRepository fcarRepository;
+
+    // If you have an interface for user repository, use that. Otherwise, keep it as is:
     private final UserRepository userRepository;
 
     /**
      * Constructor
      */
     public FCARService() {
+        // Production repository
         this.fcarRepository = new FCARRepository();
         this.userRepository = new UserRepository();
     }
 
     /**
      * Get an FCAR by ID
-     * @param fcarId The ID of the FCAR to retrieve
-     * @return The retrieved FCAR or null if not found
      */
     public FCAR getFCARById(int fcarId) {
         return fcarRepository.findById(fcarId);
@@ -35,7 +40,6 @@ public class FCARService {
 
     /**
      * Get all FCARs
-     * @return List of all FCARs
      */
     public List<FCAR> getAllFCARs() {
         return fcarRepository.findAll();
@@ -43,8 +47,6 @@ public class FCARService {
 
     /**
      * Get FCARs for a specific course
-     * @param courseCode The course code to get FCARs for
-     * @return List of FCARs for the course
      */
     public List<FCAR> getFCARsForCourse(String courseCode) {
         return fcarRepository.findByCourseCode(courseCode);
@@ -52,8 +54,6 @@ public class FCARService {
 
     /**
      * Get FCARs created by a specific professor
-     * @param professorId The ID of the professor
-     * @return List of FCARs created by the professor
      */
     public List<FCAR> getFCARsByProfessor(int professorId) {
         return fcarRepository.findByInstructorId(professorId);
@@ -61,13 +61,6 @@ public class FCARService {
 
     /**
      * Create a new FCAR
-     * @param courseCode The course code
-     * @param professorId The ID of the professor creating the FCAR
-     * @param semester The semester
-     * @param year The year
-     * @param outcomeId The outcome ID
-     * @param indicatorId The indicator ID
-     * @return The created FCAR or null if creation failed
      */
     public FCAR createFCAR(String courseCode, int professorId, String semester, int year,
                            int outcomeId, int indicatorId) {
@@ -77,28 +70,28 @@ public class FCARService {
             return null;
         }
 
-        // Create a new FCAR object
+        // Create new FCAR object
         FCAR fcar = new FCAR(
-                "temp", // Temporary ID, will be replaced after saving
+                "temp", // Temporary ID will be replaced after saving
                 courseCode,
                 String.valueOf(professorId),
                 semester,
                 year
         );
 
-        // Setup initial FCAR data
+        // Setup initial data
         Map<String, String> assessmentMethods = new HashMap<>();
         assessmentMethods.put("outcome", "outcome" + outcomeId);
         assessmentMethods.put("indicator", "outcome" + outcomeId + "_indicator" + indicatorId);
-        assessmentMethods.put("targetGoal", "70"); // Default target goal
+        assessmentMethods.put("targetGoal", "70"); // Default target
 
         fcar.setAssessmentMethods(assessmentMethods);
         fcar.setStatus("Draft");
 
-        // Save the FCAR to the database
+        // Save to DB (auto-generates an ID)
         FCAR savedFCAR = fcarRepository.save(fcar);
 
-        // Update the professor's FCARs list
+        // If saved, update the professor’s list
         if (savedFCAR != null) {
             professor.addFcarId(savedFCAR.getFcarId());
             userRepository.update(professor);
@@ -109,8 +102,6 @@ public class FCARService {
 
     /**
      * Update an FCAR
-     * @param fcar The FCAR to update
-     * @return true if update was successful, false otherwise
      */
     public boolean updateFCAR(FCAR fcar) {
         return fcarRepository.update(fcar);
@@ -118,22 +109,18 @@ public class FCARService {
 
     /**
      * Delete an FCAR
-     * @param fcarId The ID of the FCAR to delete
-     * @return true if deletion was successful, false otherwise
      */
     public boolean deleteFCAR(int fcarId) {
-        // Get the FCAR to find the associated professor
         FCAR fcar = fcarRepository.findById(fcarId);
         if (fcar != null) {
-            // Remove the FCAR ID from the professor's list
+            // Remove from professor’s list
             Professor professor = (Professor) userRepository.findById(
                     Integer.parseInt(fcar.getProfessorId()));
             if (professor != null) {
                 professor.removeFcarId(String.valueOf(fcarId));
                 userRepository.update(professor);
             }
-
-            // Delete the FCAR
+            // Delete from DB
             return fcarRepository.delete(fcarId);
         }
         return false;
@@ -141,8 +128,6 @@ public class FCARService {
 
     /**
      * Submit an FCAR for review
-     * @param fcarId The ID of the FCAR to submit
-     * @return true if submission was successful, false otherwise
      */
     public boolean submitFCAR(int fcarId) {
         FCAR fcar = fcarRepository.findById(fcarId);
@@ -155,8 +140,6 @@ public class FCARService {
 
     /**
      * Approve an FCAR
-     * @param fcarId The ID of the FCAR to approve
-     * @return true if approval was successful, false otherwise
      */
     public boolean approveFCAR(int fcarId) {
         FCAR fcar = fcarRepository.findById(fcarId);
@@ -169,16 +152,12 @@ public class FCARService {
 
     /**
      * Reject an FCAR
-     * @param fcarId The ID of the FCAR to reject
-     * @param feedback Feedback about why the FCAR was rejected
-     * @return true if rejection was successful, false otherwise
      */
     public boolean rejectFCAR(int fcarId, String feedback) {
         FCAR fcar = fcarRepository.findById(fcarId);
         if (fcar != null && "Submitted".equals(fcar.getStatus())) {
             fcar.setStatus("Rejected");
-
-            // Store feedback in improvement actions
+            // Record feedback
             Map<String, String> improvementActions = fcar.getImprovementActions();
             improvementActions.put("feedback", feedback);
             fcar.setImprovementActions(improvementActions);
@@ -190,13 +169,12 @@ public class FCARService {
 
     /**
      * Return an FCAR to draft status
-     * @param fcarId The ID of the FCAR to return to draft
-     * @return true if the operation was successful, false otherwise
      */
     public boolean returnFCARToDraft(int fcarId) {
         FCAR fcar = fcarRepository.findById(fcarId);
-        if (fcar != null && ("Submitted".equals(fcar.getStatus()) ||
-                "Rejected".equals(fcar.getStatus()))) {
+        if (fcar != null
+                && ("Submitted".equals(fcar.getStatus())
+                || "Rejected".equals(fcar.getStatus()))) {
             fcar.setStatus("Draft");
             return fcarRepository.update(fcar);
         }
@@ -205,17 +183,13 @@ public class FCARService {
 
     /**
      * Add student outcome data to an FCAR
-     * @param fcarId The ID of the FCAR
-     * @param outcomeId The outcome ID
-     * @param achievementLevel The achievement level (1-5)
-     * @return true if the operation was successful, false otherwise
      */
     public boolean addStudentOutcome(int fcarId, String outcomeId, int achievementLevel) {
         FCAR fcar = fcarRepository.findById(fcarId);
         if (fcar != null) {
-            Map<String, Integer> studentOutcomes = fcar.getStudentOutcomes();
-            studentOutcomes.put(outcomeId, achievementLevel);
-            fcar.setStudentOutcomes(studentOutcomes);
+            Map<String, Integer> outcomes = fcar.getStudentOutcomes();
+            outcomes.put(outcomeId, achievementLevel);
+            fcar.setStudentOutcomes(outcomes);
             return fcarRepository.update(fcar);
         }
         return false;
@@ -223,17 +197,13 @@ public class FCARService {
 
     /**
      * Add assessment method data to an FCAR
-     * @param fcarId The ID of the FCAR
-     * @param methodId The method ID
-     * @param description The description
-     * @return true if the operation was successful, false otherwise
      */
     public boolean addAssessmentMethod(int fcarId, String methodId, String description) {
         FCAR fcar = fcarRepository.findById(fcarId);
         if (fcar != null) {
-            Map<String, String> assessmentMethods = fcar.getAssessmentMethods();
-            assessmentMethods.put(methodId, description);
-            fcar.setAssessmentMethods(assessmentMethods);
+            Map<String, String> methods = fcar.getAssessmentMethods();
+            methods.put(methodId, description);
+            fcar.setAssessmentMethods(methods);
             return fcarRepository.update(fcar);
         }
         return false;
@@ -241,17 +211,13 @@ public class FCARService {
 
     /**
      * Add improvement action data to an FCAR
-     * @param fcarId The ID of the FCAR
-     * @param actionId The action ID
-     * @param description The description
-     * @return true if the operation was successful, false otherwise
      */
     public boolean addImprovementAction(int fcarId, String actionId, String description) {
         FCAR fcar = fcarRepository.findById(fcarId);
         if (fcar != null) {
-            Map<String, String> improvementActions = fcar.getImprovementActions();
-            improvementActions.put(actionId, description);
-            fcar.setImprovementActions(improvementActions);
+            Map<String, String> actions = fcar.getImprovementActions();
+            actions.put(actionId, description);
+            fcar.setImprovementActions(actions);
             return fcarRepository.update(fcar);
         }
         return false;

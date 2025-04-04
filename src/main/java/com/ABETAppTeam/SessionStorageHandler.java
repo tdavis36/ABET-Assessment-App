@@ -1,6 +1,8 @@
 package com.ABETAppTeam;
 
 import java.util.List;
+
+import com.ABETAppTeam.controller.FCARController;
 import jakarta.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.Map;
@@ -23,7 +25,7 @@ public class SessionStorageHandler {
         List<FCAR> cachedFCARs = (List<FCAR>) session.getAttribute(FCAR_CACHE_SESSION_KEY);
         if (cachedFCARs == null) {
             // Load FCARs from primary storage (FCARFactory)
-            cachedFCARs = FCARFactory.getAllFCARsAsList();
+            cachedFCARs = FCARController.getInstance().getAllFCARs();
             session.setAttribute(FCAR_CACHE_SESSION_KEY, cachedFCARs);
         }
         return cachedFCARs;
@@ -50,7 +52,7 @@ public class SessionStorageHandler {
      * @return true if update succeeded, false otherwise.
      */
     public boolean updateFCAR(HttpSession session, FCAR fcar) {
-        boolean success = FCARFactory.update(fcar);
+        boolean success = FCARController.getInstance().updateFCAR(fcar);
         if (success) {
             invalidateCache(session);
         }
@@ -65,7 +67,7 @@ public class SessionStorageHandler {
      * @return true if deletion succeeded, false otherwise.
      */
     public boolean deleteFCAR(HttpSession session, int fcarId) {
-        boolean success = FCARFactory.delete(String.valueOf(fcarId));
+        boolean success = FCARController.getInstance().deleteFCAR(String.valueOf(fcarId));
         if (success) {
             invalidateCache(session);
         }

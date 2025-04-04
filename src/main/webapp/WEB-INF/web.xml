@@ -23,11 +23,6 @@
         <servlet-name>ProfessorServlet</servlet-name>
         <servlet-class>com.ABETAppTeam.ProfessorServlet</servlet-class>
     </servlet>
-    
-    <servlet>
-        <servlet-name>TestServlet</servlet-name>
-        <servlet-class>com.ABETAppTeam.TestServlet</servlet-class>
-    </servlet>
 
     <!-- Servlet Mappings -->
     <servlet-mapping>
@@ -43,11 +38,6 @@
     <servlet-mapping>
         <servlet-name>ProfessorServlet</servlet-name>
         <url-pattern>/professor</url-pattern>
-    </servlet-mapping>
-    
-    <servlet-mapping>
-        <servlet-name>TestServlet</servlet-name>
-        <url-pattern>/test</url-pattern>
     </servlet-mapping>
 
     <welcome-file-list>

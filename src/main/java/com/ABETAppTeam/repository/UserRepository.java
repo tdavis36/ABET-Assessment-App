@@ -357,10 +357,7 @@ public class UserRepository {
                     passwordHash,
                     email,
                     firstName,
-                    lastName,
-                    deptName,
-                    null, // Office location not stored in our schema
-                    null  // Phone number not stored in our schema
+                    lastName
             );
 
             // Load additional data for Professors

@@ -255,7 +255,7 @@ volumes:
             if result:
                 click.echo("Database container started successfully.")
 
-                # Wait for database to be ready
+                # Wait for a database to be ready
                 click.echo("Waiting for database to be ready...")
                 time.sleep(5)  # Give it an initial few seconds
 
@@ -794,7 +794,7 @@ def setup():
     click.echo("\nDevelopment environment setup complete!")
 
 if __name__ == "__main__":
-    # Check Python version
+    # Check a Python version
     if sys.version_info < (3, 6):
         print("Python 3.6 or higher is required.")
         sys.exit(1)

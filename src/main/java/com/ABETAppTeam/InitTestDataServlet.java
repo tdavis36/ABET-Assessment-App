@@ -2,6 +2,8 @@ package com.ABETAppTeam;
 
 import java.io.IOException;
 
+import com.ABETAppTeam.controller.DisplaySystemController;
+import com.ABETAppTeam.controller.FCARController;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -33,15 +35,15 @@ public class InitTestDataServlet extends HttpServlet {
                 DisplaySystemController displayController = DisplaySystemController.getInstance();
 
                 // Create test users
-                Professor smith = new Professor("Smith", "smith", "password", "smith@university.edu", "John", "Smith",
-                                "Computer Science", "Room 101", "555-1234");
+                Professor smith = new Professor("0", "jsmith", "password", "jsmith@edu.edu", "John",
+                                "Smith");
                 smith.addCourseId("CS101");
                 smith.addCourseId("CS201");
                 smith.addCourseId("CS320");
 
-                Professor johnson = new Professor("Johnson", "johnson", "password", "johnson@university.edu", "Emily",
-                                "Johnson",
-                                "Computer Science", "Room 102", "555-5678");
+                Professor johnson = new Professor("1", "ejohnson", "password", "ejohnson@edu.edu",
+                                "Emily",
+                                "Johnson");
                 johnson.addCourseId("CS330");
                 johnson.addCourseId("CS335");
 

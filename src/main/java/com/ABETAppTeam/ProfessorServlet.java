@@ -1,8 +1,11 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.util.Map;
 
+import com.ABETAppTeam.controller.DisplaySystemController;
+import com.ABETAppTeam.controller.FCARController;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -12,6 +15,7 @@ import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/ProfessorServlet")
 public class ProfessorServlet extends HttpServlet {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     // Get the controllers
@@ -145,27 +149,24 @@ public class ProfessorServlet extends HttpServlet {
                 fcar = displayController.getFCAR(newFcarId);
             }
 
-            // Get target goal
+            // Now gather additional input (targetGoal, assessment methods, outcomes, etc.)
             String targetGoal = request.getParameter("targetGoal");
-
-            // Get assessment method details
             String workUsed = request.getParameter("workUsed");
             String assessmentDescription = request.getParameter("assessmentDescription");
 
-            // Get achievement levels
             int level4 = Integer.parseInt(request.getParameter("level4"));
             int level3 = Integer.parseInt(request.getParameter("level3"));
             int level2 = Integer.parseInt(request.getParameter("level2"));
             int level1 = Integer.parseInt(request.getParameter("level1"));
             int level0 = Integer.parseInt(request.getParameter("level0"));
 
-            // Calculate results
             int totalStudents = level4 + level3 + level2 + level1 + level0;
             int studentsMetTarget = level4 + level3;
-            double percentageMetTarget = totalStudents > 0 ? (double) studentsMetTarget / totalStudents * 100 : 0;
+            double percentageMetTarget = (totalStudents > 0)
+                    ? (double) studentsMetTarget / totalStudents * 100
+                    : 0;
             boolean targetMet = percentageMetTarget >= Double.parseDouble(targetGoal);
 
-            // Get summary and improvement actions
             String summary = request.getParameter("summary");
             String improvementActions = request.getParameter("improvementActions");
 
@@ -182,7 +183,6 @@ public class ProfessorServlet extends HttpServlet {
                 if (paramName.startsWith("indicator_")) {
                     String indicatorValue = request.getParameter(paramName);
                     if (indicatorValue != null && !indicatorValue.isEmpty()) {
-                        // Store the indicator as selected
                         fcar.addAssessmentMethod(paramName, indicatorValue);
                     }
                 }
@@ -210,7 +210,7 @@ public class ProfessorServlet extends HttpServlet {
 
             // Check if breakdown by major was selected
             String breakdownByMajor = request.getParameter("breakdownByMajor");
-            if (breakdownByMajor != null && breakdownByMajor.equals("on")) {
+            if ("on".equals(breakdownByMajor)) {
                 // Get major breakdown data
                 String[] majors = request.getParameterValues("major[]");
                 String[] majorLevel4s = request.getParameterValues("majorLevel4[]");
