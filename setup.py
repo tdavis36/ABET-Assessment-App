@@ -4,7 +4,6 @@ import sys
 import platform
 import subprocess
 import shutil
-import getpass
 import tempfile
 import time
 import re
@@ -591,11 +590,24 @@ def shell():
 @shell.command()
 def install():
     """Install shell aliases and functions."""
-    shell_config = OS_SETTINGS["shell_config_file"]
+    # For PowerShell, check multiple possible profile locations
+    if OS_SETTINGS["shell_type"] == "powershell":
+        ps_profile1 = Path.home() / "Documents" / "PowerShell" / "Microsoft.PowerShell_profile.ps1"
+        ps_profile2 = Path.home() / "Documents" / "WindowsPowerShell" / "Microsoft.PowerShell_profile.ps1"
+        if ps_profile1.exists():
+            shell_config = ps_profile1
+        elif ps_profile2.exists():
+            shell_config = ps_profile2
+        else:
+            # Create the PowerShell directory if it doesn't exist, and use ps_profile1 as default
+            (Path.home() / "Documents" / "PowerShell").mkdir(parents=True, exist_ok=True)
+            shell_config = Path.home() / "Documents" / "PowerShell" / "Microsoft.PowerShell_profile.ps1"
+    else:
+        shell_config = OS_SETTINGS["shell_config_file"]
+
     click.echo(f"Installing shell integration for {shell_config}...")
 
     if OS_SETTINGS["shell_type"] == "powershell":
-        # PowerShell implementation
         aliases = [
             "",
             "# ABET Assessment App aliases",
@@ -644,7 +656,6 @@ def install():
             "# End ABET Assessment App aliases"
         ]
     else:
-        # Bash/Zsh implementation
         aliases = [
             "",
             "# ABET Assessment App aliases",
@@ -692,7 +703,6 @@ def install():
 
     shell_config_path = Path(shell_config)
     shell_config_path.parent.mkdir(parents=True, exist_ok=True)
-
     if shell_config_path.exists():
         with open(shell_config_path, "r") as f:
             content = f.read()
@@ -705,39 +715,47 @@ def install():
     else:
         with open(shell_config_path, "w") as f:
             f.write("\n".join(aliases))
-
     click.echo("Shell integration installed successfully!")
     if OS_SETTINGS["shell_type"] == "powershell":
         click.echo("To use the aliases in PowerShell, run: . $PROFILE")
     else:
-        config_name = os.path.basename(shell_config)
+        config_name = os.path.basename(str(shell_config))
         click.echo(f"To use the aliases in your shell, run: source ~/{config_name}")
+
 
 @shell.command()
 def remove():
     """Remove shell aliases and functions."""
-    shell_config = OS_SETTINGS["shell_config_file"]
-    click.echo(f"Removing shell integration from {shell_config}...")
+    # For PowerShell, check multiple profile locations
+    if OS_SETTINGS["shell_type"] == "powershell":
+        ps_profile1 = Path.home() / "Documents" / "PowerShell" / "Microsoft.PowerShell_profile.ps1"
+        ps_profile2 = Path.home() / "Documents" / "WindowsPowerShell" / "Microsoft.PowerShell_profile.ps1"
+        if ps_profile1.exists():
+            shell_config = ps_profile1
+        elif ps_profile2.exists():
+            shell_config = ps_profile2
+        else:
+            click.echo("No PowerShell profile found.")
+            return
+    else:
+        shell_config = OS_SETTINGS["shell_config_file"]
 
+    click.echo(f"Removing shell integration from {shell_config}...")
     shell_config_path = Path(shell_config)
     if shell_config_path.exists():
         with open(shell_config_path, "r") as f:
             content = f.read()
-
         if "ABET Assessment App aliases" in content:
-            # Remove existing aliases
             pattern = r"\n# ABET Assessment App aliases.*?# End ABET Assessment App aliases\n"
             content = re.sub(pattern, "", content, flags=re.DOTALL)
-
-            # Write cleaned file
             with open(shell_config_path, "w") as f:
                 f.write(content)
-
             click.echo("Shell integration removed successfully!")
         else:
             click.echo("No shell integration found.")
     else:
         click.echo(f"Shell config file not found: {shell_config}")
+
 
 # Development environment command group
 @cli.group()
