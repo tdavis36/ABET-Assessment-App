@@ -67,4 +67,9 @@ public class InMemoryFCARRepository implements IFCARRepository {
     public boolean delete(int fcarId) {
         return store.remove(fcarId) != null;
     }
+
+    @Override
+    public List<FCAR> findBySemesterAndYear(String semester, int year) {
+        return List.of();
+    }
 }

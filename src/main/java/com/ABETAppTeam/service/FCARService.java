@@ -30,6 +30,17 @@ public class FCARService {
     }
 
     /**
+     * Constructor with dependency injection (for testing)
+     *
+     * @param fcarRepository The FCAR repository implementation
+     * @param userRepository The User repository implementation
+     */
+    public FCARService(IFCARRepository fcarRepository, UserRepository userRepository) {
+        this.fcarRepository = fcarRepository;
+        this.userRepository = userRepository;
+    }
+
+    /**
      * Get an FCAR by ID
      *
      * @param fcarId The ID of the FCAR to retrieve

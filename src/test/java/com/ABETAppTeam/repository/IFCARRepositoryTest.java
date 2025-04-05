@@ -21,7 +21,7 @@ class IFCARRepositoryTest {
     void testSave_SuccessfulSave() {
         // Arrange
         IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
-        FCAR inputFcar = new FCAR("001", "CS101", "Prof123", "Spring", 2023);
+        FCAR inputFcar = new FCAR(0, "CS101", 123, "Spring", 2023);
 
         when(mockRepository.save(any(FCAR.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -30,8 +30,8 @@ class IFCARRepositoryTest {
 
         // Assert
         assertNotNull(resultFcar, "Saved FCAR should not be null");
-        assertEquals("001", resultFcar.getFcarId(), "FCAR ID should match the input");
-        assertEquals("CS101", resultFcar.getCourseId(), "Course ID should be correctly saved");
+        assertEquals(0, resultFcar.getFcarId(), "FCAR ID should match the input");
+        assertEquals("CS101", resultFcar.getCourseCode(), "Course ID should be correctly saved");
         verify(mockRepository, times(1)).save(inputFcar);
     }
 
