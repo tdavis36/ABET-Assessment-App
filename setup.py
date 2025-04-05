@@ -499,11 +499,11 @@ def setup():
     click.echo(f"Environment file created at: {env_file}")
 
     if click.confirm("Do you want to start the database with these settings now?"):
-        db.start()
+        start()
         # Wait a moment for the database to be ready
         time.sleep(5)
         if click.confirm("Do you want to run database migrations now?"):
-            db.migrate()
+            migrate()
 
 # Hooks command group
 @cli.group()

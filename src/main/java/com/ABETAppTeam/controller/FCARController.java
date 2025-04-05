@@ -17,7 +17,7 @@ public class FCARController {
     private final FCARService fcarService;
 
     /**
-     * Private constructor for singleton pattern
+     * Private constructor for a singleton pattern
      */
     private FCARController() {
         this.fcarService = new FCARService();
