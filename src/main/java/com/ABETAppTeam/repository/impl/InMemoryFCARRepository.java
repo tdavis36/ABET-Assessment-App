@@ -46,21 +46,16 @@ public class InMemoryFCARRepository implements IFCARRepository {
     @Override
     public FCAR save(FCAR fcar) {
         // If no ID => create new
-        if (fcar.getFcarId() == null || fcar.getFcarId().isEmpty()) {
-            fcar.setFcarId(String.valueOf(currentId++));
+        if (fcar.getFcarId() == 0) {
+            fcar.setFcarId(currentId++);
         }
-        store.put(Integer.parseInt(fcar.getFcarId()), fcar);
+        store.put(fcar.getFcarId(), fcar);
         return fcar;
     }
 
     @Override
     public boolean update(FCAR fcar) {
-        int id;
-        try {
-            id = Integer.parseInt(fcar.getFcarId());
-        } catch (NumberFormatException e) {
-            return false;
-        }
+        int id = fcar.getFcarId();
         if (!store.containsKey(id)) {
             return false;
         }

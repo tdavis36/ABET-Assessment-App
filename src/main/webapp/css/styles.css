@@ -271,3 +271,121 @@ textarea {
 .achievement-table th {
     background-color: #f2f2f2;
 }
+
+.fcar-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.fcar-item {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.fcar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.fcar-details {
+    margin-top: 15px;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.fcar-section {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+.fcar-section h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #008350;
+    font-size: 18px;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-draft {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
+.status-submitted {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.status-approved {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-rejected {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Toggle details button */
+.toggle-details {
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+/* FCAR actions */
+.fcar-actions {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+    .fcar-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .toggle-details {
+        margin-top: 10px;
+        align-self: flex-end;
+    }
+
+    .fcar-actions {
+        flex-direction: column;
+    }
+
+    .fcar-actions button,
+    .fcar-actions .btn {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}

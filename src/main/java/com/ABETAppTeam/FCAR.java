@@ -1,5 +1,6 @@
 package com.ABETAppTeam;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,29 +11,53 @@ import java.util.Map;
  * assess student outcomes and course effectiveness for ABET accreditation.
  */
 public class FCAR {
-    private String fcarId;
-    private String courseId;
-    private String professorId;
+    private int fcarId;
+    private String courseCode;
+    private int instructorId;
     private String semester;
     private int year;
+    private Date dateFilled;
+    private int outcomeId;
+    private int indicatorId;
+    private int goalId;
+    private int methodId;
+    private String methodDesc;
+    private int studentExpectId;
+    private String summaryDesc;
+    private int actionId;
+    private Date createdAt;
+    private Date updatedAt;
     private String status; // e.g., "Draft", "Submitted", "Approved", "Rejected"
+
+    // These maps are used for storing detailed information that might not fit directly
+    // into the database schema - they will be persisted in separate tables
     private Map<String, Integer> studentOutcomes; // Outcome ID -> Achievement level (1-5)
     private Map<String, String> assessmentMethods; // Method ID -> Description
     private Map<String, String> improvementActions; // Action ID -> Description
 
     /**
+     * Default constructor
+     */
+    public FCAR() {
+        this.studentOutcomes = new HashMap<>();
+        this.assessmentMethods = new HashMap<>();
+        this.improvementActions = new HashMap<>();
+        this.status = "Draft";
+    }
+
+    /**
      * Constructor
      *
-     * @param fcarId      Unique identifier for the FCAR
-     * @param courseId    ID of the course
-     * @param professorId ID of the professor creating the FCAR
-     * @param semester    Semester (e.g., "Fall", "Spring", "Summer")
-     * @param year        Year
+     * @param fcarId       Unique identifier for the FCAR
+     * @param courseCode   Course code
+     * @param instructorId ID of the professor creating the FCAR
+     * @param semester     Semester (e.g., "Fall", "Spring", "Summer")
+     * @param year         Year
      */
-    public FCAR(String fcarId, String courseId, String professorId, String semester, int year) {
+    public FCAR(int fcarId, String courseCode, int instructorId, String semester, int year) {
         this.fcarId = fcarId;
-        this.courseId = courseId;
-        this.professorId = professorId;
+        this.courseCode = courseCode;
+        this.instructorId = instructorId;
         this.semester = semester;
         this.year = year;
         this.status = "Draft";
@@ -45,28 +70,38 @@ public class FCAR {
     // Getters and Setters
     // ------------------------------------------------------------------------
 
-    public String getFcarId() {
+    public int getFcarId() {
         return fcarId;
     }
 
-    public void setFcarId(String fcarId) {
+    public void setFcarId(int fcarId) {
         this.fcarId = fcarId;
     }
 
-    public String getCourseId() {
-        return courseId;
+    public String getCourseCode() {
+        return courseCode;
     }
 
-    public void setCourseId(String courseId) {
-        this.courseId = courseId;
+    public void setCourseCode(String courseCode) {
+        this.courseCode = courseCode;
     }
 
-    public String getProfessorId() {
-        return professorId;
+    public int getInstructorId() {
+        return instructorId;
     }
 
-    public void setProfessorId(String professorId) {
-        this.professorId = professorId;
+    public void setInstructorId(int instructorId) {
+        this.instructorId = instructorId;
+    }
+
+    // For backward compatibility
+    public int getProfessorId() {
+        return instructorId;
+    }
+
+    // For backward compatibility
+    public void setProfessorId(int professorId) {
+        this.instructorId = professorId;
     }
 
     public String getSemester() {
@@ -83,6 +118,94 @@ public class FCAR {
 
     public void setYear(int year) {
         this.year = year;
+    }
+
+    public Date getDateFilled() {
+        return dateFilled;
+    }
+
+    public void setDateFilled(Date dateFilled) {
+        this.dateFilled = dateFilled;
+    }
+
+    public int getOutcomeId() {
+        return outcomeId;
+    }
+
+    public void setOutcomeId(int outcomeId) {
+        this.outcomeId = outcomeId;
+    }
+
+    public int getIndicatorId() {
+        return indicatorId;
+    }
+
+    public void setIndicatorId(int indicatorId) {
+        this.indicatorId = indicatorId;
+    }
+
+    public int getGoalId() {
+        return goalId;
+    }
+
+    public void setGoalId(int goalId) {
+        this.goalId = goalId;
+    }
+
+    public int getMethodId() {
+        return methodId;
+    }
+
+    public void setMethodId(int methodId) {
+        this.methodId = methodId;
+    }
+
+    public String getMethodDesc() {
+        return methodDesc;
+    }
+
+    public void setMethodDesc(String methodDesc) {
+        this.methodDesc = methodDesc;
+    }
+
+    public int getStudentExpectId() {
+        return studentExpectId;
+    }
+
+    public void setStudentExpectId(int studentExpectId) {
+        this.studentExpectId = studentExpectId;
+    }
+
+    public String getSummaryDesc() {
+        return summaryDesc;
+    }
+
+    public void setSummaryDesc(String summaryDesc) {
+        this.summaryDesc = summaryDesc;
+    }
+
+    public int getActionId() {
+        return actionId;
+    }
+
+    public void setActionId(int actionId) {
+        this.actionId = actionId;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public String getStatus() {
@@ -136,5 +259,15 @@ public class FCAR {
      */
     public void addImprovementAction(String actionId, String description) {
         this.improvementActions.put(actionId, description);
+    }
+
+    // For backward compatibility
+    public String getCourseId() {
+        return this.courseCode;
+    }
+
+    // For backward compatibility
+    public void setCourseId(String courseId) {
+        this.courseCode = courseId;
     }
 }

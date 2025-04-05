@@ -58,7 +58,7 @@ public class IndicatorRepository {
      */
     public List<Indicator> findAll() {
         List<Indicator> indicators = new ArrayList<>();
-        String sql = "SELECT * FROM Indicator ORDER BY outcome_id, indicator_number";
+        String sql = "SELECT * FROM Indicator ORDER BY outcome_id, indicator_num";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -82,7 +82,7 @@ public class IndicatorRepository {
      */
     public List<Indicator> findByOutcomeId(int outcomeId) {
         List<Indicator> indicators = new ArrayList<>();
-        String sql = "SELECT * FROM Indicator WHERE outcome_id = ? ORDER BY indicator_number";
+        String sql = "SELECT * FROM Indicator WHERE outcome_id = ? ORDER BY indicator_num";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {

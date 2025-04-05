@@ -29,14 +29,13 @@ public class UserRepository {
      * @return The found user or null if not found
      */
     public User findById(int userId) {
-        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User_Data u " +
-                "JOIN Role_Data r ON u.role_id = r.role_id " +
+        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User u " +
+                "JOIN Role r ON u.role_id = r.role_id " +
                 "JOIN Department d ON u.dept_id = d.dept_id " +
                 "WHERE u.user_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setInt(1, userId);
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -52,20 +51,19 @@ public class UserRepository {
     }
 
     /**
-     * Find a user by username
-     * @param username The username to find
+     * Find a user by email
+     * @param email The email to find
      * @return The found user or null if not found
      */
-    public User findByUsername(String username) {
-        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User_Data u " +
-                "JOIN Role_Data r ON u.role_id = r.role_id " +
+    public User findByEmail(String email) {
+        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User u " +
+                "JOIN Role r ON u.role_id = r.role_id " +
                 "JOIN Department d ON u.dept_id = d.dept_id " +
                 "WHERE u.email = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, username);
+            stmt.setString(1, email);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -85,8 +83,8 @@ public class UserRepository {
      */
     public List<User> findAll() {
         List<User> users = new ArrayList<>();
-        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User_Data u " +
-                "JOIN Role_Data r ON u.role_id = r.role_id " +
+        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User u " +
+                "JOIN Role r ON u.role_id = r.role_id " +
                 "JOIN Department d ON u.dept_id = d.dept_id";
 
         try (Connection conn = dataSource.getConnection();
@@ -109,8 +107,8 @@ public class UserRepository {
      */
     public List<Professor> findAllProfessors() {
         List<Professor> professors = new ArrayList<>();
-        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User_Data u " +
-                "JOIN Role_Data r ON u.role_id = r.role_id " +
+        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User u " +
+                "JOIN Role r ON u.role_id = r.role_id " +
                 "JOIN Department d ON u.dept_id = d.dept_id " +
                 "WHERE r.role_name = 'Professor'";
 
@@ -121,7 +119,9 @@ public class UserRepository {
             while (rs.next()) {
                 User user = mapResultSetToUser(rs);
                 if (user instanceof Professor) {
-                    professors.add((Professor) user);
+                    Professor professor = (Professor) user;
+                    loadProfessorCourses(professor);
+                    professors.add(professor);
                 }
             }
         } catch (SQLException e) {
@@ -134,23 +134,21 @@ public class UserRepository {
     /**
      * Authenticate a user
      * @param email User's email
-     * @param password User's password
+     * @param password User's password (unhashed)
      * @return The authenticated user or null if authentication fails
      */
     public User authenticate(String email, String password) {
-        // In a real implementation, you would hash the password and compare with stored hash
-        // For this example, we'll just compare the raw password (NOT SECURE!)
-        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User_Data u " +
-                "JOIN Role_Data r ON u.role_id = r.role_id " +
+        // In a real application, you would hash the password here
+        // and compare the hashed values
+        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User u " +
+                "JOIN Role r ON u.role_id = r.role_id " +
                 "JOIN Department d ON u.dept_id = d.dept_id " +
-                "WHERE u.email = ? AND u.password_hash = ?";
+                "WHERE u.email = ? AND u.password_hash = ? AND u.is_active = TRUE";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setString(1, email);
-            // SECURITY ISSUE: In a real application, you'd hash the password before comparing
-            stmt.setString(2, password);
+            stmt.setString(2, password); // In reality, this would be hashed
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -170,32 +168,18 @@ public class UserRepository {
      * @return The saved user with updated ID
      */
     public User save(User user) {
-        String sql = "INSERT INTO User_Data (first_name, last_name, email, password_hash, " +
+        String sql = "INSERT INTO User (first_name, last_name, email, password_hash, " +
                 "role_id, dept_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
             stmt.setString(1, user.getFirstName());
             stmt.setString(2, user.getLastName());
             stmt.setString(3, user.getEmail());
-            stmt.setString(4, user.getPassword());
-
-            // Role ID and Department ID would be set based on the concrete user type
-            int roleId = 2; // Default to Professor role
-            int deptId = 1; // Default to CS department
-
-            if (user instanceof Admin) {
-                roleId = 1; // Admin role
-            } else if (user instanceof Professor) {
-                Professor professor = (Professor) user;
-                // In a real implementation, you'd look up the department ID by name
-                // Example: deptId = getDepartmentIdByName(professor.getDepartment());
-            }
-
-            stmt.setInt(5, roleId);
-            stmt.setInt(6, deptId);
-            stmt.setBoolean(7, true); // is_active
+            stmt.setString(4, user.getPasswordHash());
+            stmt.setInt(5, user.getRoleId());
+            stmt.setInt(6, user.getDeptId());
+            stmt.setBoolean(7, user.isActive());
 
             int affectedRows = stmt.executeUpdate();
 
@@ -205,23 +189,23 @@ public class UserRepository {
 
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
-                    // Update the User object with the generated ID
-                    user.setUserId(String.valueOf(generatedKeys.getInt(1)));
+                    user.setUserId(generatedKeys.getInt(1));
+
+                    // Save professor-specific details if applicable
+                    if (user instanceof Professor) {
+                        saveProfessorDetails((Professor) user);
+                    }
+
+                    return user;
                 } else {
                     throw new SQLException("Creating user failed, no ID obtained.");
                 }
             }
-
-            // If the user is a Professor, store additional information
-            if (user instanceof Professor) {
-                saveProfessorDetails((Professor) user);
-            }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return user;
+        return null;
     }
 
     /**
@@ -230,9 +214,8 @@ public class UserRepository {
      * @throws SQLException If an error occurs while saving
      */
     private void saveProfessorDetails(Professor professor) throws SQLException {
-        // In a real implementation, you might have a separate table for professor details
-        // For our schema, we're storing all user data in the User_Data table
-        // Additional professor details could be stored in a related table if needed
+        // Add code to save professor-specific details if needed
+        // This might involve inserting into a Professor table or related tables
     }
 
     /**
@@ -241,22 +224,22 @@ public class UserRepository {
      * @return true if update was successful, false otherwise
      */
     public boolean update(User user) {
-        String sql = "UPDATE User_Data SET first_name = ?, last_name = ?, email = ?, " +
-                "is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?";
+        String sql = "UPDATE User SET first_name = ?, last_name = ?, email = ?, " +
+                "role_id = ?, dept_id = ?, is_active = ? WHERE user_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setString(1, user.getFirstName());
             stmt.setString(2, user.getLastName());
             stmt.setString(3, user.getEmail());
-            stmt.setBoolean(4, true); // is_active - you might want to make this configurable
-            stmt.setInt(5, Integer.parseInt(user.getUserId()));
+            stmt.setInt(4, user.getRoleId());
+            stmt.setInt(5, user.getDeptId());
+            stmt.setBoolean(6, user.isActive());
+            stmt.setInt(7, user.getUserId());
 
             int affectedRows = stmt.executeUpdate();
 
-            // If the user is a Professor, update additional information
-            if (user instanceof Professor && affectedRows > 0) {
+            if (affectedRows > 0 && user instanceof Professor) {
                 updateProfessorDetails((Professor) user);
             }
 
@@ -273,8 +256,8 @@ public class UserRepository {
      * @throws SQLException If an error occurs while updating
      */
     private void updateProfessorDetails(Professor professor) throws SQLException {
-        // In a real implementation, you might update additional professor details
-        // For our schema, this would depend on how you're storing professor-specific info
+        // Add code to update professor-specific details if needed
+        // This might involve updating a Professor table or related tables
     }
 
     /**
@@ -283,15 +266,13 @@ public class UserRepository {
      * @return true if deletion was successful, false otherwise
      */
     public boolean delete(int userId) {
-        String sql = "DELETE FROM User_Data WHERE user_id = ?";
+        String sql = "DELETE FROM User WHERE user_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setInt(1, userId);
 
-            int affectedRows = stmt.executeUpdate();
-            return affectedRows > 0;
+            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -305,17 +286,14 @@ public class UserRepository {
      * @return true if password change was successful, false otherwise
      */
     public boolean changePassword(int userId, String newPasswordHash) {
-        String sql = "UPDATE User_Data SET password_hash = ?, updated_at = CURRENT_TIMESTAMP " +
-                "WHERE user_id = ?";
+        String sql = "UPDATE User SET password_hash = ? WHERE user_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setString(1, newPasswordHash);
             stmt.setInt(2, userId);
 
-            int affectedRows = stmt.executeUpdate();
-            return affectedRows > 0;
+            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -334,35 +312,24 @@ public class UserRepository {
         String lastName = rs.getString("last_name");
         String email = rs.getString("email");
         String passwordHash = rs.getString("password_hash");
+        int roleId = rs.getInt("role_id");
+        int deptId = rs.getInt("dept_id");
+        boolean isActive = rs.getBoolean("is_active");
         String roleName = rs.getString("role_name");
         String deptName = rs.getString("dept_name");
 
         User user;
 
-        // Create the appropriate user type based on role
-        if ("Administrator".equals(roleName)) {
-            user = new Admin(
-                    String.valueOf(userId),
-                    email, // Using email as username
-                    passwordHash,
-                    email,
-                    firstName,
-                    lastName
-            );
+        if ("Administrator".equals(roleName) || "Admin".equals(roleName)) {
+            user = new Admin(userId, firstName, lastName, email, passwordHash,
+                    roleId, deptId, isActive);
         } else {
-            // Default to Professor
-            user = new Professor(
-                    String.valueOf(userId),
-                    email, // Using email as username
-                    passwordHash,
-                    email,
-                    firstName,
-                    lastName
-            );
-
-            // Load additional data for Professors
-            loadProfessorCourses((Professor) user);
+            user = new Professor(userId, firstName, lastName, email, passwordHash,
+                    roleId, deptId, isActive);
         }
+
+        user.setRoleName(roleName);
+        user.setDeptName(deptName);
 
         return user;
     }
@@ -372,20 +339,8 @@ public class UserRepository {
      * @param professor The professor to load courses for
      */
     private void loadProfessorCourses(Professor professor) {
-        String sql = "SELECT course_code FROM Course WHERE professor_id = ?";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, Integer.parseInt(professor.getUserId()));
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    professor.addCourseId(rs.getString("course_code"));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        // Add code to load professor courses
+        // This would likely involve a join between a ProfessorCourse table
+        // and the Course table, if there is such a relationship
     }
 }

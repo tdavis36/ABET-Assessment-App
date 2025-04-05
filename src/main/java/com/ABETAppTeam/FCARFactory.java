@@ -16,9 +16,9 @@ public abstract class FCARFactory {
     private static final IFCARRepository repository = new FCARRepository();
 
     // Create & save a new FCAR
-    public static FCAR createFCAR(String courseId, String professorId, String semester, int year) {
+    public static FCAR createFCAR(String courseId, int professorId, String semester, int year) {
         // fcarId is null => the repository will assign an auto-generated ID
-        FCAR fcar = new FCAR(null, courseId, professorId, semester, year);
+        FCAR fcar = new FCAR(0, courseId, professorId, semester, year);
         return repository.save(fcar);
     }
 

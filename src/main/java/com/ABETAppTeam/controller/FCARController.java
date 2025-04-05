@@ -2,17 +2,31 @@ package com.ABETAppTeam.controller;
 
 import com.ABETAppTeam.FCAR;
 import com.ABETAppTeam.service.FCARService;
+
 import java.util.List;
 
+/**
+ * Controller for FCAR operations
+ * This class serves as a controller for FCAR-related operations
+ */
 public class FCARController {
-
-    // -------------------------------------------------------------------------
-    // SINGLETON SETUP
-    // -------------------------------------------------------------------------
+    // Singleton instance
     private static FCARController instance;
 
+    // Service for business logic
+    private final FCARService fcarService;
+
     /**
-     * Return the singleton instance of FCARController.
+     * Private constructor for singleton pattern
+     */
+    private FCARController() {
+        this.fcarService = new FCARService();
+    }
+
+    /**
+     * Get the singleton instance
+     *
+     * @return The FCARController instance
      */
     public static synchronized FCARController getInstance() {
         if (instance == null) {
@@ -21,185 +35,192 @@ public class FCARController {
         return instance;
     }
 
-    // -------------------------------------------------------------------------
-    // INSTANCE FIELDS
-    // -------------------------------------------------------------------------
-    private final FCARService fcarService;
-
-    // Private constructor for singleton usage
-    private FCARController() {
-        this.fcarService = new FCARService();
-    }
-
-    // -------------------------------------------------------------------------
-    // METHODS
-    // -------------------------------------------------------------------------
-
     /**
-     * Retrieve an FCAR by ID (string input, e.g. from user).
+     * Get an FCAR by ID
+     *
+     * @param fcarId The ID of the FCAR to retrieve
+     * @return The FCAR if found, null otherwise
      */
-    public FCAR getFCAR(String fcarId) {
-        try {
-            int id = Integer.parseInt(fcarId);
-            return fcarService.getFCARById(id);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+    public FCAR getFCAR(int fcarId) {
+        return fcarService.getFCARById(fcarId);
     }
 
     /**
-     * Create a new FCAR (4-argument version).
-     * Matches calls in your servlet: createFCAR(courseId, professorId, semester, year).
-     */
-    public String createFCAR(String courseCode, String professorId, String semester, int year) {
-        // Use default outcomeId=1, indicatorId=1 (or anything else you prefer)
-        int defaultOutcomeId = 1;
-        int defaultIndicatorId = 1;
-
-        return getString(courseCode, professorId, semester, year, defaultOutcomeId, defaultIndicatorId);
-    }
-
-    private String getString(String courseCode, String professorId, String semester, int year, int defaultOutcomeId, int defaultIndicatorId) {
-        int profId;
-        try {
-            profId = Integer.parseInt(professorId);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-
-        FCAR fcar = fcarService.createFCAR(courseCode, profId, semester, year,
-                defaultOutcomeId, defaultIndicatorId);
-        return (fcar != null) ? fcar.getFcarId() : null;
-    }
-
-    /**
-     * (Optional) Create a new FCAR (6-argument version),
-     * if you need direct outcome/indicator control from the caller.
-     */
-    public String createFCAR(String courseCode, String professorId, String semester, int year,
-                             int outcomeId, int indicatorId) {
-        return getString(courseCode, professorId, semester, year, outcomeId, indicatorId);
-    }
-
-    /**
-     * Update an existing FCAR object.
-     * Your servlet calls controller.updateFCAR(fcar).
-     */
-    public boolean updateFCAR(FCAR fcar) {
-        return fcarService.updateFCAR(fcar);
-    }
-
-    /**
-     * Delete an FCAR by string ID.
-     */
-    public boolean deleteFCAR(String fcarId) {
-        try {
-            int id = Integer.parseInt(fcarId);
-            return fcarService.deleteFCAR(id);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Submit an FCAR (change status to "Submitted").
-     */
-    public boolean submitFCAR(String fcarId) {
-        try {
-            int id = Integer.parseInt(fcarId);
-            return fcarService.submitFCAR(id);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Approve an FCAR (change status to "Approved").
-     */
-    public boolean approveFCAR(String fcarId) {
-        try {
-            int id = Integer.parseInt(fcarId);
-            return fcarService.approveFCAR(id);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Reject an FCAR (change status to "Rejected"), with optional feedback.
-     */
-    public boolean rejectFCAR(String fcarId, String feedback) {
-        try {
-            int id = Integer.parseInt(fcarId);
-            return fcarService.rejectFCAR(id, feedback);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Return an FCAR to draft status.
-     */
-    public boolean returnFCARToDraft(String fcarId) {
-        try {
-            int id = Integer.parseInt(fcarId);
-            return fcarService.returnFCARToDraft(id);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Get all FCARs in the system.
+     * Get all FCARs
+     *
+     * @return List of all FCARs
      */
     public List<FCAR> getAllFCARs() {
         return fcarService.getAllFCARs();
     }
 
     /**
-     * Get FCARs for a specific course.
+     * Get FCARs for a specific course
+     *
+     * @param courseCode The course code
+     * @return List of FCARs for the course
      */
     public List<FCAR> getFCARsForCourse(String courseCode) {
         return fcarService.getFCARsForCourse(courseCode);
     }
 
     /**
-     * Get FCARs for a particular professor.
+     * Get FCARs for a specific professor
+     *
+     * @param professorId The professor ID
+     * @return List of FCARs for the professor
      */
-    public List<FCAR> getFCARsByProfessor(String professorId) {
+    public List<FCAR> getFCARsByProfessor(int professorId) {
+        return fcarService.getFCARsByProfessor(professorId);
+    }
+
+    /**
+     * Get FCARs for a specific semester and year
+     *
+     * @param semester The semester (e.g., "Fall", "Spring", "Summer")
+     * @param year The year
+     * @return List of FCARs for the semester and year
+     */
+    public List<FCAR> getFCARsBySemester(String semester, int year) {
+        return fcarService.getFCARsBySemester(semester, year);
+    }
+
+    /**
+     * Create a new FCAR
+     *
+     * @return ID of the created FCAR
+     */
+    public String createFCAR() {
+        FCAR fcar = fcarService.createFCAR();
+        return fcar != null ? String.valueOf(fcar.getFcarId()) : null;
+    }
+
+    /**
+     * Create a new FCAR with specified parameters
+     *
+     * @param courseCode The course code
+     * @param professorId The professor ID
+     * @param semester The semester
+     * @param year The year
+     * @return The created FCAR
+     */
+    public FCAR createFCAR(String courseCode, String professorId, String semester, int year) {
+        return fcarService.createFCAR(courseCode, professorId, semester, year);
+    }
+
+    /**
+     * Create a new FCAR with specified parameters
+     *
+     * @param courseCode The course code
+     * @param professorId The professor ID
+     * @param semester The semester
+     * @param year The year
+     * @param outcomeId The outcome ID
+     * @param indicatorId The indicator ID
+     * @return The created FCAR
+     */
+    public FCAR createFCAR(String courseCode, int professorId, String semester, int year, int outcomeId, int indicatorId) {
+        return fcarService.createFCAR(courseCode, professorId, semester, year, outcomeId, indicatorId);
+    }
+
+    /**
+     * Update an existing FCAR
+     *
+     * @param fcar The FCAR to update
+     * @return true if update was successful, false otherwise
+     */
+    public boolean updateFCAR(FCAR fcar) {
+        return fcarService.updateFCAR(fcar);
+    }
+
+    /**
+     * Delete an FCAR
+     *
+     * @param fcarId The ID of the FCAR to delete
+     * @return true if deletion was successful, false otherwise
+     */
+    public boolean deleteFCAR(int fcarId) {
+        return fcarService.deleteFCAR(fcarId);
+    }
+
+    /**
+     * Submit an FCAR for review
+     *
+     * @param fcarId The ID of the FCAR to submit
+     * @return true if submission was successful, false otherwise
+     */
+    public boolean submitFCAR(int fcarId) {
+        return fcarService.submitFCAR(fcarId);
+    }
+
+    /**
+     * Approve an FCAR
+     *
+     * @param fcarId The ID of the FCAR to approve
+     * @return true if approval was successful, false otherwise
+     */
+    public boolean approveFCAR(int fcarId) {
+        return fcarService.approveFCAR(fcarId);
+    }
+
+    /**
+     * Reject an FCAR
+     *
+     * @param fcarId The ID of the FCAR to reject
+     * @param feedback Feedback explaining the rejection
+     * @return true if rejection was successful, false otherwise
+     */
+    public boolean rejectFCAR(int fcarId, String feedback) {
+        return fcarService.rejectFCAR(fcarId, feedback);
+    }
+
+    /**
+     * Return an FCAR to draft status
+     *
+     * @param fcarId The ID of the FCAR to return to draft status
+     */
+    public void returnFCARToDraft(String fcarId) {
         try {
-            int id = Integer.parseInt(professorId);
-            return fcarService.getFCARsByProfessor(id);
+            int id = Integer.parseInt(fcarId);
+            fcarService.returnFCARToDraft(id);
         } catch (NumberFormatException e) {
-            return List.of();
+            // Handle invalid ID
         }
     }
 
-    // (Optional) Provide convenience methods for adding student outcomes, etc.
-    public boolean addAssessmentMethod(String fcarId, String methodId, String description) {
-        try {
-            int id = Integer.parseInt(fcarId);
-            return fcarService.addAssessmentMethod(id, methodId, description);
-        } catch (NumberFormatException e) {
-            return false;
-        }
+    /**
+     * Add an assessment method to an FCAR
+     *
+     * @param fcarId The ID of the FCAR
+     * @param methodId The ID of the method
+     * @param description Description of the method
+     * @return true if addition was successful, false otherwise
+     */
+    public boolean addAssessmentMethod(int fcarId, String methodId, String description) {
+        return fcarService.addAssessmentMethod(fcarId, methodId, description);
     }
 
-    public boolean addImprovementAction(String fcarId, String actionId, String description) {
-        try {
-            int id = Integer.parseInt(fcarId);
-            return fcarService.addImprovementAction(id, actionId, description);
-        } catch (NumberFormatException e) {
-            return false;
-        }
+    /**
+     * Add a student outcome to an FCAR
+     *
+     * @param fcarId The ID of the FCAR
+     * @param outcomeId The ID of the outcome
+     * @param achievementLevel The achievement level
+     * @return true if addition was successful, false otherwise
+     */
+    public boolean addStudentOutcome(int fcarId, String outcomeId, int achievementLevel) {
+        return fcarService.addStudentOutcome(fcarId, outcomeId, achievementLevel);
     }
 
-    public boolean addStudentOutcome(String fcarId, String outcomeId, int achievementLevel) {
-        try {
-            int id = Integer.parseInt(fcarId);
-            return fcarService.addStudentOutcome(id, outcomeId, achievementLevel);
-        } catch (NumberFormatException e) {
-            return false;
-        }
+    /**
+     * Add an improvement action to an FCAR
+     *
+     * @param fcarId The ID of the FCAR
+     * @param actionId The ID of the action
+     * @param description Description of the action
+     * @return true if addition was successful, false otherwise
+     */
+    public boolean addImprovementAction(int fcarId, String actionId, String description) {
+        return fcarService.addImprovementAction(fcarId, actionId, description);
     }
 }

@@ -6,6 +6,9 @@ import java.util.Map;
 
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
+import com.ABETAppTeam.controller.OutcomeController;
+import com.ABETAppTeam.service.FCARService;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -27,6 +30,14 @@ public class ProfessorServlet extends HttpServlet {
         return DisplaySystemController.getInstance();
     }
 
+    private OutcomeController getOutcomeController() {
+        return OutcomeController.getInstance();
+    }
+
+    private FCARService getFCARService() {
+        return new FCARService();
+    }
+
     public ProfessorServlet() {
         super();
     }
@@ -38,13 +49,25 @@ public class ProfessorServlet extends HttpServlet {
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
 
-        // Removed ability for professors to create FCARs
-
         if ("viewFCARs".equals(action)) {
             // Get professor ID
-            String professorId = (String) session.getAttribute("professorName");
-            if (professorId == null) {
-                professorId = "Smith"; // Default for testing
+            int professorId = 0;
+            Object professorIdObj = session.getAttribute("professorName");
+
+            if (professorIdObj != null) {
+                if (professorIdObj instanceof Integer) {
+                    professorId = (int) professorIdObj;
+                } else if (professorIdObj instanceof String) {
+                    try {
+                        professorId = Integer.parseInt((String) professorIdObj);
+                    } catch (NumberFormatException e) {
+                        professorId = 1; // Default for testing
+                    }
+                }
+            }
+
+            if (professorId == 0) {
+                professorId = 1; // Default for testing
                 session.setAttribute("professorName", professorId);
             }
 
@@ -69,10 +92,10 @@ public class ProfessorServlet extends HttpServlet {
 
             if (fcar != null) {
                 // Ensure the FCAR is in draft status if it's not already
-                if (!fcar.getStatus().equals("Draft")) {
-                    // For status changes, we still need to use FCARController
-                    FCARController controller = getFCARController();
-                    controller.returnFCARToDraft(fcarId);
+                if (!"Draft".equals(fcar.getStatus())) {
+                    // For status changes, we still need to use FCARService
+                    FCARService fcarService = getFCARService();
+                    fcarService.returnFCARToDraft(Integer.parseInt(fcarId));
                     // Refresh the FCAR after status change using DisplaySystemController
                     fcar = displayController.getFCAR(fcarId);
                 }
@@ -88,11 +111,22 @@ public class ProfessorServlet extends HttpServlet {
         }
 
         // Default: Show professor dashboard
-        String professorId = (String) session.getAttribute("professorName");
-        if (professorId == null) {
-            professorId = "Smith"; // Default for testing
-            session.setAttribute("professorName", professorId);
+        int professorId = 1; // Default for testing
+        Object professorIdObj = session.getAttribute("professorName");
+
+        if (professorIdObj != null) {
+            if (professorIdObj instanceof Integer) {
+                professorId = (int) professorIdObj;
+            } else if (professorIdObj instanceof String) {
+                try {
+                    professorId = Integer.parseInt((String) professorIdObj);
+                } catch (NumberFormatException e) {
+                    // Keep default professorId
+                }
+            }
         }
+
+        session.setAttribute("professorName", professorId);
 
         // Use DisplaySystemController to get dashboard data
         DisplaySystemController displayController = getDisplayController();
@@ -117,16 +151,18 @@ public class ProfessorServlet extends HttpServlet {
         if ("submitFCAR".equals(action)) {
             // Retrieve basic form inputs
             String courseId = request.getParameter("courseId");
-            String professorId = request.getParameter("professorId");
+            String professorIdStr = request.getParameter("professorId");
             String semester = request.getParameter("semester");
             int year = Integer.parseInt(request.getParameter("year"));
+
+            int professorId = Integer.parseInt(professorIdStr);
 
             // Check if this is an edit of an existing FCAR
             String fcarId = request.getParameter("fcarId");
             FCAR fcar;
 
             DisplaySystemController displayController = getDisplayController();
-            FCARController controller = getFCARController();
+            FCARService fcarService = getFCARService();
 
             if (fcarId != null && !fcarId.isEmpty()) {
                 // Get the existing FCAR using DisplaySystemController
@@ -134,19 +170,17 @@ public class ProfessorServlet extends HttpServlet {
 
                 if (fcar == null) {
                     // FCAR not found, create a new one
-                    String newFcarId = controller.createFCAR(courseId, professorId, semester, year);
-                    fcar = displayController.getFCAR(newFcarId);
+                    fcar = fcarService.createFCAR(courseId, professorId, semester, year, 0, 0);
                 } else {
                     // Update the existing FCAR
-                    fcar.setCourseId(courseId);
-                    fcar.setProfessorId(professorId);
+                    fcar.setCourseCode(courseId);
+                    fcar.setInstructorId(professorId);
                     fcar.setSemester(semester);
                     fcar.setYear(year);
                 }
             } else {
                 // Create a new FCAR
-                String newFcarId = controller.createFCAR(courseId, professorId, semester, year);
-                fcar = displayController.getFCAR(newFcarId);
+                fcar = fcarService.createFCAR(courseId, professorId, semester, year, 0, 0);
             }
 
             // Now gather additional input (targetGoal, assessment methods, outcomes, etc.)
@@ -249,11 +283,11 @@ public class ProfessorServlet extends HttpServlet {
             String saveAction = request.getParameter("saveAction");
 
             // Store FCAR first
-            controller.updateFCAR(fcar);
+            fcarService.updateFCAR(fcar);
 
             if ("submit".equals(saveAction)) {
-                // Submit the FCAR using the controller
-                controller.submitFCAR(fcar.getFcarId());
+                // Submit the FCAR using the service
+                fcarService.submitFCAR(fcar.getFcarId());
             }
 
             // Redirect back to professor dashboard
@@ -264,11 +298,19 @@ public class ProfessorServlet extends HttpServlet {
             }
         } else if ("submitFCARStatus".equals(action)) {
             // Get the FCAR ID
-            String fcarId = request.getParameter("fcarId");
+            String fcarIdParam = request.getParameter("fcarId");
+            int fcarId;
+
+            try {
+                fcarId = Integer.parseInt(fcarIdParam);
+            } catch (NumberFormatException e) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid FCAR ID");
+                return;
+            }
 
             // Submit the FCAR
-            FCARController controller = FCARController.getInstance();
-            boolean success = controller.submitFCAR(fcarId);
+            FCARService fcarService = getFCARService();
+            boolean success = fcarService.submitFCAR(fcarId);
 
             if (success) {
                 // Success - redirect back to professor dashboard

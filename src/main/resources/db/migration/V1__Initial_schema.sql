@@ -1,200 +1,233 @@
--- User Management Tables
+SET FOREIGN_KEY_CHECKS = 0;
 
+-- Drop old tables
+DROP TABLE IF EXISTS ReportSnapshot;
+DROP TABLE IF EXISTS FCAR;
+DROP TABLE IF EXISTS ImprovementAction;
+DROP TABLE IF EXISTS FinalDetail;
+DROP TABLE IF EXISTS ReportDetail;
+DROP TABLE IF EXISTS AssignmentDetail;
+DROP TABLE IF EXISTS ExamDetail;
+DROP TABLE IF EXISTS AssessmentMethod;
+DROP TABLE IF EXISTS MethodType;
+DROP TABLE IF EXISTS TargetGoal;
+DROP TABLE IF EXISTS StudentExpectation;
+DROP TABLE IF EXISTS Expectation;
+DROP TABLE IF EXISTS ExpectationType;
+DROP TABLE IF EXISTS Indicator;
+DROP TABLE IF EXISTS Outcome;
+DROP TABLE IF EXISTS Course_Outcome;
+DROP TABLE IF EXISTS Course;
+DROP TABLE IF EXISTS User;
+DROP TABLE IF EXISTS Role;
+DROP TABLE IF EXISTS Permission;
+DROP TABLE IF EXISTS Department;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- User Management
 CREATE TABLE Department (
-                            dept_id INT PRIMARY KEY AUTO_INCREMENT,
-                            dept_name VARCHAR(100) NOT NULL
-);
+                            dept_id INT AUTO_INCREMENT PRIMARY KEY,
+                            dept_name VARCHAR(100),
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
 
-CREATE TABLE Permission_Status (
-                                   permission_id INT PRIMARY KEY AUTO_INCREMENT,
-                                   permission_desc VARCHAR(200) NOT NULL
-);
+CREATE TABLE Permission (
+                            permission_id INT AUTO_INCREMENT PRIMARY KEY,
+                            permission_desc VARCHAR(200)
+) ENGINE=InnoDB;
 
-CREATE TABLE Role_Data (
-                           role_id INT PRIMARY KEY AUTO_INCREMENT,
-                           role_name VARCHAR(100) NOT NULL,
-                           permission_id INT,
-                           FOREIGN KEY (permission_id) REFERENCES Permission_Status(permission_id)
-);
+CREATE TABLE Role (
+                      role_id INT AUTO_INCREMENT PRIMARY KEY,
+                      role_name VARCHAR(100),
+                      permission_id INT,
+                      FOREIGN KEY (permission_id) REFERENCES Permission(permission_id)
+) ENGINE=InnoDB;
 
-CREATE TABLE User_Data (
-                           user_id INT PRIMARY KEY AUTO_INCREMENT,
-                           first_name VARCHAR(50) NOT NULL,
-                           last_name VARCHAR(100) NOT NULL,
-                           email VARCHAR(150) NOT NULL UNIQUE,
-                           password_hash VARCHAR(255) NOT NULL,
-                           role_id INT,
-                           dept_id INT,
-                           is_active BOOLEAN DEFAULT TRUE,
-                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                           FOREIGN KEY (role_id) REFERENCES Role_Data(role_id),
-                           FOREIGN KEY (dept_id) REFERENCES Department(dept_id)
-);
+CREATE TABLE User (
+                      user_id INT AUTO_INCREMENT PRIMARY KEY,
+                      first_name VARCHAR(50),
+                      last_name VARCHAR(100),
+                      email VARCHAR(150),
+                      password_hash VARCHAR(255),
+                      role_id INT,
+                      dept_id INT,
+                      is_active BOOLEAN,
+                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                      FOREIGN KEY (role_id) REFERENCES Role(role_id),
+                      FOREIGN KEY (dept_id) REFERENCES Department(dept_id)
+                          ON DELETE RESTRICT
+                          ON UPDATE CASCADE
+) ENGINE=InnoDB;
 
--- Course Management Tables
-
+-- Course Management
 CREATE TABLE Course (
                         course_code VARCHAR(20) PRIMARY KEY,
-                        course_name VARCHAR(200) NOT NULL,
+                        course_name VARCHAR(200),
                         course_desc TEXT,
                         dept_id INT,
                         credits INT,
                         semester_offered VARCHAR(20),
                         FOREIGN KEY (dept_id) REFERENCES Department(dept_id)
-);
+) ENGINE=InnoDB;
 
--- Assessment Framework Tables
+-- Assessment Framework
+CREATE TABLE Outcome (
+                         outcome_id INT AUTO_INCREMENT PRIMARY KEY,
+                         outcome_num VARCHAR(20),
+                         outcome_desc TEXT,
+                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
 
-CREATE TABLE Outcomes (
-                          outcome_id INT PRIMARY KEY AUTO_INCREMENT,
-                          outcome_num VARCHAR(20) NOT NULL,
-                          outcome_desc TEXT NOT NULL,
-                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+-- Optional bridging table for Course <-> Outcome relationships
+CREATE TABLE Course_Outcome (
+                                course_code VARCHAR(20),
+                                outcome_id INT,
+                                PRIMARY KEY (course_code, outcome_id),
+                                FOREIGN KEY (course_code) REFERENCES Course(course_code),
+                                FOREIGN KEY (outcome_id) REFERENCES Outcome(outcome_id)
+) ENGINE=InnoDB;
 
-CREATE TABLE Indicators (
-                            indicators_id INT PRIMARY KEY AUTO_INCREMENT,
-                            outcome_id INT NOT NULL,
-                            indicator_num VARCHAR(20) NOT NULL,
-                            indicator_desc TEXT NOT NULL,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                            FOREIGN KEY (outcome_id) REFERENCES Outcomes(outcome_id)
-);
-
-CREATE TABLE Expectation_Type (
-                                  expectation_type_id INT PRIMARY KEY AUTO_INCREMENT,
-                                  type_name VARCHAR(20) NOT NULL
-);
-
-CREATE TABLE Expectations (
-                              expectation_id INT PRIMARY KEY AUTO_INCREMENT,
-                              indicator_id INT NOT NULL,
-                              expectation_type_id INT NOT NULL,
-                              expectation_desc VARCHAR(200) NOT NULL,
-                              FOREIGN KEY (indicator_id) REFERENCES Indicators(indicators_id),
-                              FOREIGN KEY (expectation_type_id) REFERENCES Expectation_Type(expectation_type_id)
-);
-
-CREATE TABLE Student_Expectations (
-                                      stud_expect_id INT PRIMARY KEY AUTO_INCREMENT,
-                                      course_code VARCHAR(20) NOT NULL,
-                                      start_year INT NOT NULL,
-                                      end_year INT,
-                                      expectation_type_id INT NOT NULL,
-                                      student_num INT NOT NULL,
-                                      FOREIGN KEY (course_code) REFERENCES Course(course_code),
-                                      FOREIGN KEY (expectation_type_id) REFERENCES Expectation_Type(expectation_type_id)
-);
-
-CREATE TABLE Target_Goals (
-                              goal_id INT PRIMARY KEY AUTO_INCREMENT,
-                              goal_desc VARCHAR(200) NOT NULL,
-                              outcome_id INT NOT NULL,
-                              goal_value DECIMAL(5,2) NOT NULL,
-                              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                              FOREIGN KEY (outcome_id) REFERENCES Outcomes(outcome_id)
-);
-
--- Assessment Methods Tables
-
-CREATE TABLE Method_Type (
-                             type_id INT PRIMARY KEY AUTO_INCREMENT,
-                             method_type VARCHAR(20) NOT NULL
-);
-
-CREATE TABLE Assessment_Methods (
-                                    method_id INT PRIMARY KEY AUTO_INCREMENT,
-                                    method_type VARCHAR(20) NOT NULL,
-                                    type_id INT NOT NULL,
-                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                                    FOREIGN KEY (type_id) REFERENCES Method_Type(type_id)
-);
-
-CREATE TABLE Exam_Details (
-                              exam_detail_id INT PRIMARY KEY AUTO_INCREMENT,
-                              method_id INT NOT NULL,
-                              exam_num INT NOT NULL,
-                              question_num INT NOT NULL,
-                              sub_question VARCHAR(10),
-                              exam_format VARCHAR(20) NOT NULL,
-                              FOREIGN KEY (method_id) REFERENCES Assessment_Methods(method_id)
-);
-
-CREATE TABLE Assignment_Details (
-                                    assignment_detail_id INT PRIMARY KEY AUTO_INCREMENT,
-                                    method_id INT NOT NULL,
-                                    assignment_num INT NOT NULL,
-                                    milestone VARCHAR(50),
-                                    topic VARCHAR(200),
-                                    FOREIGN KEY (method_id) REFERENCES Assessment_Methods(method_id)
-);
-
-CREATE TABLE Report_Details (
-                                report_detail_id INT PRIMARY KEY AUTO_INCREMENT,
-                                method_id INT NOT NULL,
-                                report_type VARCHAR(50) NOT NULL,
-                                FOREIGN KEY (method_id) REFERENCES Assessment_Methods(method_id)
-);
-
-CREATE TABLE Final_Details (
-                               final_detail_id INT PRIMARY KEY AUTO_INCREMENT,
-                               method_id INT NOT NULL,
-                               final_type VARCHAR(50) NOT NULL,
-                               FOREIGN KEY (method_id) REFERENCES Assessment_Methods(method_id)
-);
-
--- FCAR Tables
-
-CREATE TABLE Improvement_Actions (
-                                     action_id INT PRIMARY KEY AUTO_INCREMENT,
-                                     action_desc TEXT NOT NULL,
-                                     outcome_id INT NOT NULL,
-                                     start_year INT NOT NULL,
-                                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                                     FOREIGN KEY (outcome_id) REFERENCES Outcomes(outcome_id)
-);
-
-CREATE TABLE FCAR_Data (
-                           fcar_id INT PRIMARY KEY AUTO_INCREMENT,
-                           course_code VARCHAR(20) NOT NULL,
-                           semester VARCHAR(20) NOT NULL,
-                           year INT NOT NULL,
-                           instructor_id INT NOT NULL,
-                           date_filled TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                           outcome_id INT NOT NULL,
-                           indicator_id INT NOT NULL,
-                           goal_id INT NOT NULL,
-                           method_id INT NOT NULL,
-                           method_desc TEXT,
-                           stud_expect_id INT,
-                           summary_desc TEXT,
-                           action_id INT,
+CREATE TABLE Indicator (
+                           indicator_id INT AUTO_INCREMENT PRIMARY KEY,
+                           outcome_id INT,
+                           indicator_num VARCHAR(20),
+                           indicator_desc TEXT,
                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                           FOREIGN KEY (course_code) REFERENCES Course(course_code),
-                           FOREIGN KEY (instructor_id) REFERENCES User_Data(user_id),
-                           FOREIGN KEY (outcome_id) REFERENCES Outcomes(outcome_id),
-                           FOREIGN KEY (indicator_id) REFERENCES Indicators(indicators_id),
-                           FOREIGN KEY (goal_id) REFERENCES Target_Goals(goal_id),
-                           FOREIGN KEY (method_id) REFERENCES Assessment_Methods(method_id),
-                           FOREIGN KEY (stud_expect_id) REFERENCES Student_Expectations(stud_expect_id),
-                           FOREIGN KEY (action_id) REFERENCES Improvement_Actions(action_id)
-);
+                           FOREIGN KEY (outcome_id) REFERENCES Outcome(outcome_id)
+) ENGINE=InnoDB;
 
--- Reporting Tables
+CREATE TABLE ExpectationType (
+                                 expectation_type_id INT AUTO_INCREMENT PRIMARY KEY,
+                                 type_name VARCHAR(20)
+) ENGINE=InnoDB;
 
-CREATE TABLE Report_Snapshot (
-                                 snapshot_id INT PRIMARY KEY AUTO_INCREMENT,
-                                 report_name VARCHAR(200) NOT NULL,
-                                 snapshot_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                 gen_by_use_id INT NOT NULL,
-                                 snapshot_data LONGTEXT,  -- Using LONGTEXT instead of CLOB for MariaDB compatibility
-                                 notes VARCHAR(500),
-                                 FOREIGN KEY (gen_by_use_id) REFERENCES User_Data(user_id)
-);
+CREATE TABLE Expectation (
+                             expectation_id INT AUTO_INCREMENT PRIMARY KEY,
+                             indicator_id INT,
+                             expectation_type_id INT,
+                             expectation_desc VARCHAR(200),
+                             FOREIGN KEY (indicator_id) REFERENCES Indicator(indicator_id),
+                             FOREIGN KEY (expectation_type_id) REFERENCES ExpectationType(expectation_type_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE StudentExpectation (
+                                    stud_expect_id INT AUTO_INCREMENT PRIMARY KEY,
+                                    course_code VARCHAR(20),
+                                    start_year INT,
+                                    end_year INT,
+                                    expectation_type_id INT,
+                                    student_num INT,
+                                    FOREIGN KEY (course_code) REFERENCES Course(course_code),
+                                    FOREIGN KEY (expectation_type_id) REFERENCES ExpectationType(expectation_type_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE TargetGoal (
+                            goal_id INT AUTO_INCREMENT PRIMARY KEY,
+                            goal_desc VARCHAR(200),
+                            outcome_id INT,
+                            goal_value DECIMAL(5,2),
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            FOREIGN KEY (outcome_id) REFERENCES Outcome(outcome_id)
+) ENGINE=InnoDB;
+
+-- Assessment Methods
+CREATE TABLE MethodType (
+                            type_id INT AUTO_INCREMENT PRIMARY KEY,
+                            method_type VARCHAR(20)
+) ENGINE=InnoDB;
+
+CREATE TABLE AssessmentMethod (
+                                  method_id INT AUTO_INCREMENT PRIMARY KEY,
+                                  type_id INT,
+                                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                  FOREIGN KEY (type_id) REFERENCES MethodType(type_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE ExamDetail (
+                            exam_detail_id INT AUTO_INCREMENT PRIMARY KEY,
+                            method_id INT,
+                            exam_num INT,
+                            question_num INT,
+                            sub_question VARCHAR(10),
+                            exam_format VARCHAR(20),
+                            FOREIGN KEY (method_id) REFERENCES AssessmentMethod(method_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE AssignmentDetail (
+                                  assignment_detail_id INT AUTO_INCREMENT PRIMARY KEY,
+                                  method_id INT,
+                                  assignment_num INT,
+                                  milestone VARCHAR(50),
+                                  topic VARCHAR(200),
+                                  FOREIGN KEY (method_id) REFERENCES AssessmentMethod(method_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE ReportDetail (
+                              report_detail_id INT AUTO_INCREMENT PRIMARY KEY,
+                              method_id INT,
+                              report_type VARCHAR(50),
+                              FOREIGN KEY (method_id) REFERENCES AssessmentMethod(method_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE FinalDetail (
+                             final_detail_id INT AUTO_INCREMENT PRIMARY KEY,
+                             method_id INT,
+                             final_type VARCHAR(50),
+                             FOREIGN KEY (method_id) REFERENCES AssessmentMethod(method_id)
+) ENGINE=InnoDB;
+
+-- FCAR
+CREATE TABLE ImprovementAction (
+                                   action_id INT AUTO_INCREMENT PRIMARY KEY,
+                                   action_desc TEXT,
+                                   outcome_id INT,
+                                   start_year INT,
+                                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                   FOREIGN KEY (outcome_id) REFERENCES Outcome(outcome_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE FCAR (
+                      fcar_id INT AUTO_INCREMENT PRIMARY KEY,
+                      course_code VARCHAR(20),
+                      semester VARCHAR(20),
+                      year INT,
+                      instructor_id INT,
+                      date_filled TIMESTAMP,
+                      outcome_id INT,
+                      indicator_id INT,
+                      goal_id INT,
+                      method_id INT,
+                      method_desc TEXT,
+                      stud_expect_id INT,
+                      summary_desc TEXT,
+                      action_id INT,
+                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                      FOREIGN KEY (course_code) REFERENCES Course(course_code),
+                      FOREIGN KEY (instructor_id) REFERENCES User(user_id),
+                      FOREIGN KEY (outcome_id) REFERENCES Outcome(outcome_id),
+                      FOREIGN KEY (indicator_id) REFERENCES Indicator(indicator_id),
+                      FOREIGN KEY (goal_id) REFERENCES TargetGoal(goal_id),
+                      FOREIGN KEY (method_id) REFERENCES AssessmentMethod(method_id),
+                      FOREIGN KEY (stud_expect_id) REFERENCES StudentExpectation(stud_expect_id),
+                      FOREIGN KEY (action_id) REFERENCES ImprovementAction(action_id)
+) ENGINE=InnoDB;
+
+-- Reporting
+CREATE TABLE ReportSnapshot (
+                                snapshot_id INT AUTO_INCREMENT PRIMARY KEY,
+                                report_name VARCHAR(200),
+                                snapshot_date TIMESTAMP,
+                                gen_by_user_id INT,
+                                snapshot_data LONGTEXT,
+                                notes VARCHAR(500),
+                                FOREIGN KEY (gen_by_user_id) REFERENCES User(user_id)
+) ENGINE=InnoDB;
