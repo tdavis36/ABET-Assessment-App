@@ -4,18 +4,25 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.ABETAppTeam.model.Indicator;
 import com.ABETAppTeam.util.DataSourceFactory;
+import com.ABETAppTeam.util.DatabaseLogger;
+import com.ABETAppTeam.util.JDBCLogger;
 import com.zaxxer.hikari.HikariDataSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Repository class for outcome indicators
  */
 public class IndicatorRepository {
 
+    private static final Logger logger = LoggerFactory.getLogger(IndicatorRepository.class);
     private final HikariDataSource dataSource;
 
     /**
@@ -23,6 +30,7 @@ public class IndicatorRepository {
      */
     public IndicatorRepository() {
         this.dataSource = DataSourceFactory.getDataSource();
+        logger.debug("IndicatorRepository initialized");
     }
 
     /**
@@ -32,23 +40,22 @@ public class IndicatorRepository {
      * @return Indicator or null if not found
      */
     public Indicator findById(int indicatorId) {
-        String sql = "SELECT * FROM Indicator WHERE indicator_id = ?";
+        final String sql = "SELECT * FROM indicator WHERE indicator_id = ?";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection()) {
+            JDBCLogger.logConnectionCreated(conn);
 
-            stmt.setInt(1, indicatorId);
-
-            try (ResultSet rs = stmt.executeQuery()) {
+            try (ResultSet rs = DatabaseLogger.executeQuery(conn, sql, indicatorId)) {
                 if (rs.next()) {
                     return mapResultSetToIndicator(rs);
                 }
+                return null;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            DatabaseLogger.logSqlError(sql, new Object[]{indicatorId}, e);
+            logger.error("Error finding indicator with ID {}: {}", indicatorId, e.getMessage());
+            return null;
         }
-
-        return null;
     }
 
     /**
@@ -58,17 +65,19 @@ public class IndicatorRepository {
      */
     public List<Indicator> findAll() {
         List<Indicator> indicators = new ArrayList<>();
-        String sql = "SELECT * FROM Indicator ORDER BY outcome_id, indicator_num";
+        final String sql = "SELECT * FROM indicator ORDER BY indicator_id, outcome_id, indicator_number DESC, description ASC";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = dataSource.getConnection()) {
+            JDBCLogger.logConnectionCreated(conn);
 
-            while (rs.next()) {
-                indicators.add(mapResultSetToIndicator(rs));
+            try (ResultSet rs = DatabaseLogger.executeQuery(conn, sql)) {
+                while (rs.next()) {
+                    indicators.add(mapResultSetToIndicator(rs));
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            DatabaseLogger.logSqlError(sql, e);
+            logger.error("Error retrieving all indicators: {}", e.getMessage());
         }
 
         return indicators;
@@ -82,20 +91,19 @@ public class IndicatorRepository {
      */
     public List<Indicator> findByOutcomeId(int outcomeId) {
         List<Indicator> indicators = new ArrayList<>();
-        String sql = "SELECT * FROM Indicator WHERE outcome_id = ? ORDER BY indicator_num";
+        final String sql = "SELECT * FROM indicator WHERE outcome_id = ? ORDER BY indicator_id";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection()) {
+            JDBCLogger.logConnectionCreated(conn);
 
-            stmt.setInt(1, outcomeId);
-
-            try (ResultSet rs = stmt.executeQuery()) {
+            try (ResultSet rs = DatabaseLogger.executeQuery(conn, sql, outcomeId)) {
                 while (rs.next()) {
                     indicators.add(mapResultSetToIndicator(rs));
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            DatabaseLogger.logSqlError(sql, new Object[]{outcomeId}, e);
+            logger.error("Error finding indicators for outcome ID {}: {}", outcomeId, e.getMessage());
         }
 
         return indicators;
@@ -108,32 +116,44 @@ public class IndicatorRepository {
      * @return The saved indicator with updated ID
      */
     public Indicator save(Indicator indicator) {
-        String sql = "INSERT INTO Indicator (outcome_id, indicator_number, description) VALUES (?, ?, ?)";
+        final String sql = "INSERT INTO indicator (outcome_id, indicator_desc) VALUES (?, ?)";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = dataSource.getConnection()) {
+            JDBCLogger.logConnectionCreated(conn);
 
-            stmt.setInt(1, indicator.getOutcomeId());
-            stmt.setInt(2, indicator.getNumber());
-            stmt.setString(3, indicator.getDescription());
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                JDBCLogger.logStatementCreated(stmt, sql);
 
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Creating indicator failed, no rows affected.");
-            }
+                stmt.setInt(1, indicator.getOutcomeId());
+                stmt.setString(2, indicator.getDescription());
 
-            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    indicator.setId(generatedKeys.getInt(1));
-                } else {
-                    throw new SQLException("Creating indicator failed, no ID obtained.");
+                long startTime = System.currentTimeMillis();
+                int affectedRows = stmt.executeUpdate();
+                long executionTime = System.currentTimeMillis() - startTime;
+
+                JDBCLogger.logStatementExecuted(stmt, sql, executionTime);
+                DatabaseLogger.logSqlQuery(sql, new Object[]{indicator.getOutcomeId(), indicator.getDescription()}, executionTime);
+
+                if (affectedRows == 0) {
+                    logger.error("Creating indicator failed, no rows affected.");
+                    return null;
+                }
+
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        indicator.setId(generatedKeys.getInt(1));
+                        return indicator;
+                    } else {
+                        logger.error("Creating indicator failed, no ID obtained.");
+                        return null;
+                    }
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            DatabaseLogger.logSqlError(sql, new Object[]{indicator.getOutcomeId(), indicator.getDescription()}, e);
+            logger.error("Error saving indicator: {}", e.getMessage());
+            return null;
         }
-
-        return indicator;
     }
 
     /**
@@ -143,46 +163,44 @@ public class IndicatorRepository {
      * @return true if updated successfully, false otherwise
      */
     public boolean update(Indicator indicator) {
-        String sql = "UPDATE Indicator SET outcome_id = ?, indicator_number = ?, description = ? WHERE indicator_id = ?";
+        final String sql = "UPDATE indicator SET outcome_id = ?, description = ? WHERE indicator_id = ?";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection()) {
+            JDBCLogger.logConnectionCreated(conn);
 
-            stmt.setInt(1, indicator.getOutcomeId());
-            stmt.setInt(2, indicator.getNumber());
-            stmt.setString(3, indicator.getDescription());
-            stmt.setInt(4, indicator.getIndicatorId());
+            int rowsAffected = DatabaseLogger.executeUpdate(conn, sql,
+                    indicator.getOutcomeId(),
+                    indicator.getDescription(),
+                    indicator.getIndicatorId()
+            );
 
-            int affectedRows = stmt.executeUpdate();
-            return affectedRows > 0;
+            return rowsAffected > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            DatabaseLogger.logSqlError(sql,
+                    new Object[]{indicator.getOutcomeId(), indicator.getDescription(), indicator.getIndicatorId()}, e);
+            logger.error("Error updating indicator with ID {}: {}", indicator.getIndicatorId(), e.getMessage());
+            return false;
         }
-
-        return false;
     }
 
     /**
      * Delete an indicator
      *
-     * @param id Indicator ID
      * @return true if deleted successfully, false otherwise
      */
     public boolean delete(int indicatorId) {
-        String sql = "DELETE FROM Indicator WHERE indicator_id = ?";
+        final String sql = "DELETE FROM indicator WHERE indicator_id = ?";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = dataSource.getConnection()) {
+            JDBCLogger.logConnectionCreated(conn);
 
-            stmt.setInt(1, indicatorId);
-
-            int affectedRows = stmt.executeUpdate();
-            return affectedRows > 0;
+            int rowsAffected = DatabaseLogger.executeUpdate(conn, sql, indicatorId);
+            return rowsAffected > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            DatabaseLogger.logSqlError(sql, new Object[]{indicatorId}, e);
+            logger.error("Error deleting indicator with ID {}: {}", indicatorId, e.getMessage());
+            return false;
         }
-
-        return false;
     }
 
     /**
@@ -196,8 +214,16 @@ public class IndicatorRepository {
         Indicator indicator = new Indicator();
         indicator.setId(rs.getInt("indicator_id"));
         indicator.setOutcomeId(rs.getInt("outcome_id"));
-        indicator.setNumber(rs.getInt("indicator_number"));
         indicator.setDescription(rs.getString("description"));
+
+        // If the indicator_number column exists in the database, set it
+        try {
+            indicator.setNumber(rs.getInt("indicator_number"));
+        } catch (SQLException e) {
+            // If the column doesn't exist, just ignore it
+            logger.debug("indicator_number column not found in the result set");
+        }
+
         return indicator;
     }
 }

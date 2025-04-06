@@ -117,7 +117,7 @@ public class OutcomeRepository {
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                String courseId = rs.getString("course_id");
+                String courseId = rs.getString("course_code");
                 int outcomeId = rs.getInt("outcome_id");
 
                 if (!courseOutcomes.containsKey(courseId)) {
@@ -223,7 +223,7 @@ public class OutcomeRepository {
     private Outcome mapResultSetToOutcome(ResultSet rs) throws SQLException {
         Outcome outcome = new Outcome();
         outcome.setId(rs.getInt("outcome_id"));
-        outcome.setDescription(rs.getString("description"));
+        outcome.setDescription(rs.getString("outcome_desc"));
         return outcome;
     }
 }

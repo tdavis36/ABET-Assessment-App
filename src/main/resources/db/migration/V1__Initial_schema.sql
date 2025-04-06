@@ -1,6 +1,7 @@
+-- Updated V1 migration with consistent naming conventions
 SET FOREIGN_KEY_CHECKS = 0;
 
--- Drop old tables
+-- Drop old tables if they exist to ensure clean startup
 DROP TABLE IF EXISTS ReportSnapshot;
 DROP TABLE IF EXISTS FCAR;
 DROP TABLE IF EXISTS ImprovementAction;
@@ -22,6 +23,26 @@ DROP TABLE IF EXISTS User;
 DROP TABLE IF EXISTS Role;
 DROP TABLE IF EXISTS Permission;
 DROP TABLE IF EXISTS Department;
+
+-- Drop any duplicate tables with plural/alternate names
+DROP TABLE IF EXISTS FCAR_Data;
+DROP TABLE IF EXISTS User_Data;
+DROP TABLE IF EXISTS Role_Data;
+DROP TABLE IF EXISTS Assessment_Methods;
+DROP TABLE IF EXISTS Assignment_Details;
+DROP TABLE IF EXISTS Exam_Details;
+DROP TABLE IF EXISTS Final_Details;
+DROP TABLE IF EXISTS Indicators;
+DROP TABLE IF EXISTS Method_Type;
+DROP TABLE IF EXISTS Outcomes;
+DROP TABLE IF EXISTS Report_Details;
+DROP TABLE IF EXISTS Report_Snapshot;
+DROP TABLE IF EXISTS Improvement_Actions;
+DROP TABLE IF EXISTS Target_Goals;
+DROP TABLE IF EXISTS Expectation_Type;
+DROP TABLE IF EXISTS Expectations;
+DROP TABLE IF EXISTS Student_Expectations;
+DROP TABLE IF EXISTS Permission_Status;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -230,4 +251,45 @@ CREATE TABLE ReportSnapshot (
                                 snapshot_data LONGTEXT,
                                 notes VARCHAR(500),
                                 FOREIGN KEY (gen_by_user_id) REFERENCES User(user_id)
+) ENGINE=InnoDB;
+
+-- Table for storing FCAR status (since status isn't in the core schema)
+CREATE TABLE FCAR_Status (
+                             fcar_id INT PRIMARY KEY,
+                             status VARCHAR(50) NOT NULL DEFAULT 'Draft',
+                             FOREIGN KEY (fcar_id) REFERENCES FCAR(fcar_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Table for storing FCAR assessment methods
+CREATE TABLE FCAR_Assessment_Methods (
+                                         fcar_id INT,
+                                         method_key VARCHAR(100),
+                                         method_value TEXT,
+                                         PRIMARY KEY (fcar_id, method_key),
+                                         FOREIGN KEY (fcar_id) REFERENCES FCAR(fcar_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Table for storing FCAR student outcomes
+CREATE TABLE FCAR_Student_Outcomes (
+                                       fcar_id INT,
+                                       outcome_key VARCHAR(100),
+                                       achievement_level INT,
+                                       PRIMARY KEY (fcar_id, outcome_key),
+                                       FOREIGN KEY (fcar_id) REFERENCES FCAR(fcar_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Table for storing FCAR improvement actions
+CREATE TABLE FCAR_Improvement_Actions (
+                                          fcar_id INT,
+                                          action_key VARCHAR(100),
+                                          action_value TEXT,
+                                          PRIMARY KEY (fcar_id, action_key),
+                                          FOREIGN KEY (fcar_id) REFERENCES FCAR(fcar_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Create a table to log migration runs
+CREATE TABLE Migration_Comment (
+                                   id INT AUTO_INCREMENT PRIMARY KEY,
+                                   comment_text TEXT NOT NULL,
+                                   migration_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;

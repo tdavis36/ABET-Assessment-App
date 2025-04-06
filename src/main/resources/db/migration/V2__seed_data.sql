@@ -1,30 +1,7 @@
--- Disable FK checks to allow truncates without errors
-SET FOREIGN_KEY_CHECKS = 0;
+-- This fixed V2 migration will only insert seed data
+-- without truncating tables or modifying schema
 
--- TRUNCATE all tables to start fresh
-TRUNCATE TABLE ReportSnapshot;
-TRUNCATE TABLE FCAR;
-TRUNCATE TABLE ImprovementAction;
-TRUNCATE TABLE FinalDetail;
-TRUNCATE TABLE ReportDetail;
-TRUNCATE TABLE AssignmentDetail;
-TRUNCATE TABLE ExamDetail;
-TRUNCATE TABLE AssessmentMethod;
-TRUNCATE TABLE MethodType;
-TRUNCATE TABLE TargetGoal;
-TRUNCATE TABLE StudentExpectation;
-TRUNCATE TABLE Expectation;
-TRUNCATE TABLE ExpectationType;
-TRUNCATE TABLE Indicator;
-TRUNCATE TABLE Course_Outcome;
-TRUNCATE TABLE Outcome;
-TRUNCATE TABLE Course;
-TRUNCATE TABLE User;
-TRUNCATE TABLE Role;
-TRUNCATE TABLE Permission;
-TRUNCATE TABLE Department;
-
-SET FOREIGN_KEY_CHECKS = 1;
+-- Insert seed data into tables with consistent naming
 
 -- ===================================
 -- Department
@@ -47,7 +24,6 @@ INSERT INTO Permission (permission_desc) VALUES
 -- Role
 -- ===================================
 -- Assume role_id 1 = Admin, 2 = Professor, 3 = Viewer, etc.
--- Adjust 'permission_id' references if needed
 INSERT INTO Role (role_name, permission_id) VALUES
                                                 ('Admin', 1),       -- "Manage Everything"
                                                 ('Professor', 2),   -- "Manage Courses"
@@ -57,7 +33,6 @@ INSERT INTO Role (role_name, permission_id) VALUES
 -- User
 -- ===================================
 -- is_active = 1 means active, 0 means inactive
--- Adjust 'role_id' and 'dept_id' as needed
 INSERT INTO User (first_name, last_name, email, password_hash, role_id, dept_id, is_active)
 VALUES
     ('Alice', 'Admin', 'alice.admin@example.edu', 'hashed_pw_admin', 1, 1, 1),
@@ -67,7 +42,6 @@ VALUES
 -- ===================================
 -- Course
 -- ===================================
--- Refer dept_id from Department
 INSERT INTO Course (course_code, course_name, course_desc, dept_id, credits, semester_offered)
 VALUES
     ('CS101', 'Intro to Computer Science', 'Basics of CS', 1, 3, 'Fall'),
@@ -77,7 +51,6 @@ VALUES
 -- ===================================
 -- Outcome
 -- ===================================
--- Insert a couple of outcomes
 INSERT INTO Outcome (outcome_num, outcome_desc)
 VALUES
     ('1', 'Demonstrate problem-solving ability'),
@@ -86,8 +59,6 @@ VALUES
 -- ===================================
 -- Course_Outcome
 -- ===================================
--- Bridge table linking courses to outcomes
--- Suppose CS101 is linked to outcome 1, MATH201 is linked to outcome 2, etc.
 INSERT INTO Course_Outcome (course_code, outcome_id)
 VALUES
     ('CS101', 1),
@@ -97,7 +68,6 @@ VALUES
 -- ===================================
 -- Indicator
 -- ===================================
--- Link indicators to existing outcomes
 INSERT INTO Indicator (outcome_id, indicator_num, indicator_desc)
 VALUES
     (1, '1.1', 'Identify appropriate data structures'),
@@ -117,7 +87,6 @@ VALUES
 -- ===================================
 -- Expectation
 -- ===================================
--- Link an expectation to an indicator
 INSERT INTO Expectation (indicator_id, expectation_type_id, expectation_desc)
 VALUES
     (1, 1, 'Students will choose the correct data structure for a given problem'),
@@ -128,7 +97,6 @@ VALUES
 -- ===================================
 -- StudentExpectation
 -- ===================================
--- Suppose we track how many students are expected to reach a certain level
 INSERT INTO StudentExpectation (course_code, start_year, end_year, expectation_type_id, student_num)
 VALUES
     ('CS101', 2023, 2024, 1, 30),
@@ -138,7 +106,6 @@ VALUES
 -- ===================================
 -- TargetGoal
 -- ===================================
--- Suppose each outcome has a numeric performance goal
 INSERT INTO TargetGoal (goal_desc, outcome_id, goal_value)
 VALUES
     ('CS101 Mastery Goal', 1, 80.00),
@@ -157,7 +124,6 @@ VALUES
 -- ===================================
 -- AssessmentMethod
 -- ===================================
--- Link to the method_type by type_id
 INSERT INTO AssessmentMethod (type_id)
 VALUES
     (1),   -- Exam
@@ -199,16 +165,14 @@ VALUES
 -- ===================================
 -- ImprovementAction
 -- ===================================
--- Suppose we link to outcome_id 1 or 2
 INSERT INTO ImprovementAction (action_desc, outcome_id, start_year)
 VALUES
     ('Revise data-structure assignment to improve understanding', 1, 2023),
     ('Provide extra calculus workshops', 2, 2023);
 
 -- ===================================
--- FCAR (Faculty Course Assessment Report)
+-- FCAR
 -- ===================================
--- We'll create one example FCAR for CS101 referencing outcome 1, indicator 1, etc.
 INSERT INTO FCAR (
     course_code,
     semester,
@@ -227,10 +191,32 @@ INSERT INTO FCAR (
 VALUES
     ('CS101', 'Fall', 2023, 2, NOW(), 1, 1, 1, 1, 'Exam-based assessment', 1, 'Overall good performance', 1);
 
+-- Set the status for this FCAR
+INSERT INTO FCAR_Status (fcar_id, status)
+VALUES
+    (1, 'Draft');
+
+-- Add some assessment methods data
+INSERT INTO FCAR_Assessment_Methods (fcar_id, method_key, method_value)
+VALUES
+    (1, 'targetGoal', '70'),
+    (1, 'workUsed', 'Midterm exam questions 3-5'),
+    (1, 'assessmentDescription', 'Students were asked to select appropriate data structures for different scenarios');
+
+-- Add some student outcomes data
+INSERT INTO FCAR_Student_Outcomes (fcar_id, outcome_key, achievement_level)
+VALUES
+    (1, 'outcome1', 4);
+
+-- Add some improvement actions
+INSERT INTO FCAR_Improvement_Actions (fcar_id, action_key, action_value)
+VALUES
+    (1, 'summary', 'Students generally performed well but struggled with balanced trees'),
+    (1, 'actions', 'Add more examples of balanced tree applications in lectures');
+
 -- ===================================
 -- ReportSnapshot
 -- ===================================
--- Example snapshot of some report
 INSERT INTO ReportSnapshot (
     report_name,
     snapshot_date,
@@ -240,3 +226,7 @@ INSERT INTO ReportSnapshot (
 )
 VALUES
     ('Fall 2023 Assessment Summary', NOW(), 1, 'All FCAR data in JSON or XML', 'Snapshot created by admin');
+
+-- Record this migration
+INSERT INTO Migration_Comment (comment_text)
+VALUES ('Seed data migration completed successfully');
