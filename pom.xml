@@ -13,8 +13,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <jetty.version>11.0.24</jetty.version>
-        <jakarta.servlet.version>5.0.0</jakarta.servlet.version>
+        <jetty.version>12.0.6</jetty.version>
+        <jakarta.servlet.version>6.1.0</jakarta.servlet.version>
         <hikaricp.version>5.1.0</hikaricp.version>
         <flyway.version>11.5.0</flyway.version>
         <mariadb.version>3.4.1</mariadb.version>
@@ -88,6 +88,7 @@
     </profiles>
 
     <dependencies>
+
         <!-- Database dependencies -->
         <dependency>
             <groupId>org.testcontainers</groupId>
@@ -139,12 +140,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>jakarta.servlet.jsp.jstl</groupId>
-            <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-            <version>2.0.0</version>
-        </dependency>
-
         <!-- Testing dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -165,6 +160,32 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
             <version>1.26.2</version>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.4.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.4.14</version>
+        </dependency>
+
+        <!-- JDBC logging specific wrapper -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-ext</artifactId>
+            <version>2.0.9</version>
         </dependency>
     </dependencies>
 
@@ -225,14 +246,29 @@
                     </locations>
                     <mixed>true</mixed>
                     <baselineOnMigrate>true</baselineOnMigrate>
+                    <cleanDisabled>false</cleanDisabled>
                 </configuration>
             </plugin>
 
             <!-- Jetty development server -->
             <plugin>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
-                <version>${jetty.version}</version>
+                <groupId>org.eclipse.jetty.ee10</groupId>
+                <artifactId>jetty-ee10-maven-plugin</artifactId>
+                <version>12.0.9</version>
+                <dependencies>
+                    <!-- Apache‑JSP engine -->
+                    <dependency>
+                        <groupId>org.eclipse.jetty.ee10</groupId>
+                        <artifactId>jetty-ee10-apache-jsp</artifactId>
+                        <version>12.0.9</version>
+                    </dependency>
+                    <!-- GlassFish JSTL support -->
+                    <dependency>
+                        <groupId>org.eclipse.jetty.ee10</groupId>
+                        <artifactId>jetty-ee10-glassfish-jstl</artifactId>
+                        <version>12.0.9</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
                     <webApp>
                         <contextPath>/</contextPath>
@@ -245,13 +281,6 @@
                     </modules>
                     <scan>3</scan>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.eclipse.jetty</groupId>
-                        <artifactId>apache-jsp</artifactId>
-                        <version>${jetty.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
 
             <!-- Testing and coverage -->

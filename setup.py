@@ -58,59 +58,128 @@ def docker_compose_command():
     # Default to docker compose and hope it works
     return ["docker", "compose"]
 
-# Determine OS-specific settings
+def detect_python_command():
+    """
+    Detect which Python command is available on Windows.
+    For Windows, tries 'py' first, then falls back to 'python' or 'python3'.
+    Returns the first working command.
+    """
+    import subprocess
+    import shutil
+
+    # For Windows, prioritize py launcher first
+    if platform.system().lower() == 'windows':
+        commands = ['py', 'python', 'python3']
+    else:
+        commands = ['python3', 'python', 'py']
+
+    for cmd in commands:
+        if shutil.which(cmd):
+            try:
+                # Verify command works by getting version
+                result = subprocess.run([cmd, '--version'],
+                                        capture_output=True,
+                                        text=True,
+                                        check=False)
+                if result.returncode == 0:
+                    print(f"Detected Python command: {cmd} ({result.stdout.strip()})")
+                    return cmd
+            except Exception:
+                continue
+
+    # Default fallback based on platform
+    default_cmd = 'py' if platform.system().lower() == 'windows' else 'python3'
+    print(f"Warning: No Python commands detected. Defaulting to '{default_cmd}'")
+    return default_cmd
+
+
+# Update the get_os_specific_settings function to include mvn_cmd
 def get_os_specific_settings():
-    """Return OS-specific settings and paths"""
+    """Get OS-specific settings for the current platform."""
+    import platform
+    import shutil
+    import subprocess
+
+    # Base settings
     settings = {
-        "os_name": platform.system(),
-        "is_windows": platform.system() == "Windows",
-        "is_macos": platform.system() == "Darwin",
-        "is_linux": platform.system() == "Linux",
-        "shell_config_file": None,
-        "docker_cmd": shutil.which("docker") or "docker",
-        "docker_compose_cmd": docker_compose_command(),
-        "mvn_cmd": shutil.which("mvn") or ("mvn.cmd" if platform.system() == "Windows" else "mvn"),
-        "python_cmd": sys.executable,
+        'platform': platform.system().lower(),
     }
 
-    # Set shell config file based on OS and available shells
-    if settings["is_windows"]:
-        # Look for PowerShell profile in standard locations
-        powershell_path = Path.home() / "Documents" / "PowerShell"
-        legacy_powershell_path = Path.home() / "Documents" / "WindowsPowerShell"
-
-        if powershell_path.exists():
-            settings["shell_config_file"] = powershell_path / "Microsoft.PowerShell_profile.ps1"
-        elif legacy_powershell_path.exists():
-            settings["shell_config_file"] = legacy_powershell_path / "Microsoft.PowerShell_profile.ps1"
-        else:
-            # Create the PowerShell directory if it doesn't exist
-            powershell_path.mkdir(parents=True, exist_ok=True)
-            settings["shell_config_file"] = powershell_path / "Microsoft.PowerShell_profile.ps1"
-
-        settings["shell_type"] = "powershell"
+    # Add platform-specific flags
+    if settings['platform'] == 'windows':
+        settings['is_windows'] = True
     else:
-        # For Unix-like systems, check for shell and configs
-        shell = os.environ.get("SHELL", "")
-        home = Path.home()
+        settings['is_windows'] = False
 
-        if "zsh" in shell:
-            settings["shell_type"] = "zsh"
-            settings["shell_config_file"] = home / ".zshrc"
-        elif "bash" in shell:
-            settings["shell_type"] = "bash"
-            if (home / ".bashrc").exists():
-                settings["shell_config_file"] = home / ".bashrc"
-            else:
-                settings["shell_config_file"] = home / ".bash_profile"
-        else:
-            # Default to bash if we can't determine
-            settings["shell_type"] = "bash"
-            settings["shell_config_file"] = home / ".bashrc"
+    # Detect Docker command
+    docker_cmd = 'docker'
+    if shutil.which(docker_cmd):
+        settings['docker_cmd'] = docker_cmd
+    else:
+        print("Warning: Docker command not found in PATH. Some features may not work.")
+        settings['docker_cmd'] = docker_cmd  # Set it anyway as a fallback
 
+    # Set Docker Compose command based on platform
+    if settings['platform'] == 'windows':
+        # Windows typically uses 'docker-compose' (with hyphen)
+        compose_cmd = 'docker-compose'
+    else:
+        # Modern Docker has 'docker compose' (without hyphen) as a subcommand
+        compose_cmd = 'docker compose'
+
+    # Store both versions of the compose command
+    settings['compose_command'] = compose_cmd  # Keep for backward compatibility
+    settings['docker_compose_cmd'] = compose_cmd  # Add the new key
+
+    # Detect Maven command
+    mvn_cmd = 'mvn'
+    if shutil.which(mvn_cmd):
+        settings['mvn_cmd'] = mvn_cmd
+    else:
+        print("Warning: Maven command not found in PATH. Some features may not work.")
+        settings['mvn_cmd'] = mvn_cmd  # Set it anyway as a fallback
+
+    if settings['platform'] == 'windows':
+        # Auto-detect Python command on Windows, default to 'py'
+        settings['python_command'] = detect_python_command()
+
+        # If somehow detect_python_command didn't return 'py' and no working command was found,
+        # we'll explicitly set it to 'py' as requested
+        if not shutil.which(settings['python_command']):
+            settings['python_command'] = 'py'
+
+        # Detect shell type on Windows (PowerShell or CMD)
+        settings['shell_type'] = 'cmd'  # Default to cmd
+        try:
+            # Check if PowerShell is available
+            ps_result = subprocess.run(['powershell', '-Command', 'echo $PSVersionTable.PSVersion.Major'],
+                                       capture_output=True, text=True, check=False)
+            if ps_result.returncode == 0 and ps_result.stdout.strip():
+                settings['shell_type'] = 'powershell'
+        except Exception:
+            # If checking fails, stick with cmd
+            pass
+
+        # Other Windows-specific settings
+        # Shell config file for Windows (PowerShell profile)
+        settings['shell_config_file'] = str(Path.home() / "Documents" / "PowerShell" / "Microsoft.PowerShell_profile.ps1")
+    elif settings['platform'] == 'darwin':  # macOS
+        settings['python_command'] = 'python3'
+        settings['shell_type'] = 'bash'
+        settings['shell_config_file'] = str(Path.home() / ".bash_profile")
+    else:  # Linux and others
+        settings['python_command'] = 'python3'
+        settings['shell_type'] = 'bash'
+        settings['shell_config_file'] = str(Path.home() / ".bashrc")
+
+    print(f"Using settings for {settings['platform']}: Python command = {settings['python_command']}, "
+          f"Shell = {settings['shell_type']}, Docker command = {settings['docker_cmd']}, "
+          f"Docker Compose command = {settings['docker_compose_cmd']}, "
+          f"Maven command = {settings['mvn_cmd']}")
     return settings
 
 OS_SETTINGS = get_os_specific_settings()
+
 
 # Helper function to run shell commands
 def run_command(cmd, shell=False, cwd=None, env=None, capture_output=True):
@@ -161,6 +230,53 @@ def load_env_file(env_file=None):
 
     return env_vars
 
+
+def is_docker_running():
+    """Check if Docker daemon is running and accessible."""
+    import subprocess
+    import shutil
+
+    # First check if Docker is installed
+    docker_cmd = OS_SETTINGS.get("docker_cmd", "docker")
+    if not shutil.which(docker_cmd):
+        print("Error: Docker is not installed or not in PATH.")
+        return False
+
+    try:
+        # Use a simple Docker command to check if the daemon is running
+        # 'docker info' is lightweight and will fail if the daemon isn't accessible
+        result = subprocess.run(
+            [docker_cmd, "info"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,  # Don't raise exception as we're handling it
+            timeout=10  # Add timeout to prevent hanging
+        )
+
+        # Check the return code
+        if result.returncode != 0:
+            # Print more helpful error based on stderr content
+            if "Cannot connect to the Docker daemon" in result.stderr:
+                print("Error: Docker daemon is not running.")
+                print("Please start Docker Desktop and try again.")
+            elif "permission denied" in result.stderr.lower():
+                print("Error: Permission denied when connecting to Docker.")
+                print("Make sure your user has permissions to access Docker or try running with elevated privileges.")
+            else:
+                print(f"Error connecting to Docker: {result.stderr.strip()}")
+            return False
+
+        return True
+
+    except subprocess.TimeoutExpired:
+        print("Error: Docker command timed out. Docker daemon may be hanging or unresponsive.")
+        return False
+    except Exception as e:
+        print(f"Error checking Docker status: {str(e)}")
+        return False
+
+
 # Function to get database connection parameters
 def get_db_connection_params():
     """Get database connection parameters from .env file or defaults"""
@@ -175,137 +291,112 @@ def get_db_connection_params():
         "db_port": env_vars.get("DB_PORT", "3306")
     }
 
-# Database Docker operations
-def docker_compose_operation(operation, db_params=None):
-    """Run a docker compose operation"""
-    if db_params is None:
-        db_params = get_db_connection_params()
+# Here are the changes needed to fix the docker-compose operation function:
 
-    # Create a temporary docker-compose.yml file
-    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yml') as temp:
-        temp.write(f"""services:
-  mariadb:
-    image: mariadb:10.11
-    container_name: java_project_db
-    restart: always
+def docker_compose_operation(operation):
+    """Run Docker Compose operations with error handling and status reporting."""
+    import subprocess
+    import os
+    import tempfile
+    import time
+    import shutil
+
+    # Check if Docker is installed and running
+    if not is_docker_running():
+        print("Docker is not available. Cannot perform Docker Compose operations.")
+        return False
+
+    # Get the Docker Compose command
+    compose_cmd = docker_compose_command()  # Use the function that properly detects compose command
+
+    # Generate a temporary docker-compose file with our configuration
+    with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.yml') as temp:
+        temp_file = temp.name
+        # Write the docker-compose configuration - Remove 'version' attribute
+        temp.write("""
+services:
+  db:
+    container_name: abetapp_db
+    image: mariadb:10.11  # Use MariaDB instead of PostgreSQL to match your project
     environment:
-      MARIADB_ROOT_PASSWORD: {db_params['db_root_password']}
-      MARIADB_DATABASE: {db_params['db_name']}
-      MARIADB_USER: {db_params['db_username']}
-      MARIADB_PASSWORD: {db_params['db_password']}
+      MARIADB_DATABASE: abetapp
+      MARIADB_USER: user
+      MARIADB_PASSWORD: pass
+      MARIADB_ROOT_PASSWORD: rootpassword
     ports:
-      - "{db_params['db_port']}:{db_params['db_port']}"
+      - "3306:3306"  # Use MariaDB port instead of PostgreSQL
     volumes:
-      - mariadb_data:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --ssl=0
+      - mariadbdata:/var/lib/mysql
+    restart: unless-stopped
 
 volumes:
-  mariadb_data:
+  mariadbdata:
 """)
-        temp_file = temp.name
 
     try:
-        compose_cmd = OS_SETTINGS["docker_compose_cmd"]
-
+        # Perform the requested operation
         if operation == "start":
-            # First check if the container is already running
-            check_cmd = ["docker", "ps", "--filter", "name=java_project_db", "--format", "{{.Names}}"]
-            result = run_command(check_cmd, capture_output=True)
+            print("Starting database container...")
+            # Check if the container is already running
+            container_name = "abetapp_db"
+            check_cmd = [OS_SETTINGS["docker_cmd"], "ps", "-q", "--filter", f"name={container_name}"]
+            result = subprocess.run(check_cmd, check=True, capture_output=True, text=True)
 
-            if result and "java_project_db" in result:
-                click.echo("Database container is already running.")
+            if result.stdout.strip():
+                print(f"Container {container_name} is already running.")
                 return True
 
-            # Also check if the container exists but is stopped
-            check_stopped_cmd = ["docker", "ps", "-a", "--filter", "name=java_project_db", "--format", "{{.Names}}"]
-            stopped_result = run_command(check_stopped_cmd, capture_output=True)
-
-            if stopped_result and "java_project_db" in stopped_result:
-                click.echo("Restarting existing database container...")
-                restart_cmd = ["docker", "start", "java_project_db"]
-                run_command(restart_cmd, capture_output=False)
-
-                # Wait for database to be ready
-                click.echo("Waiting for database to be ready...")
-                time.sleep(5)  # Give it an initial few seconds
-
-                # Try to connect a few times
-                for _ in range(10):
-                    try:
-                        # Use docker exec to check if MySQL is ready
-                        check_cmd = ["docker", "exec", "java_project_db",
-                                     "mysqladmin", "ping", "-h", "localhost",
-                                     f"-u{db_params['db_username']}",
-                                     f"-p{db_params['db_password']}"]
-                        result = run_command(check_cmd, capture_output=True)
-                        if result and "mysqld is alive" in result:
-                            click.echo("Database is ready.")
-                            return True
-                    except:
-                        pass
-
-                    time.sleep(2)
-
-                click.echo("Database container is starting but not yet fully ready.")
-                return True
-
-            # If not already running, start it with docker-compose
+            # Use proper list concatenation for commands
             cmd = compose_cmd + ["-f", temp_file, "up", "-d"]
-            result = run_command(cmd, capture_output=False)
-            if result:
-                click.echo("Database container started successfully.")
-
-                # Wait for a database to be ready
-                click.echo("Waiting for database to be ready...")
-                time.sleep(5)  # Give it an initial few seconds
-
-                # Try to connect a few times
-                for _ in range(10):
-                    try:
-                        # Use docker exec to check if MySQL is ready
-                        check_cmd = ["docker", "exec", "java_project_db",
-                                     "mysqladmin", "ping", "-h", "localhost",
-                                     f"-u{db_params['db_username']}",
-                                     f"-p{db_params['db_password']}"]
-                        result = run_command(check_cmd, capture_output=True)
-                        if result and "mysqld is alive" in result:
-                            click.echo("Database is ready.")
-                            return True
-                    except:
-                        pass
-
-                    time.sleep(2)
-
-                click.echo("Database container is starting but not yet fully ready.")
-                return True
+            result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+            print("Database container started.")
+            return True
 
         elif operation == "stop":
-            # First check if the container is running
-            check_cmd = ["docker", "ps", "--filter", "name=java_project_db", "--format", "{{.Names}}"]
-            result = run_command(check_cmd, capture_output=True)
-
-            if not result or "java_project_db" not in result:
-                click.echo("Database container is not running.")
-                return True
-
+            print("Stopping database container...")
             cmd = compose_cmd + ["-f", temp_file, "down"]
-            result = run_command(cmd, capture_output=False)
-            if result:
-                click.echo("Database container stopped successfully.")
-                return True
+            result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+            print("Database container stopped.")
+            return True
 
-        elif operation == "restart":
-            # Stop and start
-            docker_compose_operation("stop", db_params)
-            return docker_compose_operation("start", db_params)
-
+        elif operation == "status":
+            # Check if the container is running
+            container_name = "abetapp_db"
+            try:
+                result = subprocess.run(
+                    [OS_SETTINGS["docker_cmd"], "ps", "-a", "--filter", f"name={container_name}", "--format",
+                     "{{.Names}}"],
+                    check=True, capture_output=True, text=True
+                )
+                if container_name in result.stdout:
+                    status_result = subprocess.run(
+                        [OS_SETTINGS["docker_cmd"], "inspect", "-f", "{{.State.Running}}", container_name],
+                        check=True, capture_output=True, text=True
+                    )
+                    is_running = status_result.stdout.strip() == "true"
+                    print(f"Container {container_name} is {'running' if is_running else 'stopped'}.")
+                    return is_running
+                print(f"Container {container_name} does not exist.")
+                return False
+            except subprocess.CalledProcessError as e:
+                print(f"Command failed: {e}")
+                if e.stderr:
+                    print(f"Error output: {e.stderr}")
+                return False
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing docker-compose operation: {e}")
+        if e.stderr:
+            print(f"Error details: {e.stderr}")
         return False
     finally:
-        # Clean up temp file
+        # Clean up the temporary file
         try:
             os.unlink(temp_file)
-        except:
+        except Exception:
             pass
+
+    return False
+
 
 # Database migration operations
 def run_flyway_operation(operation, db_params=None):
@@ -314,13 +405,13 @@ def run_flyway_operation(operation, db_params=None):
         db_params = get_db_connection_params()
 
     # Check if mvn is available
-    if not shutil.which(OS_SETTINGS["mvn_cmd"]):
+    if not shutil.which("mvn"):
         click.echo("Maven is not available. Please install Maven.")
         return False
 
     # Build the Maven command
     mvn_cmd = [
-        OS_SETTINGS["mvn_cmd"],
+        "mvn",  # Use direct string instead of OS_SETTINGS["mvn_cmd"]
         f"flyway:{operation}",
         f"-Dflyway.url=jdbc:mariadb://{db_params['db_host']}:{db_params['db_port']}/{db_params['db_name']}",
         f"-Dflyway.user={db_params['db_username']}",
@@ -342,6 +433,97 @@ def run_flyway_operation(operation, db_params=None):
     else:
         click.echo(f"Flyway {operation} failed.")
         return False
+
+    # Get the Docker Compose command
+    compose_cmd = docker_compose_command()  # Use the function that properly detects compose command
+
+    # Generate a temporary docker-compose file with our configuration
+    with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.yml') as temp:
+        temp_file = temp.name
+        # Write the docker-compose configuration - Remove 'version' attribute
+        temp.write("""
+services:
+  db:
+    container_name: abetapp_db
+    image: mariadb:10.11  # Use MariaDB instead of PostgreSQL to match your project
+    environment:
+      MARIADB_DATABASE: abetapp
+      MARIADB_USER: user
+      MARIADB_PASSWORD: pass
+      MARIADB_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"  # Use MariaDB port instead of PostgreSQL
+    volumes:
+      - mariadbdata:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  mariadbdata:
+""")
+
+    try:
+        # Perform the requested operation
+        if operation == "start":
+            print("Starting database container...")
+            # Check if the container is already running
+            container_name = "abetapp_db"
+            check_cmd = [OS_SETTINGS["docker_cmd"], "ps", "-q", "--filter", f"name={container_name}"]
+            result = subprocess.run(check_cmd, check=True, capture_output=True, text=True)
+
+            if result.stdout.strip():
+                print(f"Container {container_name} is already running.")
+                return True
+
+            # Use proper list concatenation for commands
+            cmd = compose_cmd + ["-f", temp_file, "up", "-d"]
+            result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+            print("Database container started.")
+            return True
+
+        elif operation == "stop":
+            print("Stopping database container...")
+            cmd = compose_cmd + ["-f", temp_file, "down"]
+            result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+            print("Database container stopped.")
+            return True
+
+        elif operation == "status":
+            # Check if the container is running
+            container_name = "abetapp_db"
+            try:
+                result = subprocess.run(
+                    [OS_SETTINGS["docker_cmd"], "ps", "-a", "--filter", f"name={container_name}", "--format",
+                     "{{.Names}}"],
+                    check=True, capture_output=True, text=True
+                )
+                if container_name in result.stdout:
+                    status_result = subprocess.run(
+                        [OS_SETTINGS["docker_cmd"], "inspect", "-f", "{{.State.Running}}", container_name],
+                        check=True, capture_output=True, text=True
+                    )
+                    is_running = status_result.stdout.strip() == "true"
+                    print(f"Container {container_name} is {'running' if is_running else 'stopped'}.")
+                    return is_running
+                print(f"Container {container_name} does not exist.")
+                return False
+            except subprocess.CalledProcessError as e:
+                print(f"Command failed: {e}")
+                if e.stderr:
+                    print(f"Error output: {e.stderr}")
+                return False
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing docker-compose operation: {e}")
+        if e.stderr:
+            print(f"Error details: {e.stderr}")
+        return False
+    finally:
+        # Clean up the temporary file
+        try:
+            os.unlink(temp_file)
+        except Exception:
+            pass
+
+    return False
 
 # Create the main command group
 @click.group()
@@ -406,7 +588,7 @@ def connect(user, password, database):
 
     # Build command to connect to MariaDB
     connect_cmd = [
-        "docker", "exec", "-it", "java_project_db",
+        "docker", "exec", "-it", "abetapp_db",
         "mariadb",
         f"-u{db_params['db_username']}"
     ]
@@ -499,11 +681,11 @@ def setup():
     click.echo(f"Environment file created at: {env_file}")
 
     if click.confirm("Do you want to start the database with these settings now?"):
-        db.start()
+        start()
         # Wait a moment for the database to be ready
         time.sleep(5)
         if click.confirm("Do you want to run database migrations now?"):
-            db.migrate()
+            migrate()
 
 # Hooks command group
 @cli.group()
@@ -612,13 +794,13 @@ def install():
             "",
             "# ABET Assessment App aliases",
             "# Added by setup.py script",
-            f"function Invoke-AbetDbStart {{ python '{PROJECT_ROOT / 'setup.py'}' db start }}",
-            f"function Invoke-AbetDbStop {{ python '{PROJECT_ROOT / 'setup.py'}' db stop }}",
-            f"function Invoke-AbetDbMigrate {{ python '{PROJECT_ROOT / 'setup.py'}' db migrate }}",
-            f"function Invoke-AbetDbInfo {{ python '{PROJECT_ROOT / 'setup.py'}' db info }}",
-            f"function Invoke-AbetDbClean {{ python '{PROJECT_ROOT / 'setup.py'}' db clean }}",
-            f"function Invoke-AbetDbRestart {{ python '{PROJECT_ROOT / 'setup.py'}' db restart }}",
-            f"function Invoke-AbetEnvSetup {{ python '{PROJECT_ROOT / 'setup.py'}' env setup }}",
+            f"function Invoke-AbetDbStart {{ py '{PROJECT_ROOT / 'setup.py'}' db start }}",
+            f"function Invoke-AbetDbStop {{ py '{PROJECT_ROOT / 'setup.py'}' db stop }}",
+            f"function Invoke-AbetDbMigrate {{ py '{PROJECT_ROOT / 'setup.py'}' db migrate }}",
+            f"function Invoke-AbetDbInfo {{ py '{PROJECT_ROOT / 'setup.py'}' db info }}",
+            f"function Invoke-AbetDbClean {{ py '{PROJECT_ROOT / 'setup.py'}' db clean }}",
+            f"function Invoke-AbetDbRestart {{ py '{PROJECT_ROOT / 'setup.py'}' db restart }}",
+            f"function Invoke-AbetEnvSetup {{ py '{PROJECT_ROOT / 'setup.py'}' env setup }}",
             "",
             "# Function to connect to MariaDB using Python flags",
             "function Connect-AbetDb {",
@@ -626,7 +808,7 @@ def install():
             "        [Parameter(ValueFromRemainingArguments=$true)]",
             "        [string[]]$Args",
             "    )",
-            f"    python '{PROJECT_ROOT / 'setup.py'}' db connect @Args",
+            f"    py '{PROJECT_ROOT / 'setup.py'}' db connect @Args",
             "}",
             "",
             "# Create aliases",

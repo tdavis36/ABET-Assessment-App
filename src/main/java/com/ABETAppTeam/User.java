@@ -2,18 +2,20 @@ package com.ABETAppTeam;
 
 /**
  * Base User class for the ABET Assessment Application
- * 
  * This class represents a generic user in the system and serves as the base
- * class
- * for specific user types like Admin and Professor.
+ * class for specific user types like Admin and Professor.
  */
 public abstract class User {
-    private String userId;
-    private String username;
-    private String password;
-    private String email;
+    private int userId;
     private String firstName;
     private String lastName;
+    private String email;
+    private String passwordHash;
+    private int roleId;
+    private int deptId;
+    private boolean isActive;
+    private String roleName;
+    private String deptName;
 
     /**
      * Default constructor
@@ -23,65 +25,46 @@ public abstract class User {
 
     /**
      * Parameterized constructor
-     * 
-     * @param userId    Unique identifier for the user
-     * @param username  Username for login
-     * @param password  Password for login
-     * @param email     User's email address
-     * @param firstName User's first name
-     * @param lastName  User's last name
+     *
+     * @param userId       Unique identifier for the user
+     * @param firstName    User's first name
+     * @param lastName     User's last name
+     * @param email        User's email address
+     * @param passwordHash User's hashed password
+     * @param roleId       ID of the user's role
+     * @param deptId       ID of the user's department
+     * @param isActive     Whether the user is active
      */
-    public User(String userId, String username, String password, String email, String firstName, String lastName) {
+    public User(int userId, String firstName, String lastName, String email,
+                String passwordHash, int roleId, int deptId, boolean isActive) {
         this.userId = userId;
-        this.username = username;
-        this.password = password;
-        this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.roleId = roleId;
+        this.deptId = deptId;
+        this.isActive = isActive;
     }
 
     /**
      * Authenticate user with provided credentials
-     * 
-     * @param username Username for login
-     * @param password Password for login
+     *
+     * @param email        Email for login
+     * @param passwordHash Hashed password for login
      * @return true if authentication is successful, false otherwise
      */
-    public boolean authenticate(String username, String password) {
-        return this.username.equals(username) && this.password.equals(password);
+    public boolean authenticate(String email, String passwordHash) {
+        return this.email.equals(email) && this.passwordHash.equals(passwordHash);
     }
 
     // Getters and Setters
-    public String getUserId() {
+    public int getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public void setUserId(int userId) {
         this.userId = userId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getFirstName() {
@@ -100,9 +83,65 @@ public abstract class User {
         this.lastName = lastName;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public int getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(int roleId) {
+        this.roleId = roleId;
+    }
+
+    public int getDeptId() {
+        return deptId;
+    }
+
+    public void setDeptId(int deptId) {
+        this.deptId = deptId;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        this.isActive = active;
+    }
+
+    public String getRoleName() {
+        return roleName;
+    }
+
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
+    }
+
+    public String getDeptName() {
+        return deptName;
+    }
+
+    public void setDeptName(String deptName) {
+        this.deptName = deptName;
+    }
+
     /**
      * Get the full name of the user
-     * 
+     *
      * @return Full name (first name + last name)
      */
     public String getFullName() {

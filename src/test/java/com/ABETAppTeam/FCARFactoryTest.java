@@ -19,8 +19,8 @@ public class FCARFactoryTest {
     void testCreateFCAR_Success() {
         // Arrange
         IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
-        FCAR testFCAR = new FCAR(null, "CS101", "123", "Fall", 2023);
-        FCAR savedFCAR = new FCAR("1", "CS101", "123", "Fall", 2023);
+        FCAR testFCAR = new FCAR(0, "CS101", 2, "Fall", 2023);
+        FCAR savedFCAR = new FCAR(1, "CS101", 2, "Fall", 2023);
         Mockito.when(mockRepository.save(any(FCAR.class))).thenReturn(savedFCAR);
 
         // Replace static repository with mock (if permitted through testing setup)
@@ -32,13 +32,13 @@ public class FCARFactoryTest {
         };
 
         // Act
-        FCAR result = FCARFactory.createFCAR("CS101", "123", "Fall", 2023);
+        FCAR result = FCARFactory.createFCAR("CS101", 2, "Fall", 2023);
 
         // Assert
         assertNotNull(result);
-        assertEquals("1", result.getFcarId());
-        assertEquals("CS101", result.getCourseId());
-        assertEquals("123", result.getProfessorId());
+        assertEquals(1, result.getFcarId());
+        assertEquals("CS101", result.getCourseCode());
+        assertEquals(2, result.getInstructorId());
         assertEquals("Fall", result.getSemester());
         assertEquals(2023, result.getYear());
         Mockito.verify(mockRepository, Mockito.times(1)).save(any(FCAR.class));
@@ -59,7 +59,7 @@ public class FCARFactoryTest {
         };
 
         // Act
-        FCAR result = FCARFactory.createFCAR(null, "123", "Fall", 2023);
+        FCAR result = FCARFactory.createFCAR(null, 2, "Fall", 2023);
 
         // Assert
         assertNull(result);
@@ -81,7 +81,7 @@ public class FCARFactoryTest {
         };
 
         // Act
-        FCAR result = FCARFactory.createFCAR("CS101", "123", "Spring", 1800);
+        FCAR result = FCARFactory.createFCAR("CS101", 2, "Spring", 1800);
 
         // Assert
         assertNull(result);

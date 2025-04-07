@@ -84,7 +84,7 @@ public class OutcomeRepository {
      */
     public List<Integer> findByCourseId(String courseId) {
         List<Integer> outcomeIds = new ArrayList<>();
-        String sql = "SELECT outcome_id FROM Course_Outcome WHERE course_id = ?";
+        String sql = "SELECT outcome_id FROM Course_Outcome WHERE course_code = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -110,14 +110,14 @@ public class OutcomeRepository {
      */
     public Map<String, List<Integer>> findAllCourseOutcomes() {
         Map<String, List<Integer>> courseOutcomes = new HashMap<>();
-        String sql = "SELECT course_id, outcome_id FROM Course_Outcome ORDER BY course_id, outcome_id";
+        String sql = "SELECT course_code, outcome_id FROM Course_Outcome ORDER BY course_code, outcome_id";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                String courseId = rs.getString("course_id");
+                String courseId = rs.getString("course_code");
                 int outcomeId = rs.getInt("outcome_id");
 
                 if (!courseOutcomes.containsKey(courseId)) {
@@ -140,7 +140,7 @@ public class OutcomeRepository {
      * @return The saved outcome with updated ID
      */
     public Outcome save(Outcome outcome) {
-        String sql = "INSERT INTO Outcome (description) VALUES (?)";
+        String sql = "INSERT INTO Outcome (outcome_desc) VALUES (?)";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
@@ -173,7 +173,7 @@ public class OutcomeRepository {
      * @return true if updated successfully, false otherwise
      */
     public boolean update(Outcome outcome) {
-        String sql = "UPDATE Outcome SET description = ? WHERE outcome_id = ?";
+        String sql = "UPDATE Outcome SET outcome_desc = ? WHERE outcome_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -223,7 +223,7 @@ public class OutcomeRepository {
     private Outcome mapResultSetToOutcome(ResultSet rs) throws SQLException {
         Outcome outcome = new Outcome();
         outcome.setId(rs.getInt("outcome_id"));
-        outcome.setDescription(rs.getString("description"));
+        outcome.setDescription(rs.getString("outcome_desc"));
         return outcome;
     }
 }
