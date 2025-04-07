@@ -40,7 +40,7 @@ public class IndicatorRepository {
      * @return Indicator or null if not found
      */
     public Indicator findById(int indicatorId) {
-        final String sql = "SELECT * FROM indicator WHERE indicator_id = ?";
+        final String sql = "SELECT * FROM Indicator WHERE indicator_id = ?";
 
         try (Connection conn = dataSource.getConnection()) {
             JDBCLogger.logConnectionCreated(conn);
@@ -65,7 +65,7 @@ public class IndicatorRepository {
      */
     public List<Indicator> findAll() {
         List<Indicator> indicators = new ArrayList<>();
-        final String sql = "SELECT * FROM indicator ORDER BY indicator_id, outcome_id, indicator_number DESC, description ASC";
+        final String sql = "SELECT * FROM Indicator ORDER BY indicator_id, outcome_id, indicator_number DESC, description ASC";
 
         try (Connection conn = dataSource.getConnection()) {
             JDBCLogger.logConnectionCreated(conn);
@@ -91,7 +91,7 @@ public class IndicatorRepository {
      */
     public List<Indicator> findByOutcomeId(int outcomeId) {
         List<Indicator> indicators = new ArrayList<>();
-        final String sql = "SELECT * FROM indicator WHERE outcome_id = ? ORDER BY indicator_id";
+        final String sql = "SELECT * FROM Indicator WHERE outcome_id = ? ORDER BY indicator_id";
 
         try (Connection conn = dataSource.getConnection()) {
             JDBCLogger.logConnectionCreated(conn);
@@ -189,7 +189,7 @@ public class IndicatorRepository {
      * @return true if deleted successfully, false otherwise
      */
     public boolean delete(int indicatorId) {
-        final String sql = "DELETE FROM indicator WHERE indicator_id = ?";
+        final String sql = "DELETE FROM Indicator WHERE indicator_id = ?";
 
         try (Connection conn = dataSource.getConnection()) {
             JDBCLogger.logConnectionCreated(conn);

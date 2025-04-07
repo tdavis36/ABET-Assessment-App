@@ -2,6 +2,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.ABETAppTeam</groupId>
@@ -13,19 +14,24 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <jetty.version>12.0.6</jetty.version>
-        <jakarta.servlet.version>6.1.0</jakarta.servlet.version>
+
+        <!-- Align Jetty plugin and modules to 12.0.9 (EE10 / Jakarta Servlet 6.0) -->
+        <jetty.version>12.0.9</jetty.version>
+
+        <!-- Align a Jakarta Servlet version. 6.0.x is correct for Jakarta EE10 -->
+        <jakarta.servlet.version>6.0.0</jakarta.servlet.version>
+
         <hikaricp.version>5.1.0</hikaricp.version>
         <flyway.version>11.5.0</flyway.version>
         <mariadb.version>3.4.1</mariadb.version>
 
-        <!-- Database properties with defaults, can be overridden -->
+        <!-- Database defaults (can be overridden) -->
         <db.name>abetapp</db.name>
         <db.username>root</db.username>
         <db.password>pass</db.password>
         <db.url>jdbc:mariadb://localhost:3306/${db.name}</db.url>
 
-        <!-- App configuration -->
+        <!-- App config -->
         <app.port>8081</app.port>
     </properties>
 
@@ -48,17 +54,15 @@
             </properties>
         </profile>
 
-        <!-- Database management profiles -->
+        <!-- Database management profile -->
         <profile>
             <id>db-manage</id>
             <properties>
-                <!-- These can be overridden via command line:
-                     mvn -P db-manage -Ddb.action=migrate|info|start|stop process-resources -->
+                <!-- Overridable via -Ddb.action=migrate|info|start|stop -->
                 <db.action>info</db.action>
             </properties>
             <build>
                 <plugins>
-                    <!-- Unified DB management plugin that handles all db operations -->
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
@@ -89,7 +93,7 @@
 
     <dependencies>
 
-        <!-- Database dependencies -->
+        <!-- Database -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
@@ -107,14 +111,13 @@
             <artifactId>flyway-core</artifactId>
             <version>${flyway.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-mysql</artifactId>
             <version>${flyway.version}</version>
         </dependency>
 
-        <!-- Jakarta EE dependencies -->
+        <!-- Servlet/JSP: provided if the container (Jetty, Tomcat) already supplies them -->
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
@@ -122,19 +125,58 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Testing dependencies -->
+        <dependency>
+            <groupId>jakarta.servlet.jsp</groupId>
+            <artifactId>jakarta.servlet.jsp-api</artifactId>
+            <version>3.1.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
+        <!-- Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.12.1</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>5.15.2</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.4.14</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.4.14</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-ext</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>
+            <version>2.0.9</version>
         </dependency>
 
         <!-- Security fixes -->
@@ -144,36 +186,11 @@
             <version>1.26.2</version>
         </dependency>
 
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>2.0.9</version>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.4.14</version>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>1.4.14</version>
-        </dependency>
-
-        <!-- JDBC logging specific wrapper -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-ext</artifactId>
-            <version>2.0.9</version>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Core build plugins -->
+            <!-- Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -186,6 +203,18 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>properties</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                </configuration>
+            </plugin>
+
+            <!-- WAR packaging -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <version>3.3.2</version>
                 <configuration>
@@ -193,7 +222,7 @@
                 </configuration>
             </plugin>
 
-            <!-- .env file loader -->
+            <!-- Read .env -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>properties-maven-plugin</artifactId>
@@ -214,7 +243,7 @@
                 </executions>
             </plugin>
 
-            <!-- Standalone Flyway plugin for direct use -->
+            <!-- Standalone Flyway plugin -->
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
@@ -232,23 +261,23 @@
                 </configuration>
             </plugin>
 
-            <!-- Jetty development server -->
+            <!-- Jetty EE10 dev server -->
             <plugin>
                 <groupId>org.eclipse.jetty.ee10</groupId>
                 <artifactId>jetty-ee10-maven-plugin</artifactId>
-                <version>12.0.9</version>
+                <version>${jetty.version}</version>
                 <dependencies>
-                    <!-- Apache‑JSP engine -->
+                    <!-- For JSP compilation at dev-time -->
                     <dependency>
                         <groupId>org.eclipse.jetty.ee10</groupId>
                         <artifactId>jetty-ee10-apache-jsp</artifactId>
-                        <version>12.0.9</version>
+                        <version>${jetty.version}</version>
                     </dependency>
-                    <!-- GlassFish JSTL support -->
+                    <!-- For JSTL tags at dev-time -->
                     <dependency>
                         <groupId>org.eclipse.jetty.ee10</groupId>
                         <artifactId>jetty-ee10-glassfish-jstl</artifactId>
-                        <version>12.0.9</version>
+                        <version>${jetty.version}</version>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -258,14 +287,27 @@
                     <httpConnector>
                         <port>${app.port}</port>
                     </httpConnector>
+                    <!-- Tells Jetty to watch for changes; re-deploy on code changes -->
+                    <scan>3</scan>
                     <modules>
+                        <!-- ensures JSP is loaded -->
                         <module>jsp</module>
                     </modules>
-                    <scan>3</scan>
+                    <jvmArgs>-Dorg.eclipse.jetty.server.webapp.ContainerExcludeJarPattern=^.*(jakarta.servlet.jsp.jstl-3\.0\.1\.jar).*$</jvmArgs>
+                    <systemProperties>
+                        <systemProperty>
+                            <name>java.util.logging.config.file</name>
+                            <value>${project.basedir}/src/main/resources/logging.properties</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>xml.catalog.files</name>
+                            <value>${project.basedir}/src/main/resources/catalog.xml</value>
+                        </systemProperty>
+                    </systemProperties>
                 </configuration>
             </plugin>
 
-            <!-- Testing and coverage -->
+            <!-- Tests & coverage -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -292,6 +334,8 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
+
 </project>

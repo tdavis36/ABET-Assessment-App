@@ -77,6 +77,11 @@
         <appender-ref ref="FILE" />
     </logger>
 
+    <logger name="org.apache.taglibs.standard.lang.jstl" level="ERROR" />
+    <logger name="org.eclipse.tags.shaded.org.apache.xpath.operations" level="ERROR" />
+    <logger name="org.eclipse.tags.shaded.org.apache.xalan.xsltc.dom" level="ERROR" />
+
+
     <!-- Root logger configuration -->
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
