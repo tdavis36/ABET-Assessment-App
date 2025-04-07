@@ -1,6 +1,7 @@
 <%@ page import="java.util.Collection" %>
 <%@ page import="com.ABETAppTeam.Report" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 
 <!DOCTYPE html>
 <html lang="en">
