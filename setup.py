@@ -124,7 +124,7 @@ def get_os_specific_settings():
         # Windows typically uses 'docker-compose' (with hyphen)
         compose_cmd = 'docker-compose'
     else:
-        # Modern Docker has 'docker compose' (without hyphen) as a subcommand
+        # Modern Docker has 'docker compose' (without a hyphen) as a subcommand
         compose_cmd = 'docker compose'
 
     # Store both versions of the compose command
@@ -445,14 +445,14 @@ def run_flyway_operation(operation, db_params=None):
 services:
   db:
     container_name: abetapp_db
-    image: mariadb:10.11  # Use MariaDB instead of PostgreSQL to match your project
+    image: mariadb:10.11
     environment:
       MARIADB_DATABASE: abetapp
       MARIADB_USER: user
       MARIADB_PASSWORD: pass
       MARIADB_ROOT_PASSWORD: rootpassword
     ports:
-      - "3306:3306"  # Use MariaDB port instead of PostgreSQL
+      - "3306:3306"
     volumes:
       - mariadbdata:/var/lib/mysql
     restart: unless-stopped
@@ -569,12 +569,12 @@ def connect(user, password, database):
         return
 
     # Check if the container is running
-    check_cmd = ["docker", "ps", "--filter", "name=java_project_db", "--format", "{{.Names}}"]
+    check_cmd = ["docker", "ps", "--filter", "name=abetapp_db", "--format", "{{.Names}}"]
     result = run_command(check_cmd, capture_output=True)
-    if not result or "java_project_db" not in result:
+    if not result or "abetapp_db" not in result:
         click.echo("Database container is not running. Starting it now...")
         if not docker_compose_operation("start"):
-            click.echo("Failed to start database container. Please run 'db start' first.")
+            click.echo("Failed to start database container. Please run 'dbstart' first.")
             return
 
     # Load database connection parameters and override with flags if provided

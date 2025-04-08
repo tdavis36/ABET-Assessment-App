@@ -4,6 +4,7 @@ import com.ABETAppTeam.util.JDBCLogger;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
  * Application startup listener for initializing logging
@@ -13,6 +14,11 @@ public class AppInitializer implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        // Remove existing handlers attached to the JUL root logger
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        // Install the SLF4JBridgeHandler to route JUL logs to SLF4J/Logback
+        SLF4JBridgeHandler.install();
+
         // Initialize JDBC logging
         JDBCLogger.initialize();
 
@@ -35,6 +41,7 @@ public class AppInitializer implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         // Cleanup if needed when application shuts down
+        SLF4JBridgeHandler.uninstall();
         System.out.println("ABET Assessment Application shutting down");
     }
 }
