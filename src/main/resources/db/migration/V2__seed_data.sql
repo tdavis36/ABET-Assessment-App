@@ -1,8 +1,3 @@
--- This fixed V2 migration will only insert seed data
--- without truncating tables or modifying schema
-
--- Insert seed data into tables with consistent naming
-
 -- ===================================
 -- Department
 -- ===================================

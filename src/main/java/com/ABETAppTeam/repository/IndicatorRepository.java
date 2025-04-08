@@ -65,7 +65,7 @@ public class IndicatorRepository {
      */
     public List<Indicator> findAll() {
         List<Indicator> indicators = new ArrayList<>();
-        final String sql = "SELECT * FROM Indicator ORDER BY indicator_id, outcome_id, indicator_number DESC, description ASC";
+        final String sql = "SELECT * FROM Indicator ORDER BY indicator_id, outcome_id, indicator_num DESC, indicator_desc ASC";
 
         try (Connection conn = dataSource.getConnection()) {
             JDBCLogger.logConnectionCreated(conn);
@@ -163,7 +163,7 @@ public class IndicatorRepository {
      * @return true if updated successfully, false otherwise
      */
     public boolean update(Indicator indicator) {
-        final String sql = "UPDATE indicator SET outcome_id = ?, description = ? WHERE indicator_id = ?";
+        final String sql = "UPDATE indicator SET outcome_id = ?, indicator_desc = ? WHERE indicator_id = ?";
 
         try (Connection conn = dataSource.getConnection()) {
             JDBCLogger.logConnectionCreated(conn);
@@ -214,14 +214,14 @@ public class IndicatorRepository {
         Indicator indicator = new Indicator();
         indicator.setId(rs.getInt("indicator_id"));
         indicator.setOutcomeId(rs.getInt("outcome_id"));
-        indicator.setDescription(rs.getString("description"));
+        indicator.setDescription(rs.getString("indicator_desc"));
 
-        // If the indicator_number column exists in the database, set it
+        // If the indicator_num column exists in the database, set it
         try {
-            indicator.setNumber(rs.getInt("indicator_number"));
+            indicator.setNumber(rs.getInt("indicator_num"));
         } catch (SQLException e) {
             // If the column doesn't exist, just ignore it
-            logger.debug("indicator_number column not found in the result set");
+            logger.debug("indicator_num column not found in the result set");
         }
 
         return indicator;

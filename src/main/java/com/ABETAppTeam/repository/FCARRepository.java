@@ -524,6 +524,278 @@ public class FCARRepository implements IFCARRepository {
     }
 
     /**
+     * Get FCARs with a specific status
+     * This method allows filtering FCARs by their approval status
+     *
+     * @param status The status to filter by (e.g., "Draft", "Submitted", "Approved", "Rejected")
+     * @return List of FCARs with the specified status
+     */
+    public List<FCAR> getFCARsByStatus(String status) {
+        List<FCAR> result = new ArrayList<>();
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = dataSource.getConnection();
+            String sql = "SELECT * FROM fcars WHERE status = ?";
+
+            rs = DatabaseLogger.executeQuery(conn, sql, status);
+
+            while (rs.next()) {
+                FCAR fcar = mapResultSetToFCAR(rs);
+                loadAdditionalData(conn, fcar);
+                result.add(fcar);
+            }
+
+            logger.info("Retrieved {} FCARs with status '{}'", result.size(), status);
+        } catch (SQLException e) {
+            logger.error("Error retrieving FCARs by status: {}", e.getMessage());
+            DatabaseLogger.logSqlError("SELECT * FROM fcars WHERE status = ?", new Object[]{status}, e);
+        } finally {
+            closeResources(rs, stmt, conn);
+        }
+
+        return result;
+    }
+
+    /**
+     * Update the status of an FCAR
+     * This method is used for approving or rejecting FCARs
+     *
+     * @param fcarId The ID of the FCAR to update
+     * @param status The new status (e.g., "Approved", "Rejected")
+     * @param comments Optional comments explaining the status change
+     * @return true if the update was successful, false otherwise
+     */
+    public boolean updateFCARStatus(int fcarId, String status, String comments) {
+        logger.info("Updating status of FCAR ID {} to '{}'", fcarId, status);
+        Connection conn = null;
+        boolean success = false;
+
+        try {
+            conn = dataSource.getConnection();
+            conn.setAutoCommit(false);
+
+            String sql = "UPDATE fcars SET status = ?, admin_comments = ? WHERE fcar_id = ?";
+            int rowsAffected = DatabaseLogger.executeUpdate(conn, sql, status, comments, fcarId);
+
+            if (rowsAffected > 0) {
+                conn.commit();
+                success = true;
+                logger.info("Successfully updated FCAR status to '{}'", status);
+            } else {
+                conn.rollback();
+                logger.warn("No FCAR found with ID: {}", fcarId);
+            }
+        } catch (SQLException e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                logger.error("Error rolling back transaction: {}", ex.getMessage());
+                DatabaseLogger.logSqlError("Rollback transaction", ex);
+            }
+            logger.error("Error updating FCAR status: {}", e.getMessage());
+            DatabaseLogger.logSqlError("UPDATE fcars SET status = ?, admin_comments = ? WHERE fcar_id = ?",
+                    new Object[]{status, comments, fcarId}, e);
+        } finally {
+            try {
+                if (conn != null) conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                logger.error("Error resetting auto-commit: {}", e.getMessage());
+                DatabaseLogger.logSqlError("Set auto-commit true", e);
+            }
+            closeResources(null, null, conn);
+        }
+
+        return success;
+    }
+
+    /**
+     * Get the professor's name associated with an FCAR
+     * This is a helper method for displaying professor names in the UI
+     *
+     * @param professorId The ID of the professor
+     * @return The name of the professor
+     */
+    public String getProfessorName(int professorId) {
+        String professorName = "Unknown";
+        Connection conn = null;
+        ResultSet rs = null;
+
+        try {
+            conn = dataSource.getConnection();
+            String sql = "SELECT first_name, last_name FROM users WHERE user_id = ?";
+
+            rs = DatabaseLogger.executeQuery(conn, sql, professorId);
+
+            if (rs.next()) {
+                professorName = rs.getString("first_name") + " " + rs.getString("last_name");
+            }
+        } catch (SQLException e) {
+            logger.error("Error retrieving professor name: {}", e.getMessage());
+            DatabaseLogger.logSqlError("SELECT first_name, last_name FROM users WHERE user_id = ?",
+                    new Object[]{professorId}, e);
+        } finally {
+            closeResources(rs, null, conn);
+        }
+
+        return professorName;
+    }
+
+    /**
+     * Get course information for an FCAR
+     * This method retrieves detailed course information from the courses table
+     *
+     * @param courseId The ID of the course
+     * @return A map containing course details
+     */
+    public Map<String, Object> getCourseDetails(String courseId) {
+        Map<String, Object> courseDetails = new HashMap<>();
+        Connection conn = null;
+        ResultSet rs = null;
+
+        try {
+            conn = dataSource.getConnection();
+            String sql = "SELECT * FROM courses WHERE course_id = ?";
+
+            rs = DatabaseLogger.executeQuery(conn, sql, courseId);
+
+            if (rs.next()) {
+                courseDetails.put("courseId", rs.getString("course_id"));
+                courseDetails.put("title", rs.getString("title"));
+                courseDetails.put("description", rs.getString("description"));
+                courseDetails.put("credits", rs.getInt("credits"));
+                courseDetails.put("department", rs.getString("department"));
+            }
+        } catch (SQLException e) {
+            logger.error("Error retrieving course details: {}", e.getMessage());
+            DatabaseLogger.logSqlError("SELECT * FROM courses WHERE course_id = ?",
+                    new Object[]{courseId}, e);
+        } finally {
+            closeResources(rs, null, conn);
+        }
+
+        return courseDetails;
+    }
+
+    /**
+     * Get SLO assessments for an FCAR
+     * This method retrieves the student learning outcome assessments
+     *
+     * @param fcarId The ID of the FCAR
+     * @return List of SLO assessment maps containing assessment data
+     */
+    public List<Map<String, Object>> getSLOAssessments(int fcarId) {
+        List<Map<String, Object>> sloAssessments = new ArrayList<>();
+        Connection conn = null;
+        ResultSet rs = null;
+
+        try {
+            conn = dataSource.getConnection();
+            String sql = "SELECT s.slo_id, s.description, a.assessment_tool, " +
+                    "a.achievement_target, a.actual_achievement " +
+                    "FROM fcar_slo_assessments a " +
+                    "JOIN student_learning_outcomes s ON a.slo_id = s.slo_id " +
+                    "WHERE a.fcar_id = ?";
+
+            rs = DatabaseLogger.executeQuery(conn, sql, fcarId);
+
+            while (rs.next()) {
+                Map<String, Object> assessment = new HashMap<>();
+                assessment.put("sloId", rs.getInt("slo_id"));
+                assessment.put("description", rs.getString("description"));
+                assessment.put("assessmentTool", rs.getString("assessment_tool"));
+                assessment.put("achievementTarget", rs.getDouble("achievement_target"));
+                assessment.put("actualAchievement", rs.getDouble("actual_achievement"));
+                sloAssessments.add(assessment);
+            }
+        } catch (SQLException e) {
+            logger.error("Error retrieving SLO assessments: {}", e.getMessage());
+            DatabaseLogger.logSqlError("SELECT query for SLO assessments with FCAR ID",
+                    new Object[]{fcarId}, e);
+        } finally {
+            closeResources(rs, null, conn);
+        }
+
+        return sloAssessments;
+    }
+
+    /**
+     * Get FCARs for a specific course
+     * This method retrieves all FCARs associated with a specific course code
+     * and optionally filtered by semester and year
+     *
+     * @param courseCode The course code to filter by
+     * @param semester Optional semester filter (can be null)
+     * @param year Optional year filter (can be 0 to ignore)
+     * @return List of FCARs for the specified course
+     */
+    public List<FCAR> getFCARsByCourse(String courseCode, String semester, int year) {
+        List<FCAR> results = new ArrayList<>();
+        Connection conn = null;
+        ResultSet rs = null;
+
+        try {
+            conn = dataSource.getConnection();
+            StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM fcars WHERE course_code = ?");
+            List<Object> params = new ArrayList<>();
+            params.add(courseCode);
+
+            if (semester != null && !semester.isEmpty()) {
+                sqlBuilder.append(" AND semester = ?");
+                params.add(semester);
+            }
+
+            if (year > 0) {
+                sqlBuilder.append(" AND year = ?");
+                params.add(year);
+            }
+
+            String sql = sqlBuilder.toString();
+            rs = DatabaseLogger.executeQuery(conn, sql, params.toArray());
+
+            while (rs.next()) {
+                FCAR fcar = mapResultSetToFCAR(rs);
+                loadAdditionalData(conn, fcar);
+                results.add(fcar);
+            }
+
+            logger.info("Retrieved {} FCARs for course '{}'", results.size(), courseCode);
+        } catch (SQLException e) {
+            logger.error("Error retrieving FCARs by course: {}", e.getMessage());
+            DatabaseLogger.logSqlError("SELECT query for FCARs by course, semester, and year", e);
+        } finally {
+            closeResources(rs, null, conn);
+        }
+
+        return results;
+    }
+
+    /**
+     * Get all FCARs from the database
+     * This method is used for admin access to all FCARs
+     *
+     * @return List of all FCARs in the database
+     */
+    public List<FCAR> getAllFCARs() {
+        logger.info("Retrieving all FCARs from database");
+        return findAll();
+    }
+
+    /**
+     * Get FCARs for a specific professor
+     * This method filters FCARs by the professor's ID
+     *
+     * @param professorId The ID of the professor
+     * @return List of FCARs associated with the specified professor
+     */
+    public List<FCAR> getFCARsByProfessorId(int professorId) {
+        logger.info("Retrieving FCARs for professor ID: {}", professorId);
+        return findByInstructorId(professorId);
+    }
+
+    /**
      * Helper method to close database resources
      *
      * @param rs ResultSet to close
