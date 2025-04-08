@@ -27,7 +27,7 @@
 
         <!-- Database defaults (can be overridden) -->
         <db.name>abetapp</db.name>
-        <db.username>root</db.username>
+        <db.username>user</db.username>
         <db.password>pass</db.password>
         <db.url>jdbc:mariadb://localhost:3306/${db.name}</db.url>
 
@@ -54,7 +54,6 @@
             </properties>
         </profile>
 
-        <!-- Database management profile -->
         <profile>
             <id>db-manage</id>
             <properties>
@@ -75,12 +74,11 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>${project.basedir}/scripts/db-action.sh</executable>
+                                    <executable>python</executable>
                                     <arguments>
+                                        <argument>${project.basedir}/setup.py</argument>
+                                        <argument>db</argument>
                                         <argument>${db.action}</argument>
-                                        <argument>${db.url}</argument>
-                                        <argument>${db.username}</argument>
-                                        <argument>${db.password}</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
