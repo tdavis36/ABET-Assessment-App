@@ -1,22 +1,19 @@
 package com.ABETAppTeam.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
+import com.ABETAppTeam.service.LoggingService;
 
 /**
  * Utility class for database logging
- * Handles SQL query logging, error logging and performance monitoring
+ * This class is now a thin wrapper around LoggingService for backward compatibility
  */
 public class DatabaseLogger {
 
-    private static final Logger logger = LoggerFactory.getLogger(DatabaseLogger.class);
+    private static final LoggingService loggingService = LoggingService.getInstance();
 
     /**
      * Log an SQL query error with details
@@ -25,8 +22,7 @@ public class DatabaseLogger {
      * @param e The SQLException that occurred
      */
     public static void logSqlError(String sql, SQLException e) {
-        logger.error("SQL Error: {} - Error code: {}, SQL state: {}, Message: {}",
-                sql, e.getErrorCode(), e.getSQLState(), e.getMessage());
+        loggingService.logSqlError(sql, e);
     }
 
     /**
@@ -37,8 +33,7 @@ public class DatabaseLogger {
      * @param e The SQLException that occurred
      */
     public static void logSqlError(String sql, Object[] params, SQLException e) {
-        logger.error("SQL Error: {} with params {} - Error code: {}, SQL state: {}, Message: {}",
-                sql, Arrays.toString(params), e.getErrorCode(), e.getSQLState(), e.getMessage());
+        loggingService.logSqlError(sql, params, e);
     }
 
     /**
@@ -48,9 +43,7 @@ public class DatabaseLogger {
      * @param timeMs The time in milliseconds that the query took to execute
      */
     public static void logSqlQuery(String sql, long timeMs) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("SQL Query executed in {}ms: {}", timeMs, sql);
-        }
+        loggingService.logSqlQuery(sql, timeMs);
     }
 
     /**
@@ -61,10 +54,7 @@ public class DatabaseLogger {
      * @param timeMs The time in milliseconds that the query took to execute
      */
     public static void logSqlQuery(String sql, Object[] params, long timeMs) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("SQL Query executed in {}ms: {} with params: {}",
-                    timeMs, sql, Arrays.toString(params));
-        }
+        loggingService.logSqlQuery(sql, params, timeMs);
     }
 
     /**
@@ -77,14 +67,15 @@ public class DatabaseLogger {
      */
     public static ResultSet executeQuery(Connection conn, String sql) throws SQLException {
         long startTime = System.currentTimeMillis();
+        Statement stmt = null;
         try {
-            Statement stmt = conn.createStatement();
+            stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sql);
             long executionTime = System.currentTimeMillis() - startTime;
-            logSqlQuery(sql, executionTime);
+            loggingService.logSqlQuery(sql, executionTime);
             return rs;
         } catch (SQLException e) {
-            logSqlError(sql, e);
+            loggingService.logSqlError(sql, e);
             throw e;
         }
     }
@@ -100,7 +91,7 @@ public class DatabaseLogger {
      */
     public static ResultSet executeQuery(Connection conn, String sql, Object... params) throws SQLException {
         long startTime = System.currentTimeMillis();
-        PreparedStatement stmt;
+        PreparedStatement stmt = null;
         try {
             stmt = conn.prepareStatement(sql);
             for (int i = 0; i < params.length; i++) {
@@ -108,10 +99,10 @@ public class DatabaseLogger {
             }
             ResultSet rs = stmt.executeQuery();
             long executionTime = System.currentTimeMillis() - startTime;
-            logSqlQuery(sql, params, executionTime);
+            loggingService.logSqlQuery(sql, params, executionTime);
             return rs;
         } catch (SQLException e) {
-            logSqlError(sql, params, e);
+            loggingService.logSqlError(sql, params, e);
             throw e;
         }
     }
@@ -126,14 +117,15 @@ public class DatabaseLogger {
      */
     public static int executeUpdate(Connection conn, String sql) throws SQLException {
         long startTime = System.currentTimeMillis();
+        Statement stmt = null;
         try {
-            Statement stmt = conn.createStatement();
+            stmt = conn.createStatement();
             int rowsAffected = stmt.executeUpdate(sql);
             long executionTime = System.currentTimeMillis() - startTime;
-            logSqlQuery(sql, executionTime);
+            loggingService.logSqlQuery(sql, executionTime);
             return rowsAffected;
         } catch (SQLException e) {
-            logSqlError(sql, e);
+            loggingService.logSqlError(sql, e);
             throw e;
         }
     }
@@ -149,7 +141,7 @@ public class DatabaseLogger {
      */
     public static int executeUpdate(Connection conn, String sql, Object... params) throws SQLException {
         long startTime = System.currentTimeMillis();
-        PreparedStatement stmt;
+        PreparedStatement stmt = null;
         try {
             stmt = conn.prepareStatement(sql);
             for (int i = 0; i < params.length; i++) {
@@ -157,10 +149,10 @@ public class DatabaseLogger {
             }
             int rowsAffected = stmt.executeUpdate();
             long executionTime = System.currentTimeMillis() - startTime;
-            logSqlQuery(sql, params, executionTime);
+            loggingService.logSqlQuery(sql, params, executionTime);
             return rowsAffected;
         } catch (SQLException e) {
-            logSqlError(sql, params, e);
+            loggingService.logSqlError(sql, params, e);
             throw e;
         }
     }
@@ -173,9 +165,6 @@ public class DatabaseLogger {
      * @param totalConnections Total number of connections
      */
     public static void logConnectionPoolStatus(int activeConnections, int idleConnections, int totalConnections) {
-        if (logger.isInfoEnabled()) {
-            logger.info("Connection pool status: active={}, idle={}, total={}",
-                    activeConnections, idleConnections, totalConnections);
-        }
+        loggingService.logConnectionPoolStatus(activeConnections, idleConnections, totalConnections);
     }
 }

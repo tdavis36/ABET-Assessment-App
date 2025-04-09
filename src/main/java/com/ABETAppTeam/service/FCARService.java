@@ -105,7 +105,7 @@ public class FCARService {
                            int outcomeId, int indicatorId) {
         // Verify the professor exists
         User user = userRepository.findById(professorId);
-        if (user == null || !(user instanceof Professor)) {
+        if (!(user instanceof Professor)) {
             return null;
         }
 
@@ -131,7 +131,7 @@ public class FCARService {
         FCAR savedFCAR = fcarRepository.save(fcar);
 
         // If saved successfully and user is a Professor, update professor's FCARs
-        if (savedFCAR != null && user instanceof Professor) {
+        if (savedFCAR != null) {
             Professor professor = (Professor) user;
             professor.addFcarId(savedFCAR.getFcarId());
             userRepository.update(professor);
@@ -194,8 +194,7 @@ public class FCARService {
 
         // Remove from professor's list if applicable
         User user = userRepository.findById(fcar.getInstructorId());
-        if (user instanceof Professor) {
-            Professor professor = (Professor) user;
+        if (user instanceof Professor professor) {
             professor.removeFcarId(fcarId);
             userRepository.update(professor);
         }
