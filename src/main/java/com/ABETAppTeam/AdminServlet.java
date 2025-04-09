@@ -9,6 +9,8 @@ import java.util.Map;
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.OutcomeController;
+import com.ABETAppTeam.service.LoggingService;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -18,6 +20,13 @@ import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/AdminServlet")
 public class AdminServlet extends HttpServlet {
+
+    private final LoggingService logger;
+
+    public AdminServlet() {
+        this.logger = LoggingService.getInstance();
+        logger.info("AdminServlet initialized");
+    }
 
     // Get the controllers
     private FCARController getFCARController() {
@@ -38,94 +47,128 @@ public class AdminServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String timerId = logger.startTimer("adminServlet.doGet");
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
+        User user = (User) session.getAttribute("user");
 
-        // Use DisplaySystemController to get dashboard data
-        DisplaySystemController displayController = getDisplayController();
-        Map<String, Object> dashboardData = displayController.generateAdminDashboard();
+        try {
+            // Check if user is an admin
+            if (!(user instanceof Admin)) {
+                logger.warn("Unauthorized access attempt to AdminServlet by user ID {}", user != null ? user.getUserId() : "unknown");
+                logger.logSecurityEvent("UNAUTHORIZED_ACCESS",
+                        user != null ? String.valueOf(user.getUserId()) : "unknown",
+                        getClientIpAddress(request),
+                        "Non-admin user attempted to access AdminServlet",
+                        false);
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Admin access required");
+                return;
+            }
 
-        // Convert courses to a List if it's not already
-        Object coursesObj = dashboardData.get("courses");
-        if (!(coursesObj instanceof List)) {
-            List<Course> courseList = new ArrayList<>();
+            logger.info("Admin user ID {} accessing AdminServlet with action: {}", user.getUserId(), action);
 
-            if (coursesObj instanceof Collection<?>) {
-                // Convert any Collection to a List<Course>
-                for (Object obj : (Collection<?>) coursesObj) {
-                    if (obj instanceof Course) {
-                        courseList.add((Course) obj);
+            // Use DisplaySystemController to get dashboard data
+            logger.debug("Fetching dashboard data for admin view");
+            DisplaySystemController displayController = getDisplayController();
+            Map<String, Object> dashboardData = displayController.generateAdminDashboard();
+
+            // Convert courses to a List if it's not already
+            Object coursesObj = dashboardData.get("courses");
+            if (!(coursesObj instanceof List)) {
+                logger.debug("Converting courses to a List for admin dashboard");
+                List<Course> courseList = new ArrayList<>();
+
+                if (coursesObj instanceof Collection<?>) {
+                    // Convert any Collection to a List<Course>
+                    for (Object obj : (Collection<?>) coursesObj) {
+                        if (obj instanceof Course) {
+                            courseList.add((Course) obj);
+                        }
                     }
                 }
+
+                // Replace with our new List
+                dashboardData.put("courses", courseList);
             }
 
-            // Replace with our new List
-            dashboardData.put("courses", courseList);
-        }
+            // Add all attributes from the dashboard data to the request
+            for (Map.Entry<String, Object> entry : dashboardData.entrySet()) {
+                request.setAttribute(entry.getKey(), entry.getValue());
+            }
 
-        // Add all attributes from the dashboard data to the request
-        for (Map.Entry<String, Object> entry : dashboardData.entrySet()) {
-            request.setAttribute(entry.getKey(), entry.getValue());
-        }
+            // Add outcome data from OutcomeController for JavaScript
+            logger.debug("Adding outcome data for JavaScript to request");
+            OutcomeController outcomeController = getOutcomeController();
+            request.setAttribute("outcomeData", outcomeController.getOutcomeDataAsJson());
 
-        // Add outcome data from OutcomeController for JavaScript
-        OutcomeController outcomeController = getOutcomeController();
-        request.setAttribute("outcomeData", outcomeController.getOutcomeDataAsJson());
-
-        if ("viewFCARs".equals(action)) {
-            request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
-            return;
-        } else if ("editFCAR".equals(action)) {
-            // Get the FCAR ID
-            int fcarId = Integer.parseInt(request.getParameter("fcarId"));
-            FCARController fcarController = getFCARController();
-            FCAR fcar = fcarController.getFCAR(fcarId);
-
-            if (fcar != null) {
-                // Pass the FCAR to the form
-                request.setAttribute("fcar", fcar);
-
-                // Get related course information if needed
-                Course course = displayController.getCourse(fcar.getCourseCode());
-                if (course != null) {
-                    request.setAttribute("course", course);
-                }
-
-                // Get related professor information if needed
-                User professor = displayController.getUser(fcar.getInstructorId());
-                if (professor != null) {
-                    request.setAttribute("professor", professor);
-                }
-
-                request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
-                return;
-            } else {
-                // FCAR not found, redirect back to admin page with error
-                request.setAttribute("error", "FCAR not found");
+            if ("viewFCARs".equals(action)) {
+                logger.debug("Forwarding to admin.jsp to view FCARs");
                 request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
                 return;
-            }
-        } else if ("createFCAR".equals(action)) {
-            // Get available courses and professors for the form
-            request.getRequestDispatcher("/WEB-INF/createFCAR.jsp").forward(request, response);
-            return;
-        } else if ("viewUsers".equals(action)) {
-            // Get all users for display
-            // This could be added to the dashboard data or fetched separately if needed
-            request.getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
-            return;
-        } else if ("viewCourses".equals(action)) {
-            // Courses are already in the dashboard data
-            request.getRequestDispatcher("/WEB-INF/courses.jsp").forward(request, response);
-            return;
-        } else if ("viewReports".equals(action)) {
-            // This would display the reporting interface
-            request.getRequestDispatcher("/WEB-INF/reports.jsp").forward(request, response);
-            return;
-        }
+            } else if ("editFCAR".equals(action)) {
+                // Get the FCAR ID
+                int fcarId = Integer.parseInt(request.getParameter("fcarId"));
+                logger.info("Admin user ID {} editing FCAR ID {}", user.getUserId(), fcarId);
 
-        // Default: display the admin dashboard
-        request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
+                FCARController fcarController = getFCARController();
+                FCAR fcar = fcarController.getFCAR(fcarId);
+
+                if (fcar != null) {
+                    // Pass the FCAR to the form
+                    request.setAttribute("fcar", fcar);
+
+                    // Get related course information if needed
+                    Course course = displayController.getCourse(fcar.getCourseCode());
+                    if (course != null) {
+                        request.setAttribute("course", course);
+                    }
+
+                    // Get related professor information if needed
+                    User professor = displayController.getUser(fcar.getInstructorId());
+                    if (professor != null) {
+                        request.setAttribute("professor", professor);
+                    }
+
+                    logger.debug("Forwarding to fcarForm.jsp to edit FCAR ID {}", fcarId);
+                    request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+                } else {
+                    // FCAR not found, redirect back to admin page with error
+                    logger.warn("FCAR not found: ID {}", fcarId);
+                    request.setAttribute("error", "FCAR not found");
+                    request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
+                }
+                return;
+            } else if ("createFCAR".equals(action)) {
+                // Get available courses and professors for the form
+                logger.debug("Forwarding to createFCAR.jsp");
+                request.getRequestDispatcher("/WEB-INF/createFCAR.jsp").forward(request, response);
+                return;
+            } else if ("viewUsers".equals(action)) {
+                // Get all users for display
+                logger.debug("Forwarding to users.jsp");
+                request.getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
+                return;
+            } else if ("viewCourses".equals(action)) {
+                // Courses are already in the dashboard data
+                logger.debug("Forwarding to courses.jsp");
+                request.getRequestDispatcher("/WEB-INF/courses.jsp").forward(request, response);
+                return;
+            } else if ("viewReports".equals(action)) {
+                // This would display the reporting interface
+                logger.debug("Forwarding to reports.jsp");
+                request.getRequestDispatcher("/WEB-INF/reports.jsp").forward(request, response);
+                return;
+            }
+
+            // Default: display the admin dashboard
+            logger.debug("No specific action, displaying admin dashboard");
+            request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
+        } catch (Exception e) {
+            logger.error("Error in AdminServlet.doGet: {}", e.getMessage(), e);
+            throw e;
+        } finally {
+            logger.stopTimer(timerId, "action=" + action);
+        }
     }
 
     /**
@@ -134,178 +177,274 @@ public class AdminServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Get action parameter
-        String action = request.getParameter("action");
-        FCARController fcarController = getFCARController();
+        String timerId = logger.startTimer("adminServlet.doPost");
 
-        if ("createFCAR".equals(action)) {
-            // Extract FCAR data from request
-            String courseCode = request.getParameter("courseCode");
-            String professorIdStr = request.getParameter("professorId");
-            String semester = request.getParameter("semester");
-            int year = Integer.parseInt(request.getParameter("year"));
+        try {
+            // Get action parameter
+            String action = request.getParameter("action");
+            FCARController fcarController = getFCARController();
+            HttpSession session = request.getSession();
+            User user = (User) session.getAttribute("user");
 
-            // Create a new FCAR using the controller
-            FCAR fcar = fcarController.createFCAR(courseCode, professorIdStr, semester, year);
+            // Check if user is an admin
+            if (!(user instanceof Admin)) {
+                logger.warn("Unauthorized POST attempt to AdminServlet by user ID {}", user != null ? user.getUserId() : "unknown");
+                logger.logSecurityEvent("UNAUTHORIZED_ACCESS",
+                        user != null ? String.valueOf(user.getUserId()) : "unknown",
+                        getClientIpAddress(request),
+                        "Non-admin user attempted to POST to AdminServlet",
+                        false);
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Admin access required");
+                return;
+            }
 
-            if (fcar != null) {
-                request.setAttribute("message", "FCAR created successfully with ID: " + fcar.getFcarId());
+            logger.info("Admin user ID {} submitting POST with action: {}", user.getUserId(), action);
 
-                // If outcome and indicator were specified, add them
-                String outcomeIdStr = request.getParameter("outcomeId");
-                String indicatorIdStr = request.getParameter("indicatorId");
-                if (outcomeIdStr != null && !outcomeIdStr.isEmpty() &&
-                        indicatorIdStr != null && !indicatorIdStr.isEmpty()) {
+            if ("createFCAR".equals(action)) {
+                // Extract FCAR data from request
+                String courseCode = request.getParameter("courseCode");
+                String professorIdStr = request.getParameter("professorId");
+                String semester = request.getParameter("semester");
+                int year = Integer.parseInt(request.getParameter("year"));
+
+                logger.info("Admin creating new FCAR: course={}, professor={}, semester={}, year={}",
+                        courseCode, professorIdStr, semester, year);
+
+                // Create a new FCAR using the controller
+                FCAR fcar = fcarController.createFCAR(courseCode, professorIdStr, semester, year);
+
+                if (fcar != null) {
+                    logger.info("FCAR created successfully: ID {}", fcar.getFcarId());
+                    request.setAttribute("message", "FCAR created successfully with ID: " + fcar.getFcarId());
+
+                    // If outcome and indicator were specified, add them
+                    String outcomeIdStr = request.getParameter("outcomeId");
+                    String indicatorIdStr = request.getParameter("indicatorId");
+                    if (outcomeIdStr != null && !outcomeIdStr.isEmpty() &&
+                            indicatorIdStr != null && !indicatorIdStr.isEmpty()) {
+                        try {
+                            int outcomeId = Integer.parseInt(outcomeIdStr);
+                            int indicatorId = Integer.parseInt(indicatorIdStr);
+
+                            logger.debug("Setting outcome ID {} and indicator ID {} for FCAR ID {}",
+                                    outcomeId, indicatorId, fcar.getFcarId());
+
+                            fcar.setOutcomeId(outcomeId);
+                            fcar.setIndicatorId(indicatorId);
+                            fcarController.updateFCAR(fcar);
+                        } catch (NumberFormatException e) {
+                            // Log error but continue - outcome/indicator is optional
+                            logger.warn("Invalid outcome or indicator format: {}", e.getMessage());
+                        }
+                    }
+                } else {
+                    logger.error("Failed to create FCAR for course {} and professor {}",
+                            courseCode, professorIdStr);
+                    request.setAttribute("error", "Failed to create FCAR");
+                }
+
+                // Redirect to admin page with a message
+                logger.debug("Redirecting to AdminServlet with message=FCARCreated");
+                response.sendRedirect(request.getContextPath() + "/AdminServlet?message=FCARCreated");
+                return;
+            }
+            else if ("updateFCAR".equals(action)) {
+                // Extract FCAR ID and ensure it's valid
+                int fcarId = Integer.parseInt(request.getParameter("fcarId"));
+                if (fcarId <= 0) {
+                    logger.warn("Invalid FCAR ID {} specified for update", fcarId);
+                    request.setAttribute("error", "Invalid FCAR ID");
+                    request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
+                    return;
+                }
+
+                logger.info("Admin updating FCAR ID {}", fcarId);
+
+                // Get existing FCAR
+                FCAR fcar = fcarController.getFCAR(fcarId);
+                if (fcar == null) {
+                    logger.warn("FCAR not found for update: ID {}", fcarId);
+                    request.setAttribute("error", "FCAR not found");
+                    request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
+                    return;
+                }
+
+                // Update FCAR properties
+                String courseCode = request.getParameter("courseCode");
+                if (courseCode != null) {
+                    logger.debug("Updating course code to {} for FCAR ID {}", courseCode, fcarId);
+                    fcar.setCourseCode(courseCode);
+                }
+
+                String professorIdStr = request.getParameter("professorId");
+                if (professorIdStr != null && !professorIdStr.isEmpty()) {
                     try {
-                        int outcomeId = Integer.parseInt(outcomeIdStr);
-                        int indicatorId = Integer.parseInt(indicatorIdStr);
-
-                        fcar.setOutcomeId(outcomeId);
-                        fcar.setIndicatorId(indicatorId);
-                        fcarController.updateFCAR(fcar);
+                        int professorId = Integer.parseInt(professorIdStr);
+                        logger.debug("Updating professor ID to {} for FCAR ID {}", professorId, fcarId);
+                        fcar.setInstructorId(professorId);
                     } catch (NumberFormatException e) {
-                        // Log error but continue - outcome/indicator is optional
+                        // Invalid professor ID, ignore
+                        logger.warn("Invalid professor ID format: {}", professorIdStr);
                     }
                 }
-            } else {
-                request.setAttribute("error", "Failed to create FCAR");
-            }
 
-            // Redirect to admin page with a message
-            response.sendRedirect(request.getContextPath() + "/AdminServlet?message=FCARCreated");
-            return;
-        }
-        else if ("updateFCAR".equals(action)) {
-            // Extract FCAR ID and ensure it's valid
-            int fcarId = Integer.parseInt(request.getParameter("fcarId"));
-            if (fcarId <= 0) {
-                request.setAttribute("error", "Invalid FCAR ID");
-                request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
+                String semester = request.getParameter("semester");
+                if (semester != null) {
+                    logger.debug("Updating semester to {} for FCAR ID {}", semester, fcarId);
+                    fcar.setSemester(semester);
+                }
+
+                String yearStr = request.getParameter("year");
+                if (yearStr != null && !yearStr.isEmpty()) {
+                    try {
+                        int year = Integer.parseInt(yearStr);
+                        logger.debug("Updating year to {} for FCAR ID {}", year, fcarId);
+                        fcar.setYear(year);
+                    } catch (NumberFormatException e) {
+                        // Invalid year, ignore
+                        logger.warn("Invalid year format: {}", yearStr);
+                    }
+                }
+
+                String status = request.getParameter("status");
+                if (status != null) {
+                    logger.debug("Updating status to {} for FCAR ID {}", status, fcarId);
+                    fcar.setStatus(status);
+                }
+
+                // Update outcome and indicator if specified
+                String outcomeIdStr = request.getParameter("outcomeId");
+                if (outcomeIdStr != null && !outcomeIdStr.isEmpty()) {
+                    try {
+                        int outcomeId = Integer.parseInt(outcomeIdStr);
+                        logger.debug("Updating outcome ID to {} for FCAR ID {}", outcomeId, fcarId);
+                        fcar.setOutcomeId(outcomeId);
+                    } catch (NumberFormatException e) {
+                        // Invalid outcome ID, ignore
+                        logger.warn("Invalid outcome ID format: {}", outcomeIdStr);
+                    }
+                }
+
+                String indicatorIdStr = request.getParameter("indicatorId");
+                if (indicatorIdStr != null && !indicatorIdStr.isEmpty()) {
+                    try {
+                        int indicatorId = Integer.parseInt(indicatorIdStr);
+                        logger.debug("Updating indicator ID to {} for FCAR ID {}", indicatorId, fcarId);
+                        fcar.setIndicatorId(indicatorId);
+                    } catch (NumberFormatException e) {
+                        // Invalid indicator ID, ignore
+                        logger.warn("Invalid indicator ID format: {}", indicatorIdStr);
+                    }
+                }
+
+                // Call the controller to update the FCAR
+                boolean updated = fcarController.updateFCAR(fcar);
+
+                if (updated) {
+                    logger.info("FCAR ID {} updated successfully", fcarId);
+                    request.setAttribute("message", "FCAR updated successfully");
+                } else {
+                    logger.error("Failed to update FCAR ID {}", fcarId);
+                    request.setAttribute("error", "Failed to update FCAR");
+                }
+
+                // Redirect to admin page with a message
+                logger.debug("Redirecting to AdminServlet with message=FCARUpdated");
+                response.sendRedirect(request.getContextPath() + "/AdminServlet?message=FCARUpdated");
+                return;
+            }
+            else if ("approveFCAR".equals(action)) {
+                int fcarId = Integer.parseInt(request.getParameter("fcarId"));
+                logger.info("Admin user ID {} approving FCAR ID {}", user.getUserId(), fcarId);
+
+                boolean approved = fcarController.approveFCAR(fcarId);
+
+                if (approved) {
+                    logger.info("FCAR ID {} approved successfully", fcarId);
+                    request.setAttribute("message", "FCAR approved successfully");
+                } else {
+                    logger.error("Failed to approve FCAR ID {}", fcarId);
+                    request.setAttribute("error", "Failed to approve FCAR");
+                }
+
+                // Redirect to view FCARs
+                logger.debug("Redirecting to AdminServlet?action=viewFCARs with message=FCARApproved");
+                response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARApproved");
+                return;
+            }
+            else if ("rejectFCAR".equals(action)) {
+                int fcarId = Integer.parseInt(request.getParameter("fcarId"));
+                String feedback = request.getParameter("feedback");
+
+                logger.info("Admin user ID {} rejecting FCAR ID {} with feedback: {}",
+                        user.getUserId(), fcarId, feedback);
+
+                boolean rejected = fcarController.rejectFCAR(fcarId, feedback);
+
+                if (rejected) {
+                    logger.info("FCAR ID {} rejected successfully", fcarId);
+                    request.setAttribute("message", "FCAR rejected successfully");
+                } else {
+                    logger.error("Failed to reject FCAR ID {}", fcarId);
+                    request.setAttribute("error", "Failed to reject FCAR");
+                }
+
+                // Redirect to view FCARs
+                logger.debug("Redirecting to AdminServlet?action=viewFCARs with message=FCARRejected");
+                response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARRejected");
+                return;
+            }
+            else if ("deleteFCAR".equals(action)) {
+                int fcarId = Integer.parseInt(request.getParameter("fcarId"));
+                logger.info("Admin user ID {} deleting FCAR ID {}", user.getUserId(), fcarId);
+
+                boolean deleted = fcarController.deleteFCAR(fcarId);
+
+                if (deleted) {
+                    logger.info("FCAR ID {} deleted successfully", fcarId);
+                    request.setAttribute("message", "FCAR deleted successfully");
+                } else {
+                    logger.error("Failed to delete FCAR ID {}", fcarId);
+                    request.setAttribute("error", "Failed to delete FCAR");
+                }
+
+                // Redirect to view FCARs
+                logger.debug("Redirecting to AdminServlet?action=viewFCARs with message=FCARDeleted");
+                response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARDeleted");
                 return;
             }
 
-            // Get existing FCAR
-            FCAR fcar = fcarController.getFCAR(fcarId);
-            if (fcar == null) {
-                request.setAttribute("error", "FCAR not found");
-                request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
-                return;
-            }
-
-            // Update FCAR properties
-            String courseCode = request.getParameter("courseCode");
-            if (courseCode != null) {
-                fcar.setCourseCode(courseCode);
-            }
-
-            String professorIdStr = request.getParameter("professorId");
-            if (professorIdStr != null && !professorIdStr.isEmpty()) {
-                try {
-                    int professorId = Integer.parseInt(professorIdStr);
-                    fcar.setInstructorId(professorId);
-                } catch (NumberFormatException e) {
-                    // Invalid professor ID, ignore
-                }
-            }
-
-            String semester = request.getParameter("semester");
-            if (semester != null) {
-                fcar.setSemester(semester);
-            }
-
-            String yearStr = request.getParameter("year");
-            if (yearStr != null && !yearStr.isEmpty()) {
-                try {
-                    fcar.setYear(Integer.parseInt(yearStr));
-                } catch (NumberFormatException e) {
-                    // Invalid year, ignore
-                }
-            }
-
-            String status = request.getParameter("status");
-            if (status != null) {
-                fcar.setStatus(status);
-            }
-
-            // Update outcome and indicator if specified
-            String outcomeIdStr = request.getParameter("outcomeId");
-            if (outcomeIdStr != null && !outcomeIdStr.isEmpty()) {
-                try {
-                    int outcomeId = Integer.parseInt(outcomeIdStr);
-                    fcar.setOutcomeId(outcomeId);
-                } catch (NumberFormatException e) {
-                    // Invalid outcome ID, ignore
-                }
-            }
-
-            String indicatorIdStr = request.getParameter("indicatorId");
-            if (indicatorIdStr != null && !indicatorIdStr.isEmpty()) {
-                try {
-                    int indicatorId = Integer.parseInt(indicatorIdStr);
-                    fcar.setIndicatorId(indicatorId);
-                } catch (NumberFormatException e) {
-                    // Invalid indicator ID, ignore
-                }
-            }
-
-            // Call the controller to update the FCAR
-            boolean updated = fcarController.updateFCAR(fcar);
-
-            if (updated) {
-                request.setAttribute("message", "FCAR updated successfully");
-            } else {
-                request.setAttribute("error", "Failed to update FCAR");
-            }
-
-            // Redirect to admin page with a message
-            response.sendRedirect(request.getContextPath() + "/AdminServlet?message=FCARUpdated");
-            return;
+            // If we get here, forward back to admin page
+            logger.debug("No specific action matched, forwarding to doGet");
+            doGet(request, response);
+        } catch (Exception e) {
+            logger.error("Error in AdminServlet.doPost: {}", e.getMessage(), e);
+            throw e;
+        } finally {
+            logger.stopTimer(timerId, "action=" + request.getParameter("action"));
         }
-        else if ("approveFCAR".equals(action)) {
-            int fcarId = Integer.parseInt(request.getParameter("fcarId"));
-            boolean approved = fcarController.approveFCAR(fcarId);
+    }
 
-            if (approved) {
-                request.setAttribute("message", "FCAR approved successfully");
-            } else {
-                request.setAttribute("error", "Failed to approve FCAR");
-            }
-
-            // Redirect to view FCARs
-            response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARApproved");
-            return;
+    /**
+     * Extract the client IP address from the request
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
         }
-        else if ("rejectFCAR".equals(action)) {
-            int fcarId = Integer.parseInt(request.getParameter("fcarId"));
-            String feedback = request.getParameter("feedback");
-            boolean rejected = fcarController.rejectFCAR(fcarId, feedback);
-
-            if (rejected) {
-                request.setAttribute("message", "FCAR rejected successfully");
-            } else {
-                request.setAttribute("error", "Failed to reject FCAR");
-            }
-
-            // Redirect to view FCARs
-            response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARRejected");
-            return;
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
         }
-        else if ("deleteFCAR".equals(action)) {
-            int fcarId = Integer.parseInt(request.getParameter("fcarId"));
-            boolean deleted = fcarController.deleteFCAR(fcarId);
-
-            if (deleted) {
-                request.setAttribute("message", "FCAR deleted successfully");
-            } else {
-                request.setAttribute("error", "Failed to delete FCAR");
-            }
-
-            // Redirect to view FCARs
-            response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARDeleted");
-            return;
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
         }
-
-        // If we get here, forward back to admin page
-        doGet(request, response);
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
     }
 }

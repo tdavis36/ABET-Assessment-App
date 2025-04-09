@@ -43,7 +43,7 @@ public class AppInitializer implements ServletContextListener {
             }
         }
 
-        // Create archive directory if it doesn't exist
+        // Create the archive directory if it doesn't exist
         File archiveDir = new File("logs/archive");
         if (!archiveDir.exists()) {
             boolean created = archiveDir.mkdirs();

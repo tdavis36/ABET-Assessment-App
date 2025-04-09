@@ -2,11 +2,8 @@ package com.ABETAppTeam.repository;
 
 import com.ABETAppTeam.FCAR;
 import com.ABETAppTeam.util.DataSourceFactory;
-import com.ABETAppTeam.util.DatabaseLogger;
+import com.ABETAppTeam.service.LoggingService;
 import com.zaxxer.hikari.HikariDataSource;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,11 +13,11 @@ import java.util.Map;
 
 /**
  * JDBC implementation of the IFCARRepository interface
- * This class handles database operations for FCAR objects
+ * This class handles database operations for FCAR objects with comprehensive logging
  */
 public class FCARRepository implements IFCARRepository {
 
-    private static final Logger logger = LoggerFactory.getLogger(FCARRepository.class);
+    private static final LoggingService logger = LoggingService.getInstance();
     private final HikariDataSource dataSource;
 
     /**
@@ -28,6 +25,7 @@ public class FCARRepository implements IFCARRepository {
      */
     public FCARRepository() {
         this.dataSource = DataSourceFactory.getDataSource();
+        logger.debug("FCARRepository initialized with data source");
     }
 
     @Override
@@ -39,19 +37,21 @@ public class FCARRepository implements IFCARRepository {
         String sql = "SELECT * FROM FCAR WHERE fcar_id = ?";
 
         try {
-            conn = dataSource.getConnection();
+            // Start timing this operation
+            String timerId = logger.startTimer("fcar.findById");
 
-            long startTime = System.currentTimeMillis();
+            conn = dataSource.getConnection();
+            logger.logConnectionCreated(conn);
+
             stmt = conn.prepareStatement(sql);
             stmt.setInt(1, fcarId);
-            rs = stmt.executeQuery();
-            long queryTime = System.currentTimeMillis() - startTime;
+            logger.logStatementCreated(stmt, sql);
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, new Object[]{fcarId}, queryTime);
+            rs = stmt.executeQuery();
 
             if (rs.next()) {
                 fcar = mapResultSetToFCAR(rs);
+                logger.debug("Found FCAR with ID: {}", fcarId);
             } else {
                 logger.debug("No FCAR found with ID: {}", fcarId);
                 return null; // FCAR not found
@@ -59,9 +59,12 @@ public class FCARRepository implements IFCARRepository {
 
             // Load additional data from related tables
             loadAdditionalData(conn, fcar);
+
+            // Stop timing the operation
+            logger.stopTimer(timerId, "fcarId=" + fcarId);
         } catch (SQLException e) {
-            // Log the SQL error
-            DatabaseLogger.logSqlError(sql, new Object[]{fcarId}, e);
+            logger.logSqlError(sql, new Object[]{fcarId}, e);
+            logger.error("Error finding FCAR by ID: {}", e.getMessage(), e);
         } finally {
             closeResources(rs, stmt, conn);
         }
@@ -78,28 +81,36 @@ public class FCARRepository implements IFCARRepository {
         String sql = "SELECT * FROM FCAR";
 
         try {
+            // Start timing this operation
+            String timerId = logger.startTimer("fcar.findAll");
+
             conn = dataSource.getConnection();
+            logger.logConnectionCreated(conn);
 
-            long startTime = System.currentTimeMillis();
             stmt = conn.createStatement();
+            logger.logStatementCreated(stmt, sql);
+
             rs = stmt.executeQuery(sql);
-            long queryTime = System.currentTimeMillis() - startTime;
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, queryTime);
-
+            int count = 0;
             while (rs.next()) {
                 FCAR fcar = mapResultSetToFCAR(rs);
                 fcars.add(fcar);
+                count++;
             }
+
+            logger.debug("Found {} FCARs in database", count);
 
             // Load additional data for each FCAR
             for (FCAR fcar : fcars) {
                 loadAdditionalData(conn, fcar);
             }
+
+            // Stop timing the operation
+            logger.stopTimer(timerId, "count=" + fcars.size());
         } catch (SQLException e) {
-            // Log the SQL error
-            DatabaseLogger.logSqlError(sql, e);
+            logger.logSqlError(sql, e);
+            logger.error("Error finding all FCARs: {}", e.getMessage(), e);
         } finally {
             closeResources(rs, stmt, conn);
         }
@@ -116,29 +127,37 @@ public class FCARRepository implements IFCARRepository {
         String sql = "SELECT * FROM FCAR WHERE course_code = ?";
 
         try {
-            conn = dataSource.getConnection();
+            // Start timing this operation
+            String timerId = logger.startTimer("fcar.findByCourseCode");
 
-            long startTime = System.currentTimeMillis();
+            conn = dataSource.getConnection();
+            logger.logConnectionCreated(conn);
+
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, courseCode);
+            logger.logStatementCreated(stmt, sql);
+
             rs = stmt.executeQuery();
-            long queryTime = System.currentTimeMillis() - startTime;
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, new Object[]{courseCode}, queryTime);
-
+            int count = 0;
             while (rs.next()) {
                 FCAR fcar = mapResultSetToFCAR(rs);
                 fcars.add(fcar);
+                count++;
             }
+
+            logger.debug("Found {} FCARs for course code: {}", count, courseCode);
 
             // Load additional data for each FCAR
             for (FCAR fcar : fcars) {
                 loadAdditionalData(conn, fcar);
             }
+
+            // Stop timing the operation
+            logger.stopTimer(timerId, "courseCode=" + courseCode + ", count=" + fcars.size());
         } catch (SQLException e) {
-            // Log the SQL error
-            DatabaseLogger.logSqlError(sql, new Object[]{courseCode}, e);
+            logger.logSqlError(sql, new Object[]{courseCode}, e);
+            logger.error("Error finding FCARs by course code: {}", e.getMessage(), e);
         } finally {
             closeResources(rs, stmt, conn);
         }
@@ -155,29 +174,37 @@ public class FCARRepository implements IFCARRepository {
         String sql = "SELECT * FROM FCAR WHERE instructor_id = ?";
 
         try {
-            conn = dataSource.getConnection();
+            // Start timing this operation
+            String timerId = logger.startTimer("fcar.findByInstructorId");
 
-            long startTime = System.currentTimeMillis();
+            conn = dataSource.getConnection();
+            logger.logConnectionCreated(conn);
+
             stmt = conn.prepareStatement(sql);
             stmt.setInt(1, instructorId);
+            logger.logStatementCreated(stmt, sql);
+
             rs = stmt.executeQuery();
-            long queryTime = System.currentTimeMillis() - startTime;
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, new Object[]{instructorId}, queryTime);
-
+            int count = 0;
             while (rs.next()) {
                 FCAR fcar = mapResultSetToFCAR(rs);
                 fcars.add(fcar);
+                count++;
             }
+
+            logger.debug("Found {} FCARs for instructor ID: {}", count, instructorId);
 
             // Load additional data for each FCAR
             for (FCAR fcar : fcars) {
                 loadAdditionalData(conn, fcar);
             }
+
+            // Stop timing the operation
+            logger.stopTimer(timerId, "instructorId=" + instructorId + ", count=" + fcars.size());
         } catch (SQLException e) {
-            // Log the SQL error
-            DatabaseLogger.logSqlError(sql, new Object[]{instructorId}, e);
+            logger.logSqlError(sql, new Object[]{instructorId}, e);
+            logger.error("Error finding FCARs by instructor ID: {}", e.getMessage(), e);
         } finally {
             closeResources(rs, stmt, conn);
         }
@@ -194,30 +221,38 @@ public class FCARRepository implements IFCARRepository {
         String sql = "SELECT * FROM FCAR WHERE semester = ? AND year = ?";
 
         try {
-            conn = dataSource.getConnection();
+            // Start timing this operation
+            String timerId = logger.startTimer("fcar.findBySemesterAndYear");
 
-            long startTime = System.currentTimeMillis();
+            conn = dataSource.getConnection();
+            logger.logConnectionCreated(conn);
+
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, semester);
             stmt.setInt(2, year);
+            logger.logStatementCreated(stmt, sql);
+
             rs = stmt.executeQuery();
-            long queryTime = System.currentTimeMillis() - startTime;
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, new Object[]{semester, year}, queryTime);
-
+            int count = 0;
             while (rs.next()) {
                 FCAR fcar = mapResultSetToFCAR(rs);
                 fcars.add(fcar);
+                count++;
             }
+
+            logger.debug("Found {} FCARs for semester {} {}", count, semester, year);
 
             // Load additional data for each FCAR
             for (FCAR fcar : fcars) {
                 loadAdditionalData(conn, fcar);
             }
+
+            // Stop timing the operation
+            logger.stopTimer(timerId, "semester=" + semester + ", year=" + year + ", count=" + fcars.size());
         } catch (SQLException e) {
-            // Log the SQL error
-            DatabaseLogger.logSqlError(sql, new Object[]{semester, year}, e);
+            logger.logSqlError(sql, new Object[]{semester, year}, e);
+            logger.error("Error finding FCARs by semester and year: {}", e.getMessage(), e);
         } finally {
             closeResources(rs, stmt, conn);
         }
@@ -228,17 +263,23 @@ public class FCARRepository implements IFCARRepository {
     @Override
     public FCAR save(FCAR fcar) {
         Connection conn = null;
+        String timerId = logger.startTimer("fcar.save");
 
         try {
             conn = dataSource.getConnection();
+            logger.logConnectionCreated(conn);
+
             conn.setAutoCommit(false);
+            logger.debug("Transaction started for FCAR save operation");
 
             try {
                 if (fcar.getFcarId() <= 0) {
                     // Insert new FCAR
+                    logger.debug("Inserting new FCAR");
                     insertFCAR(conn, fcar);
                 } else {
                     // Update existing FCAR
+                    logger.debug("Updating existing FCAR with ID: {}", fcar.getFcarId());
                     updateFCAR(conn, fcar);
                 }
 
@@ -246,22 +287,30 @@ public class FCARRepository implements IFCARRepository {
                 saveAdditionalData(conn, fcar);
 
                 conn.commit();
+                logger.debug("Transaction committed for FCAR ID: {}", fcar.getFcarId());
+
+                logger.stopTimer(timerId, "fcarId=" + fcar.getFcarId() + ", operation=" +
+                        (fcar.getFcarId() <= 0 ? "insert" : "update"));
+
                 return fcar;
             } catch (SQLException e) {
                 conn.rollback();
+                logger.debug("Transaction rolled back due to error: {}", e.getMessage());
                 logger.error("Failed to save FCAR: {}", e.getMessage(), e);
+
+                logger.stopTimer(timerId, "operation=failed, error=" + e.getMessage());
                 return null;
             } finally {
-                if (conn != null) {
-                    try {
-                        conn.setAutoCommit(true);
-                    } catch (SQLException e) {
-                        logger.error("Failed to reset auto-commit: {}", e.getMessage(), e);
-                    }
+                // Reset auto-commit
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException e) {
+                    logger.error("Failed to reset auto-commit: {}", e.getMessage(), e);
                 }
             }
         } catch (SQLException e) {
             logger.error("Failed to get database connection: {}", e.getMessage(), e);
+            logger.stopTimer(timerId, "operation=failed, error=" + e.getMessage());
             return null;
         } finally {
             closeResources(null, null, conn);
@@ -276,9 +325,11 @@ public class FCARRepository implements IFCARRepository {
                 "VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try {
-            long startTime = System.currentTimeMillis();
+            String innerTimerId = logger.startTimer("fcar.insert");
 
             stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            logger.logStatementCreated(stmt, sql);
+
             stmt.setString(1, fcar.getCourseCode());
             stmt.setString(2, fcar.getSemester());
             stmt.setInt(3, fcar.getYear());
@@ -329,7 +380,6 @@ public class FCARRepository implements IFCARRepository {
             }
 
             int affectedRows = stmt.executeUpdate();
-            long queryTime = System.currentTimeMillis() - startTime;
 
             // Create a params array for logging (excluding large text fields for clarity)
             Object[] params = new Object[] {
@@ -344,10 +394,10 @@ public class FCARRepository implements IFCARRepository {
                     fcar.getActionId() > 0 ? fcar.getActionId() : null
             };
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, params, queryTime);
+            logger.stopTimer(innerTimerId, "affectedRows=" + affectedRows);
 
             if (affectedRows == 0) {
+                logger.error("Creating FCAR failed, no rows affected");
                 throw new SQLException("Creating FCAR failed, no rows affected.");
             }
 
@@ -357,11 +407,11 @@ public class FCARRepository implements IFCARRepository {
                 fcar.setFcarId(generatedKeys.getInt(1));
                 logger.debug("Created new FCAR with ID: {}", fcar.getFcarId());
             } else {
+                logger.error("Creating FCAR failed, no ID obtained");
                 throw new SQLException("Creating FCAR failed, no ID obtained.");
             }
         } catch (SQLException e) {
-            // Log the detailed SQL error
-            DatabaseLogger.logSqlError(sql, e);
+            logger.logSqlError(sql, e);
             throw e;
         } finally {
             closeResources(generatedKeys, stmt, null);
@@ -376,9 +426,11 @@ public class FCARRepository implements IFCARRepository {
                 "WHERE fcar_id = ?";
 
         try {
-            long startTime = System.currentTimeMillis();
+            String innerTimerId = logger.startTimer("fcar.update");
 
             stmt = conn.prepareStatement(sql);
+            logger.logStatementCreated(stmt, sql);
+
             stmt.setString(1, fcar.getCourseCode());
             stmt.setString(2, fcar.getSemester());
             stmt.setInt(3, fcar.getYear());
@@ -431,7 +483,6 @@ public class FCARRepository implements IFCARRepository {
             stmt.setInt(13, fcar.getFcarId());
 
             int affectedRows = stmt.executeUpdate();
-            long queryTime = System.currentTimeMillis() - startTime;
 
             // Create a params array for logging (excluding large text fields for clarity)
             Object[] params = new Object[] {
@@ -447,17 +498,16 @@ public class FCARRepository implements IFCARRepository {
                     fcar.getFcarId()
             };
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, params, queryTime);
+            logger.stopTimer(innerTimerId, "fcarId=" + fcar.getFcarId() + ", affectedRows=" + affectedRows);
 
             if (affectedRows == 0) {
+                logger.warn("Updating FCAR failed, no rows affected. FCAR ID: {}", fcar.getFcarId());
                 throw new SQLException("Updating FCAR failed, no rows affected.");
             }
 
             logger.debug("Updated FCAR with ID: {}", fcar.getFcarId());
         } catch (SQLException e) {
-            // Log the detailed SQL error
-            DatabaseLogger.logSqlError(sql, e);
+            logger.logSqlError(sql, e);
             throw e;
         } finally {
             closeResources(null, stmt, null);
@@ -471,7 +521,11 @@ public class FCARRepository implements IFCARRepository {
             return false; // Cannot update an FCAR without a valid ID
         }
 
-        return save(fcar) != null;
+        String timerId = logger.startTimer("fcar.updateViaInterface");
+        boolean result = save(fcar) != null;
+        logger.stopTimer(timerId, "fcarId=" + fcar.getFcarId() + ", success=" + result);
+
+        return result;
     }
 
     @Override
@@ -480,43 +534,52 @@ public class FCARRepository implements IFCARRepository {
         PreparedStatement stmt = null;
         String sql = "DELETE FROM FCAR WHERE fcar_id = ?";
 
+        String timerId = logger.startTimer("fcar.delete");
+
         try {
             conn = dataSource.getConnection();
+            logger.logConnectionCreated(conn);
+
             conn.setAutoCommit(false);
+            logger.debug("Transaction started for FCAR deletion");
 
             try {
                 // Delete related data from auxiliary tables
                 deleteAdditionalData(conn, fcarId);
 
                 // Delete the FCAR
-                long startTime = System.currentTimeMillis();
                 stmt = conn.prepareStatement(sql);
                 stmt.setInt(1, fcarId);
-                int affectedRows = stmt.executeUpdate();
-                long queryTime = System.currentTimeMillis() - startTime;
+                logger.logStatementCreated(stmt, sql);
 
-                // Log the successful query execution
-                DatabaseLogger.logSqlQuery(sql, new Object[]{fcarId}, queryTime);
+                int affectedRows = stmt.executeUpdate();
 
                 conn.commit();
-                logger.info("Deleted FCAR with ID: {}", fcarId);
+                logger.debug("Transaction committed for FCAR deletion");
+
+                logger.info("Deleted FCAR with ID: {}, rows affected: {}", fcarId, affectedRows);
+                logger.stopTimer(timerId, "fcarId=" + fcarId + ", affectedRows=" + affectedRows);
+
                 return affectedRows > 0;
             } catch (SQLException e) {
                 conn.rollback();
-                // Log the SQL error
-                DatabaseLogger.logSqlError(sql, new Object[]{fcarId}, e);
+                logger.debug("Transaction rolled back due to error: {}", e.getMessage());
+
+                logger.logSqlError(sql, new Object[]{fcarId}, e);
+                logger.error("Error deleting FCAR: {}", e.getMessage(), e);
+
+                logger.stopTimer(timerId, "fcarId=" + fcarId + ", success=false, error=" + e.getMessage());
                 return false;
             } finally {
-                if (conn != null) {
-                    try {
-                        conn.setAutoCommit(true);
-                    } catch (SQLException e) {
-                        logger.error("Failed to reset auto-commit: {}", e.getMessage(), e);
-                    }
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException e) {
+                    logger.error("Failed to reset auto-commit: {}", e.getMessage(), e);
                 }
             }
         } catch (SQLException e) {
             logger.error("Failed to get database connection: {}", e.getMessage(), e);
+            logger.stopTimer(timerId, "fcarId=" + fcarId + ", success=false, error=" + e.getMessage());
             return false;
         } finally {
             closeResources(null, stmt, conn);
@@ -535,23 +598,34 @@ public class FCARRepository implements IFCARRepository {
         Connection conn = null;
         PreparedStatement stmt = null;
         ResultSet rs = null;
+        String sql = "SELECT * FROM FCAR_Status s JOIN FCAR f ON s.fcar_id = f.fcar_id WHERE s.status = ?";
+
+        String timerId = logger.startTimer("fcar.getByStatus");
 
         try {
             conn = dataSource.getConnection();
-            String sql = "SELECT * FROM fcars WHERE status = ?";
+            logger.logConnectionCreated(conn);
 
-            rs = DatabaseLogger.executeQuery(conn, sql, status);
+            stmt = conn.prepareStatement(sql);
+            stmt.setString(1, status);
+            logger.logStatementCreated(stmt, sql);
 
+            rs = stmt.executeQuery();
+
+            int count = 0;
             while (rs.next()) {
                 FCAR fcar = mapResultSetToFCAR(rs);
                 loadAdditionalData(conn, fcar);
                 result.add(fcar);
+                count++;
             }
 
-            logger.info("Retrieved {} FCARs with status '{}'", result.size(), status);
+            logger.debug("Found {} FCARs with status '{}'", count, status);
+            logger.stopTimer(timerId, "status=" + status + ", count=" + count);
         } catch (SQLException e) {
-            logger.error("Error retrieving FCARs by status: {}", e.getMessage());
-            DatabaseLogger.logSqlError("SELECT * FROM fcars WHERE status = ?", new Object[]{status}, e);
+            logger.logSqlError(sql, new Object[]{status}, e);
+            logger.error("Error retrieving FCARs by status: {}", e.getMessage(), e);
+            logger.stopTimer(timerId, "status=" + status + ", success=false, error=" + e.getMessage());
         } finally {
             closeResources(rs, stmt, conn);
         }
@@ -570,229 +644,67 @@ public class FCARRepository implements IFCARRepository {
      */
     public boolean updateFCARStatus(int fcarId, String status, String comments) {
         logger.info("Updating status of FCAR ID {} to '{}'", fcarId, status);
+
         Connection conn = null;
+        PreparedStatement stmt = null;
+        String sql = "INSERT INTO FCAR_Status (fcar_id, status, comments) VALUES (?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE status = ?, comments = ?";
+
+        String timerId = logger.startTimer("fcar.updateStatus");
         boolean success = false;
 
         try {
             conn = dataSource.getConnection();
+            logger.logConnectionCreated(conn);
+
             conn.setAutoCommit(false);
+            logger.debug("Transaction started for FCAR status update");
 
-            String sql = "UPDATE fcars SET status = ?, admin_comments = ? WHERE fcar_id = ?";
-            int rowsAffected = DatabaseLogger.executeUpdate(conn, sql, status, comments, fcarId);
+            try {
+                stmt = conn.prepareStatement(sql);
+                stmt.setInt(1, fcarId);
+                stmt.setString(2, status);
+                stmt.setString(3, comments);
+                stmt.setString(4, status);
+                stmt.setString(5, comments);
+                logger.logStatementCreated(stmt, sql);
 
-            if (rowsAffected > 0) {
+                int rowsAffected = stmt.executeUpdate();
+
                 conn.commit();
-                success = true;
-                logger.info("Successfully updated FCAR status to '{}'", status);
-            } else {
-                conn.rollback();
-                logger.warn("No FCAR found with ID: {}", fcarId);
-            }
-        } catch (SQLException e) {
-            try {
-                if (conn != null) conn.rollback();
-            } catch (SQLException ex) {
-                logger.error("Error rolling back transaction: {}", ex.getMessage());
-                DatabaseLogger.logSqlError("Rollback transaction", ex);
-            }
-            logger.error("Error updating FCAR status: {}", e.getMessage());
-            DatabaseLogger.logSqlError("UPDATE fcars SET status = ?, admin_comments = ? WHERE fcar_id = ?",
-                    new Object[]{status, comments, fcarId}, e);
-        } finally {
-            try {
-                if (conn != null) conn.setAutoCommit(true);
+                logger.debug("Transaction committed for FCAR status update");
+
+                success = rowsAffected > 0;
+                logger.info("FCAR status update {} for ID {}: {}",
+                        success ? "successful" : "failed", fcarId, status);
+                logger.stopTimer(timerId, "fcarId=" + fcarId + ", status=" + status + ", success=" + success);
+
+                return success;
             } catch (SQLException e) {
-                logger.error("Error resetting auto-commit: {}", e.getMessage());
-                DatabaseLogger.logSqlError("Set auto-commit true", e);
-            }
-            closeResources(null, null, conn);
-        }
+                conn.rollback();
+                logger.debug("Transaction rolled back due to error: {}", e.getMessage());
 
-        return success;
-    }
+                logger.logSqlError(sql, new Object[]{fcarId, status, comments, status, comments}, e);
+                logger.error("Error updating FCAR status: {}", e.getMessage(), e);
 
-    /**
-     * Get the professor's name associated with an FCAR
-     * This is a helper method for displaying professor names in the UI
-     *
-     * @param professorId The ID of the professor
-     * @return The name of the professor
-     */
-    public String getProfessorName(int professorId) {
-        String professorName = "Unknown";
-        Connection conn = null;
-        ResultSet rs = null;
-
-        try {
-            conn = dataSource.getConnection();
-            String sql = "SELECT first_name, last_name FROM users WHERE user_id = ?";
-
-            rs = DatabaseLogger.executeQuery(conn, sql, professorId);
-
-            if (rs.next()) {
-                professorName = rs.getString("first_name") + " " + rs.getString("last_name");
+                logger.stopTimer(timerId, "fcarId=" + fcarId + ", status=" + status +
+                        ", success=false, error=" + e.getMessage());
+                return false;
+            } finally {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException e) {
+                    logger.error("Failed to reset auto-commit: {}", e.getMessage(), e);
+                }
             }
         } catch (SQLException e) {
-            logger.error("Error retrieving professor name: {}", e.getMessage());
-            DatabaseLogger.logSqlError("SELECT first_name, last_name FROM users WHERE user_id = ?",
-                    new Object[]{professorId}, e);
+            logger.error("Failed to get database connection: {}", e.getMessage(), e);
+            logger.stopTimer(timerId, "fcarId=" + fcarId + ", status=" + status +
+                    ", success=false, error=" + e.getMessage());
+            return false;
         } finally {
-            closeResources(rs, null, conn);
+            closeResources(null, stmt, conn);
         }
-
-        return professorName;
-    }
-
-    /**
-     * Get course information for an FCAR
-     * This method retrieves detailed course information from the courses table
-     *
-     * @param courseId The ID of the course
-     * @return A map containing course details
-     */
-    public Map<String, Object> getCourseDetails(String courseId) {
-        Map<String, Object> courseDetails = new HashMap<>();
-        Connection conn = null;
-        ResultSet rs = null;
-
-        try {
-            conn = dataSource.getConnection();
-            String sql = "SELECT * FROM courses WHERE course_id = ?";
-
-            rs = DatabaseLogger.executeQuery(conn, sql, courseId);
-
-            if (rs.next()) {
-                courseDetails.put("courseId", rs.getString("course_id"));
-                courseDetails.put("title", rs.getString("title"));
-                courseDetails.put("description", rs.getString("description"));
-                courseDetails.put("credits", rs.getInt("credits"));
-                courseDetails.put("department", rs.getString("department"));
-            }
-        } catch (SQLException e) {
-            logger.error("Error retrieving course details: {}", e.getMessage());
-            DatabaseLogger.logSqlError("SELECT * FROM courses WHERE course_id = ?",
-                    new Object[]{courseId}, e);
-        } finally {
-            closeResources(rs, null, conn);
-        }
-
-        return courseDetails;
-    }
-
-    /**
-     * Get SLO assessments for an FCAR
-     * This method retrieves the student learning outcome assessments
-     *
-     * @param fcarId The ID of the FCAR
-     * @return List of SLO assessment maps containing assessment data
-     */
-    public List<Map<String, Object>> getSLOAssessments(int fcarId) {
-        List<Map<String, Object>> sloAssessments = new ArrayList<>();
-        Connection conn = null;
-        ResultSet rs = null;
-
-        try {
-            conn = dataSource.getConnection();
-            String sql = "SELECT s.slo_id, s.description, a.assessment_tool, " +
-                    "a.achievement_target, a.actual_achievement " +
-                    "FROM fcar_slo_assessments a " +
-                    "JOIN student_learning_outcomes s ON a.slo_id = s.slo_id " +
-                    "WHERE a.fcar_id = ?";
-
-            rs = DatabaseLogger.executeQuery(conn, sql, fcarId);
-
-            while (rs.next()) {
-                Map<String, Object> assessment = new HashMap<>();
-                assessment.put("sloId", rs.getInt("slo_id"));
-                assessment.put("description", rs.getString("description"));
-                assessment.put("assessmentTool", rs.getString("assessment_tool"));
-                assessment.put("achievementTarget", rs.getDouble("achievement_target"));
-                assessment.put("actualAchievement", rs.getDouble("actual_achievement"));
-                sloAssessments.add(assessment);
-            }
-        } catch (SQLException e) {
-            logger.error("Error retrieving SLO assessments: {}", e.getMessage());
-            DatabaseLogger.logSqlError("SELECT query for SLO assessments with FCAR ID",
-                    new Object[]{fcarId}, e);
-        } finally {
-            closeResources(rs, null, conn);
-        }
-
-        return sloAssessments;
-    }
-
-    /**
-     * Get FCARs for a specific course
-     * This method retrieves all FCARs associated with a specific course code
-     * and optionally filtered by semester and year
-     *
-     * @param courseCode The course code to filter by
-     * @param semester Optional semester filter (can be null)
-     * @param year Optional year filter (can be 0 to ignore)
-     * @return List of FCARs for the specified course
-     */
-    public List<FCAR> getFCARsByCourse(String courseCode, String semester, int year) {
-        List<FCAR> results = new ArrayList<>();
-        Connection conn = null;
-        ResultSet rs = null;
-
-        try {
-            conn = dataSource.getConnection();
-            StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM fcars WHERE course_code = ?");
-            List<Object> params = new ArrayList<>();
-            params.add(courseCode);
-
-            if (semester != null && !semester.isEmpty()) {
-                sqlBuilder.append(" AND semester = ?");
-                params.add(semester);
-            }
-
-            if (year > 0) {
-                sqlBuilder.append(" AND year = ?");
-                params.add(year);
-            }
-
-            String sql = sqlBuilder.toString();
-            rs = DatabaseLogger.executeQuery(conn, sql, params.toArray());
-
-            while (rs.next()) {
-                FCAR fcar = mapResultSetToFCAR(rs);
-                loadAdditionalData(conn, fcar);
-                results.add(fcar);
-            }
-
-            logger.info("Retrieved {} FCARs for course '{}'", results.size(), courseCode);
-        } catch (SQLException e) {
-            logger.error("Error retrieving FCARs by course: {}", e.getMessage());
-            DatabaseLogger.logSqlError("SELECT query for FCARs by course, semester, and year", e);
-        } finally {
-            closeResources(rs, null, conn);
-        }
-
-        return results;
-    }
-
-    /**
-     * Get all FCARs from the database
-     * This method is used for admin access to all FCARs
-     *
-     * @return List of all FCARs in the database
-     */
-    public List<FCAR> getAllFCARs() {
-        logger.info("Retrieving all FCARs from database");
-        return findAll();
-    }
-
-    /**
-     * Get FCARs for a specific professor
-     * This method filters FCARs by the professor's ID
-     *
-     * @param professorId The ID of the professor
-     * @return List of FCARs associated with the specified professor
-     */
-    public List<FCAR> getFCARsByProfessorId(int professorId) {
-        logger.info("Retrieving FCARs for professor ID: {}", professorId);
-        return findByInstructorId(professorId);
     }
 
     /**
@@ -822,6 +734,7 @@ public class FCARRepository implements IFCARRepository {
         if (conn != null) {
             try {
                 conn.close();
+                logger.logConnectionClosed(conn);
             } catch (SQLException e) {
                 logger.warn("Failed to close Connection: {}", e.getMessage());
             }
@@ -887,7 +800,7 @@ public class FCARRepository implements IFCARRepository {
             // Status field - default to 'Draft' if not found
             fcar.setStatus("Draft");
         } catch (SQLException e) {
-            logger.error("Error mapping ResultSet to FCAR: {}", e.getMessage());
+            logger.error("Error mapping ResultSet to FCAR: {}", e.getMessage(), e);
             throw e;
         }
 
@@ -906,17 +819,27 @@ public class FCARRepository implements IFCARRepository {
             return;
         }
 
-        // Load assessment methods from a separate table
-        loadAssessmentMethods(conn, fcar);
+        String timerId = logger.startTimer("fcar.loadAdditionalData");
 
-        // Load student outcomes from a separate table
-        loadStudentOutcomes(conn, fcar);
+        try {
+            // Load assessment methods from a separate table
+            loadAssessmentMethods(conn, fcar);
 
-        // Load improvement actions from a separate table
-        loadImprovementActions(conn, fcar);
+            // Load student outcomes from a separate table
+            loadStudentOutcomes(conn, fcar);
 
-        // Load status from a separate table
-        loadStatus(conn, fcar);
+            // Load improvement actions from a separate table
+            loadImprovementActions(conn, fcar);
+
+            // Load status from a separate table
+            loadStatus(conn, fcar);
+
+            logger.stopTimer(timerId, "fcarId=" + fcar.getFcarId());
+        } catch (SQLException e) {
+            logger.error("Error loading additional data for FCAR {}: {}", fcar.getFcarId(), e.getMessage(), e);
+            logger.stopTimer(timerId, "fcarId=" + fcar.getFcarId() + ", success=false, error=" + e.getMessage());
+            throw e;
+        }
     }
 
     /**
@@ -933,22 +856,22 @@ public class FCARRepository implements IFCARRepository {
         String sql = "SELECT method_key, method_value FROM FCAR_Assessment_Methods WHERE fcar_id = ?";
 
         try {
-            long startTime = System.currentTimeMillis();
             stmt = conn.prepareStatement(sql);
             stmt.setInt(1, fcar.getFcarId());
+            logger.logStatementCreated(stmt, sql);
+
             rs = stmt.executeQuery();
-            long queryTime = System.currentTimeMillis() - startTime;
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, new Object[]{fcar.getFcarId()}, queryTime);
-
+            int count = 0;
             while (rs.next()) {
                 String key = rs.getString("method_key");
                 String value = rs.getString("method_value");
                 methods.put(key, value);
+                count++;
             }
 
             fcar.setAssessmentMethods(methods);
+            logger.debug("Loaded {} assessment methods for FCAR {}", count, fcar.getFcarId());
         } catch (SQLException e) {
             // If the table doesn't exist yet, log it but don't fail
             if (e.getMessage().contains("doesn't exist") ||
@@ -957,7 +880,7 @@ public class FCARRepository implements IFCARRepository {
                 logger.warn("FCAR_Assessment_Methods table does not exist yet: {}", e.getMessage());
             } else {
                 // Log other errors
-                DatabaseLogger.logSqlError(sql, new Object[]{fcar.getFcarId()}, e);
+                logger.logSqlError(sql, new Object[]{fcar.getFcarId()}, e);
                 throw e;
             }
         } finally {
@@ -979,22 +902,22 @@ public class FCARRepository implements IFCARRepository {
         String sql = "SELECT outcome_key, achievement_level FROM FCAR_Student_Outcomes WHERE fcar_id = ?";
 
         try {
-            long startTime = System.currentTimeMillis();
             stmt = conn.prepareStatement(sql);
             stmt.setInt(1, fcar.getFcarId());
+            logger.logStatementCreated(stmt, sql);
+
             rs = stmt.executeQuery();
-            long queryTime = System.currentTimeMillis() - startTime;
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, new Object[]{fcar.getFcarId()}, queryTime);
-
+            int count = 0;
             while (rs.next()) {
                 String key = rs.getString("outcome_key");
                 int level = rs.getInt("achievement_level");
                 outcomes.put(key, level);
+                count++;
             }
 
             fcar.setStudentOutcomes(outcomes);
+            logger.debug("Loaded {} student outcomes for FCAR {}", count, fcar.getFcarId());
         } catch (SQLException e) {
             // If the table doesn't exist yet, log it but don't fail
             if (e.getMessage().contains("doesn't exist") ||
@@ -1003,7 +926,7 @@ public class FCARRepository implements IFCARRepository {
                 logger.warn("FCAR_Student_Outcomes table does not exist yet: {}", e.getMessage());
             } else {
                 // Log other errors
-                DatabaseLogger.logSqlError(sql, new Object[]{fcar.getFcarId()}, e);
+                logger.logSqlError(sql, new Object[]{fcar.getFcarId()}, e);
                 throw e;
             }
         } finally {
@@ -1025,22 +948,22 @@ public class FCARRepository implements IFCARRepository {
         String sql = "SELECT action_key, action_value FROM FCAR_Improvement_Actions WHERE fcar_id = ?";
 
         try {
-            long startTime = System.currentTimeMillis();
             stmt = conn.prepareStatement(sql);
             stmt.setInt(1, fcar.getFcarId());
+            logger.logStatementCreated(stmt, sql);
+
             rs = stmt.executeQuery();
-            long queryTime = System.currentTimeMillis() - startTime;
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, new Object[]{fcar.getFcarId()}, queryTime);
-
+            int count = 0;
             while (rs.next()) {
                 String key = rs.getString("action_key");
                 String value = rs.getString("action_value");
                 actions.put(key, value);
+                count++;
             }
 
             fcar.setImprovementActions(actions);
+            logger.debug("Loaded {} improvement actions for FCAR {}", count, fcar.getFcarId());
         } catch (SQLException e) {
             // If the table doesn't exist yet, log it but don't fail
             if (e.getMessage().contains("doesn't exist") ||
@@ -1049,7 +972,7 @@ public class FCARRepository implements IFCARRepository {
                 logger.warn("FCAR_Improvement_Actions table does not exist yet: {}", e.getMessage());
             } else {
                 // Log other errors
-                DatabaseLogger.logSqlError(sql, new Object[]{fcar.getFcarId()}, e);
+                logger.logSqlError(sql, new Object[]{fcar.getFcarId()}, e);
                 throw e;
             }
         } finally {
@@ -1067,21 +990,28 @@ public class FCARRepository implements IFCARRepository {
     private void loadStatus(Connection conn, FCAR fcar) throws SQLException {
         PreparedStatement stmt = null;
         ResultSet rs = null;
-        String sql = "SELECT status FROM FCAR_Status WHERE fcar_id = ?";
+        String sql = "SELECT status, comments FROM FCAR_Status WHERE fcar_id = ?";
 
         try {
-            long startTime = System.currentTimeMillis();
             stmt = conn.prepareStatement(sql);
             stmt.setInt(1, fcar.getFcarId());
-            rs = stmt.executeQuery();
-            long queryTime = System.currentTimeMillis() - startTime;
+            logger.logStatementCreated(stmt, sql);
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, new Object[]{fcar.getFcarId()}, queryTime);
+            rs = stmt.executeQuery();
 
             if (rs.next()) {
                 String status = rs.getString("status");
+                String comments = rs.getString("comments");
                 fcar.setStatus(status);
+
+                // Store comments in the improvement actions map
+                if (comments != null && !comments.isEmpty()) {
+                    Map<String, String> actions = fcar.getImprovementActions();
+                    actions.put("statusComments", comments);
+                    fcar.setImprovementActions(actions);
+                }
+
+                logger.debug("Loaded status '{}' for FCAR {}", status, fcar.getFcarId());
             }
         } catch (SQLException e) {
             // If the table doesn't exist yet, log it but don't fail
@@ -1091,7 +1021,7 @@ public class FCARRepository implements IFCARRepository {
                 logger.warn("FCAR_Status table does not exist yet: {}", e.getMessage());
             } else {
                 // Log other errors
-                DatabaseLogger.logSqlError(sql, new Object[]{fcar.getFcarId()}, e);
+                logger.logSqlError(sql, new Object[]{fcar.getFcarId()}, e);
                 throw e;
             }
         } finally {
@@ -1107,17 +1037,27 @@ public class FCARRepository implements IFCARRepository {
      * @throws SQLException If an error occurs while deleting data
      */
     private void deleteAdditionalData(Connection conn, int fcarId) throws SQLException {
-        // Delete assessment methods
-        deleteFromTable(conn, "FCAR_Assessment_Methods", fcarId);
+        String timerId = logger.startTimer("fcar.deleteAdditionalData");
 
-        // Delete student outcomes
-        deleteFromTable(conn, "FCAR_Student_Outcomes", fcarId);
+        try {
+            // Delete assessment methods
+            deleteFromTable(conn, "FCAR_Assessment_Methods", fcarId);
 
-        // Delete improvement actions
-        deleteFromTable(conn, "FCAR_Improvement_Actions", fcarId);
+            // Delete student outcomes
+            deleteFromTable(conn, "FCAR_Student_Outcomes", fcarId);
 
-        // Delete status
-        deleteFromTable(conn, "FCAR_Status", fcarId);
+            // Delete improvement actions
+            deleteFromTable(conn, "FCAR_Improvement_Actions", fcarId);
+
+            // Delete status
+            deleteFromTable(conn, "FCAR_Status", fcarId);
+
+            logger.stopTimer(timerId, "fcarId=" + fcarId);
+        } catch (SQLException e) {
+            logger.error("Error deleting additional data for FCAR {}: {}", fcarId, e.getMessage(), e);
+            logger.stopTimer(timerId, "fcarId=" + fcarId + ", success=false, error=" + e.getMessage());
+            throw e;
+        }
     }
 
     /**
@@ -1133,17 +1073,16 @@ public class FCARRepository implements IFCARRepository {
         String sql = "DELETE FROM " + tableName + " WHERE fcar_id = ?";
 
         try {
-            long startTime = System.currentTimeMillis();
             stmt = conn.prepareStatement(sql);
             stmt.setInt(1, fcarId);
-            int rowsDeleted = stmt.executeUpdate();
-            long queryTime = System.currentTimeMillis() - startTime;
+            logger.logStatementCreated(stmt, sql);
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, new Object[]{fcarId}, queryTime);
+            int rowsDeleted = stmt.executeUpdate();
 
             if (rowsDeleted > 0) {
-                logger.debug("Deleted {} rows from {}", rowsDeleted, tableName);
+                logger.debug("Deleted {} rows from {} for FCAR {}", rowsDeleted, tableName, fcarId);
+            } else {
+                logger.debug("No rows deleted from {} for FCAR {}", tableName, fcarId);
             }
         } catch (SQLException e) {
             // If the table doesn't exist yet, log it but don't fail
@@ -1153,7 +1092,7 @@ public class FCARRepository implements IFCARRepository {
                 logger.warn("{} table does not exist yet: {}", tableName, e.getMessage());
             } else {
                 // Log other errors
-                DatabaseLogger.logSqlError(sql, new Object[]{fcarId}, e);
+                logger.logSqlError(sql, new Object[]{fcarId}, e);
                 throw e;
             }
         } finally {
@@ -1173,22 +1112,31 @@ public class FCARRepository implements IFCARRepository {
             return;
         }
 
+        String timerId = logger.startTimer("fcar.saveAdditionalData");
         int fcarId = fcar.getFcarId();
 
-        // Delete existing data first to prevent duplicates
-        deleteAdditionalData(conn, fcarId);
+        try {
+            // Delete existing data first to prevent duplicates
+            deleteAdditionalData(conn, fcarId);
 
-        // Save assessment methods to a separate table
-        saveAssessmentMethods(conn, fcarId, fcar.getAssessmentMethods());
+            // Save assessment methods to a separate table
+            saveAssessmentMethods(conn, fcarId, fcar.getAssessmentMethods());
 
-        // Save student outcomes to a separate table
-        saveStudentOutcomes(conn, fcarId, fcar.getStudentOutcomes());
+            // Save student outcomes to a separate table
+            saveStudentOutcomes(conn, fcarId, fcar.getStudentOutcomes());
 
-        // Save improvement actions to a separate table
-        saveImprovementActions(conn, fcarId, fcar.getImprovementActions());
+            // Save improvement actions to a separate table
+            saveImprovementActions(conn, fcarId, fcar.getImprovementActions());
 
-        // Save status to a separate table
-        saveStatus(conn, fcarId, fcar.getStatus());
+            // Save status to a separate table
+            saveStatus(conn, fcarId, fcar.getStatus());
+
+            logger.stopTimer(timerId, "fcarId=" + fcarId);
+        } catch (SQLException e) {
+            logger.error("Error saving additional data for FCAR {}: {}", fcarId, e.getMessage(), e);
+            logger.stopTimer(timerId, "fcarId=" + fcarId + ", success=false, error=" + e.getMessage());
+            throw e;
+        }
     }
 
     /**
@@ -1201,6 +1149,7 @@ public class FCARRepository implements IFCARRepository {
      */
     private void saveAssessmentMethods(Connection conn, int fcarId, Map<String, String> methods) throws SQLException {
         if (methods == null || methods.isEmpty()) {
+            logger.debug("No assessment methods to save for FCAR {}", fcarId);
             return;
         }
 
@@ -1213,28 +1162,31 @@ public class FCARRepository implements IFCARRepository {
 
         try {
             stmt = conn.prepareStatement(sql);
+            logger.logStatementCreated(stmt, sql);
 
+            int count = 0;
             for (Map.Entry<String, String> entry : methods.entrySet()) {
-                long startTime = System.currentTimeMillis();
-
                 stmt.setInt(1, fcarId);
                 stmt.setString(2, entry.getKey());
                 stmt.setString(3, entry.getValue());
-                stmt.executeUpdate();
+                stmt.addBatch();
+                count++;
 
-                long queryTime = System.currentTimeMillis() - startTime;
-
-                // Log individual inserts only at trace level to avoid log flooding
-                if (logger.isTraceEnabled()) {
-                    DatabaseLogger.logSqlQuery(sql,
-                            new Object[]{fcarId, entry.getKey(), entry.getValue()}, queryTime);
+                // Execute in batches of 50 to avoid overly large batches
+                if (count % 50 == 0) {
+                    stmt.executeBatch();
+                    stmt.clearBatch();
                 }
             }
 
-            // Log summary at debug level
-            logger.debug("Saved {} assessment methods for FCAR ID: {}", methods.size(), fcarId);
+            // Execute any remaining batch items
+            if (count % 50 != 0) {
+                stmt.executeBatch();
+            }
+
+            logger.debug("Saved {} assessment methods for FCAR {}", count, fcarId);
         } catch (SQLException e) {
-            DatabaseLogger.logSqlError(sql, new Object[]{fcarId, "method_key", "method_value"}, e);
+            logger.logSqlError(sql, new Object[]{fcarId, "[method_key]", "[method_value]"}, e);
             throw e;
         } finally {
             closeResources(null, stmt, null);
@@ -1251,6 +1203,7 @@ public class FCARRepository implements IFCARRepository {
      */
     private void saveStudentOutcomes(Connection conn, int fcarId, Map<String, Integer> outcomes) throws SQLException {
         if (outcomes == null || outcomes.isEmpty()) {
+            logger.debug("No student outcomes to save for FCAR {}", fcarId);
             return;
         }
 
@@ -1263,28 +1216,31 @@ public class FCARRepository implements IFCARRepository {
 
         try {
             stmt = conn.prepareStatement(sql);
+            logger.logStatementCreated(stmt, sql);
 
+            int count = 0;
             for (Map.Entry<String, Integer> entry : outcomes.entrySet()) {
-                long startTime = System.currentTimeMillis();
-
                 stmt.setInt(1, fcarId);
                 stmt.setString(2, entry.getKey());
                 stmt.setInt(3, entry.getValue());
-                stmt.executeUpdate();
+                stmt.addBatch();
+                count++;
 
-                long queryTime = System.currentTimeMillis() - startTime;
-
-                // Log individual inserts only at trace level to avoid log flooding
-                if (logger.isTraceEnabled()) {
-                    DatabaseLogger.logSqlQuery(sql,
-                            new Object[]{fcarId, entry.getKey(), entry.getValue()}, queryTime);
+                // Execute in batches of 50 to avoid overly large batches
+                if (count % 50 == 0) {
+                    stmt.executeBatch();
+                    stmt.clearBatch();
                 }
             }
 
-            // Log summary at debug level
-            logger.debug("Saved {} student outcomes for FCAR ID: {}", outcomes.size(), fcarId);
+            // Execute any remaining batch items
+            if (count % 50 != 0) {
+                stmt.executeBatch();
+            }
+
+            logger.debug("Saved {} student outcomes for FCAR {}", count, fcarId);
         } catch (SQLException e) {
-            DatabaseLogger.logSqlError(sql, new Object[]{fcarId, "outcome_key", "[achievement_level]"}, e);
+            logger.logSqlError(sql, new Object[]{fcarId, "[outcome_key]", "[achievement_level]"}, e);
             throw e;
         } finally {
             closeResources(null, stmt, null);
@@ -1301,6 +1257,7 @@ public class FCARRepository implements IFCARRepository {
      */
     private void saveImprovementActions(Connection conn, int fcarId, Map<String, String> actions) throws SQLException {
         if (actions == null || actions.isEmpty()) {
+            logger.debug("No improvement actions to save for FCAR {}", fcarId);
             return;
         }
 
@@ -1313,28 +1270,36 @@ public class FCARRepository implements IFCARRepository {
 
         try {
             stmt = conn.prepareStatement(sql);
+            logger.logStatementCreated(stmt, sql);
 
+            int count = 0;
             for (Map.Entry<String, String> entry : actions.entrySet()) {
-                long startTime = System.currentTimeMillis();
+                // Skip statusComments, as they are stored in the FCAR_Status table
+                if ("statusComments".equals(entry.getKey())) {
+                    continue;
+                }
 
                 stmt.setInt(1, fcarId);
                 stmt.setString(2, entry.getKey());
                 stmt.setString(3, entry.getValue());
-                stmt.executeUpdate();
+                stmt.addBatch();
+                count++;
 
-                long queryTime = System.currentTimeMillis() - startTime;
-
-                // Log individual inserts only at trace level to avoid log flooding
-                if (logger.isTraceEnabled()) {
-                    DatabaseLogger.logSqlQuery(sql,
-                            new Object[]{fcarId, entry.getKey(), entry.getValue()}, queryTime);
+                // Execute in batches of 50 to avoid overly large batches
+                if (count % 50 == 0) {
+                    stmt.executeBatch();
+                    stmt.clearBatch();
                 }
             }
 
-            // Log summary at debug level
-            logger.debug("Saved {} improvement actions for FCAR ID: {}", actions.size(), fcarId);
+            // Execute any remaining batch items
+            if (count % 50 != 0) {
+                stmt.executeBatch();
+            }
+
+            logger.debug("Saved {} improvement actions for FCAR {}", count, fcarId);
         } catch (SQLException e) {
-            DatabaseLogger.logSqlError(sql, new Object[]{fcarId, "action_key", "action_value"}, e);
+            logger.logSqlError(sql, new Object[]{fcarId, "[action_key]", "[action_value]"}, e);
             throw e;
         } finally {
             closeResources(null, stmt, null);
@@ -1351,33 +1316,39 @@ public class FCARRepository implements IFCARRepository {
      */
     private void saveStatus(Connection conn, int fcarId, String status) throws SQLException {
         if (status == null || status.isEmpty()) {
+            logger.debug("No status to save for FCAR {}", fcarId);
             return;
         }
 
         // Create the table if it doesn't exist
         createStatusTable(conn);
 
+        // Get comments if they exist in the improvement actions
+        String comments = null;
+        FCAR fcar = findById(fcarId);
+        if (fcar != null && fcar.getImprovementActions() != null) {
+            comments = fcar.getImprovementActions().get("statusComments");
+        }
+
         // Insert or update the status
         PreparedStatement stmt = null;
-        String sql = "INSERT INTO FCAR_Status (fcar_id, status) VALUES (?, ?) " +
-                "ON DUPLICATE KEY UPDATE status = ?";
+        String sql = "INSERT INTO FCAR_Status (fcar_id, status, comments) VALUES (?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE status = ?, comments = ?";
 
         try {
-            long startTime = System.currentTimeMillis();
-
             stmt = conn.prepareStatement(sql);
             stmt.setInt(1, fcarId);
             stmt.setString(2, status);
-            stmt.setString(3, status);
-            stmt.executeUpdate();
+            stmt.setString(3, comments);
+            stmt.setString(4, status);
+            stmt.setString(5, comments);
+            logger.logStatementCreated(stmt, sql);
 
-            long queryTime = System.currentTimeMillis() - startTime;
+            int rowsAffected = stmt.executeUpdate();
 
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, new Object[]{fcarId, status, status}, queryTime);
-            logger.debug("Saved status '{}' for FCAR ID: {}", status, fcarId);
+            logger.debug("Saved status '{}' for FCAR {}, rows affected: {}", status, fcarId, rowsAffected);
         } catch (SQLException e) {
-            DatabaseLogger.logSqlError(sql, new Object[]{fcarId, status, status}, e);
+            logger.logSqlError(sql, new Object[]{fcarId, status, comments, status, comments}, e);
             throw e;
         } finally {
             closeResources(null, stmt, null);
@@ -1401,18 +1372,14 @@ public class FCARRepository implements IFCARRepository {
                 ")";
 
         try {
-            long startTime = System.currentTimeMillis();
-
             stmt = conn.createStatement();
+            logger.logStatementCreated(stmt, sql);
+
             stmt.executeUpdate(sql);
 
-            long queryTime = System.currentTimeMillis() - startTime;
-
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, queryTime);
-            logger.debug("Created FCAR_Assessment_Methods table if it didn't exist");
+            logger.debug("Ensured FCAR_Assessment_Methods table exists");
         } catch (SQLException e) {
-            DatabaseLogger.logSqlError(sql, e);
+            logger.logSqlError(sql, e);
             throw e;
         } finally {
             closeResources(null, stmt, null);
@@ -1436,18 +1403,14 @@ public class FCARRepository implements IFCARRepository {
                 ")";
 
         try {
-            long startTime = System.currentTimeMillis();
-
             stmt = conn.createStatement();
+            logger.logStatementCreated(stmt, sql);
+
             stmt.executeUpdate(sql);
 
-            long queryTime = System.currentTimeMillis() - startTime;
-
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, queryTime);
-            logger.debug("Created FCAR_Student_Outcomes table if it didn't exist");
+            logger.debug("Ensured FCAR_Student_Outcomes table exists");
         } catch (SQLException e) {
-            DatabaseLogger.logSqlError(sql, e);
+            logger.logSqlError(sql, e);
             throw e;
         } finally {
             closeResources(null, stmt, null);
@@ -1471,18 +1434,14 @@ public class FCARRepository implements IFCARRepository {
                 ")";
 
         try {
-            long startTime = System.currentTimeMillis();
-
             stmt = conn.createStatement();
+            logger.logStatementCreated(stmt, sql);
+
             stmt.executeUpdate(sql);
 
-            long queryTime = System.currentTimeMillis() - startTime;
-
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, queryTime);
-            logger.debug("Created FCAR_Improvement_Actions table if it didn't exist");
+            logger.debug("Ensured FCAR_Improvement_Actions table exists");
         } catch (SQLException e) {
-            DatabaseLogger.logSqlError(sql, e);
+            logger.logSqlError(sql, e);
             throw e;
         } finally {
             closeResources(null, stmt, null);
@@ -1499,23 +1458,20 @@ public class FCARRepository implements IFCARRepository {
         Statement stmt = null;
         String sql = "CREATE TABLE IF NOT EXISTS FCAR_Status (" +
                 "fcar_id INT PRIMARY KEY, " +
-                "status VARCHAR(50), " +
+                "status VARCHAR(50) NOT NULL, " +
+                "comments TEXT, " +
                 "FOREIGN KEY (fcar_id) REFERENCES FCAR(fcar_id) ON DELETE CASCADE" +
                 ")";
 
         try {
-            long startTime = System.currentTimeMillis();
-
             stmt = conn.createStatement();
+            logger.logStatementCreated(stmt, sql);
+
             stmt.executeUpdate(sql);
 
-            long queryTime = System.currentTimeMillis() - startTime;
-
-            // Log the successful query execution
-            DatabaseLogger.logSqlQuery(sql, queryTime);
-            logger.debug("Created FCAR_Status table if it didn't exist");
+            logger.debug("Ensured FCAR_Status table exists");
         } catch (SQLException e) {
-            DatabaseLogger.logSqlError(sql, e);
+            logger.logSqlError(sql, e);
             throw e;
         } finally {
             closeResources(null, stmt, null);

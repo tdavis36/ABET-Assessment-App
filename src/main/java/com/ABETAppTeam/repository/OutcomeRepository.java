@@ -193,7 +193,7 @@ public class OutcomeRepository {
     /**
      * Delete an outcome
      *
-     * @param id Outcome ID
+     * @param outcomeId Outcome ID
      * @return true if deleted successfully, false otherwise
      */
     public boolean delete(int outcomeId) {

@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 /**
- * Servlet filter to set up logging context for each request
+ * Servlet filter to set up logging context for each request.
  * This filter adds request-specific information to the logging context,
  * such as user ID, session ID, and request URL.
  */
@@ -29,9 +29,7 @@ public class LoggingFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        if (request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
-            HttpServletRequest httpRequest = (HttpServletRequest) request;
-            HttpServletResponse httpResponse = (HttpServletResponse) response;
+        if (request instanceof HttpServletRequest httpRequest && response instanceof HttpServletResponse httpResponse) {
 
             // Generate a unique request ID for tracking this request through the logs
             String requestId = generateRequestId();

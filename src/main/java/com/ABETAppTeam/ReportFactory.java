@@ -14,7 +14,7 @@ import java.util.UUID;
 public class ReportFactory {
 
     // In-memory storage of generated reports (in a real app, this might be a database)
-    private static Map<String, Report> reportMap = new HashMap<>();
+    private static final Map<String, Report> reportMap = new HashMap<>();
 
     /**
      * Generate a new report for a specific semester and year.

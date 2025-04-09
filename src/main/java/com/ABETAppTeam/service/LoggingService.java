@@ -11,10 +11,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Unified logging service for the ABET Assessment Application
@@ -32,12 +30,8 @@ public class LoggingService {
     private final Logger securityLogger;
     private final Logger accessLogger;
 
-    // Thread-local storage for nested timers
-    private final ThreadLocal<Map<String, String>> timerStorage =
-            ThreadLocal.withInitial(ConcurrentHashMap::new);
-
     /**
-     * Private constructor for singleton pattern
+     * Private constructor for a singleton pattern
      */
     private LoggingService() {
         this.appLogger = LoggerFactory.getLogger("com.ABETAppTeam.application");
@@ -72,31 +66,74 @@ public class LoggingService {
         System.setProperty("org.mariadb.jdbc.logging.type", "slf4j");
 
         // Get instance to ensure it's created
+        getInstance();
+
+        // Log initialization
         getInstance().info("Logging system initialized");
     }
 
     /*
-     * Application logging methods - Using format string versions only to reduce API surface
+     * Standard application logging methods
      */
+
+    public void trace(String message) {
+        appLogger.trace(message);
+    }
 
     public void trace(String format, Object... args) {
         appLogger.trace(format, args);
+    }
+
+    public void trace(String message, Throwable t) {
+        appLogger.trace(message, t);
+    }
+
+    public void debug(String message) {
+        appLogger.debug(message);
     }
 
     public void debug(String format, Object... args) {
         appLogger.debug(format, args);
     }
 
+    public void debug(String message, Throwable t) {
+        appLogger.debug(message, t);
+    }
+
+    public void info(String message) {
+        appLogger.info(message);
+    }
+
     public void info(String format, Object... args) {
         appLogger.info(format, args);
+    }
+
+    public void info(String message, Throwable t) {
+        appLogger.info(message, t);
+    }
+
+    public void warn(String message) {
+        appLogger.warn(message);
     }
 
     public void warn(String format, Object... args) {
         appLogger.warn(format, args);
     }
 
+    public void warn(String message, Throwable t) {
+        appLogger.warn(message, t);
+    }
+
+    public void error(String message) {
+        appLogger.error(message);
+    }
+
     public void error(String format, Object... args) {
         appLogger.error(format, args);
+    }
+
+    public void error(String message, Throwable t) {
+        appLogger.error(message, t);
     }
 
     /*
@@ -226,109 +263,119 @@ public class LoggingService {
 
     /**
      * Execute an SQL statement with logging and timing
-     * Centralized implementation for all SQL execution methods
      *
      * @param conn The database connection
-     * @param sql The SQL statement to execute
-     * @param isPrepared Whether this is a prepared statement
-     * @param isQuery Whether this is a query (vs. update)
-     * @param params Optional parameters for prepared statements
-     * @return Object that can be cast to either ResultSet or Integer depending on isQuery
+     * @param sql The SQL query to execute
+     * @return The result of the query execution
      * @throws SQLException If a database error occurs
      */
-    private Object executeSql(Connection conn, String sql, boolean isPrepared, boolean isQuery, Object... params)
-            throws SQLException {
+    public ResultSet executeQuery(Connection conn, String sql) throws SQLException {
         long startTime = System.currentTimeMillis();
         Statement stmt = null;
-        Object result = null;
-
         try {
-            // Log connection use
             logConnectionCreated(conn);
-
-            // Create statement based on type
-            if (isPrepared) {
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                // Set parameters for prepared statement
-                for (int i = 0; i < params.length; i++) {
-                    pstmt.setObject(i + 1, params[i]);
-                }
-                stmt = pstmt;
-            } else {
-                stmt = conn.createStatement();
-            }
-
-            // Log statement creation
+            stmt = conn.createStatement();
             logStatementCreated(stmt, sql);
-
-            // Execute statement based on type
-            if (isQuery) {
-                ResultSet rs;
-                if (isPrepared) {
-                    rs = ((PreparedStatement)stmt).executeQuery();
-                } else {
-                    rs = stmt.executeQuery(sql);
-                }
-                result = rs;
-            } else {
-                int rowsAffected;
-                if (isPrepared) {
-                    rowsAffected = ((PreparedStatement)stmt).executeUpdate();
-                } else {
-                    rowsAffected = stmt.executeUpdate(sql);
-                }
-                result = rowsAffected;
-            }
-
-            // Calculate and log execution time
+            ResultSet rs = stmt.executeQuery(sql);
             long executionTime = System.currentTimeMillis() - startTime;
             logStatementExecuted(stmt, sql, executionTime);
-
-            // Log the query with or without parameters
-            if (isPrepared) {
-                logSqlQuery(sql, params, executionTime);
-            } else {
-                logSqlQuery(sql, executionTime);
-            }
-
-            return result;
+            logSqlQuery(sql, executionTime);
+            return rs;
         } catch (SQLException e) {
-            // Log SQL error
-            if (isPrepared) {
-                logSqlError(sql, params, e);
-            } else {
-                logSqlError(sql, e);
-            }
+            logSqlError(sql, e);
             throw e;
         }
     }
 
     /**
-     * Execute a query and return the result set
-     */
-    public ResultSet executeQuery(Connection conn, String sql) throws SQLException {
-        return (ResultSet)executeSql(conn, sql, false, true);
-    }
-
-    /**
-     * Execute a prepared query with parameters and return the result set
+     * Execute an SQL prepared statement with logging and timing
+     *
+     * @param conn The database connection
+     * @param sql The SQL query to execute
+     * @param params The parameters for the prepared statement
+     * @return The result of the query execution
+     * @throws SQLException If a database error occurs
      */
     public ResultSet executeQuery(Connection conn, String sql, Object... params) throws SQLException {
-        return (ResultSet)executeSql(conn, sql, true, true, params);
+        long startTime = System.currentTimeMillis();
+        PreparedStatement stmt = null;
+        try {
+            logConnectionCreated(conn);
+            stmt = conn.prepareStatement(sql);
+            logStatementCreated(stmt, sql);
+
+            for (int i = 0; i < params.length; i++) {
+                stmt.setObject(i + 1, params[i]);
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            long executionTime = System.currentTimeMillis() - startTime;
+            logStatementExecuted(stmt, sql, executionTime);
+            logSqlQuery(sql, params, executionTime);
+            return rs;
+        } catch (SQLException e) {
+            logSqlError(sql, params, e);
+            throw e;
+        }
     }
 
     /**
-     * Execute an update and return the number of rows affected
+     * Execute an update statement with logging and timing
+     *
+     * @param conn The database connection
+     * @param sql The SQL statement to execute
+     * @return The number of rows affected
+     * @throws SQLException If a database error occurs
      */
     public int executeUpdate(Connection conn, String sql) throws SQLException {
-        return (Integer)executeSql(conn, sql, false, false);
+        long startTime = System.currentTimeMillis();
+        Statement stmt = null;
+        try {
+            logConnectionCreated(conn);
+            stmt = conn.createStatement();
+            logStatementCreated(stmt, sql);
+
+            int rowsAffected = stmt.executeUpdate(sql);
+            long executionTime = System.currentTimeMillis() - startTime;
+            logStatementExecuted(stmt, sql, executionTime);
+            logSqlQuery(sql, executionTime);
+            return rowsAffected;
+        } catch (SQLException e) {
+            logSqlError(sql, e);
+            throw e;
+        }
     }
 
     /**
-     * Execute a prepared update with parameters and return the number of rows affected
+     * Execute an update prepared statement with logging and timing
+     *
+     * @param conn The database connection
+     * @param sql The SQL statement to execute
+     * @param params The parameters for the prepared statement
+     * @return The number of rows affected
+     * @throws SQLException If a database error occurs
      */
     public int executeUpdate(Connection conn, String sql, Object... params) throws SQLException {
-        return (Integer)executeSql(conn, sql, true, false, params);
+        long startTime = System.currentTimeMillis();
+        PreparedStatement stmt = null;
+        try {
+            logConnectionCreated(conn);
+            stmt = conn.prepareStatement(sql);
+            logStatementCreated(stmt, sql);
+
+            for (int i = 0; i < params.length; i++) {
+                stmt.setObject(i + 1, params[i]);
+            }
+
+            int rowsAffected = stmt.executeUpdate();
+            long executionTime = System.currentTimeMillis() - startTime;
+            logStatementExecuted(stmt, sql, executionTime);
+            logSqlQuery(sql, params, executionTime);
+            return rowsAffected;
+        } catch (SQLException e) {
+            logSqlError(sql, params, e);
+            throw e;
+        }
     }
 
     /*
@@ -446,23 +493,16 @@ public class LoggingService {
      */
 
     /**
-     * Start timing an operation with support for nested timers
+     * Start timing an operation
      *
      * @param operationName Name of the operation to time
      * @return A unique timer ID to be used with stopTimer
      */
     public String startTimer(String operationName) {
-        // Generate a unique ID for this timer
         String timerId = UUID.randomUUID().toString();
-
-        // Store timer information in thread-local storage
-        Map<String, String> timerMap = timerStorage.get();
-        String timerKey = "timer_" + timerId;
-        timerMap.put(timerKey + "_name", operationName);
-        timerMap.put(timerKey + "_start", String.valueOf(System.currentTimeMillis()));
-
-        // Also store in MDC for potential use by appenders
-        MDC.put("currentOperation", operationName);
+        MDC.put("timerId", timerId);
+        MDC.put("operationName", operationName);
+        MDC.put("startTime", String.valueOf(System.currentTimeMillis()));
 
         if (perfLogger.isDebugEnabled()) {
             perfLogger.debug("Operation started: {}", operationName);
@@ -478,17 +518,12 @@ public class LoggingService {
      * @param additionalInfo Optional additional information about the operation
      */
     public void stopTimer(String timerId, String additionalInfo) {
-        if (timerId == null) {
-            return;
-        }
+        // Get stored values
+        String storedTimerId = MDC.get("timerId");
+        String operationName = MDC.get("operationName");
+        String startTimeStr = MDC.get("startTime");
 
-        // Retrieve timer information from thread-local storage
-        Map<String, String> timerMap = timerStorage.get();
-        String timerKey = "timer_" + timerId;
-        String operationName = timerMap.remove(timerKey + "_name");
-        String startTimeStr = timerMap.remove(timerKey + "_start");
-
-        if (operationName != null && startTimeStr != null) {
+        if (timerId != null && timerId.equals(storedTimerId) && startTimeStr != null) {
             long startTime = Long.parseLong(startTimeStr);
             long duration = System.currentTimeMillis() - startTime;
 
@@ -499,33 +534,12 @@ public class LoggingService {
                 perfLogger.info("Operation completed: {} ({}ms)",
                         operationName, duration);
             }
-
-            // Clear the MDC key if there are no more timers
-            if (timerMap.isEmpty()) {
-                MDC.remove("currentOperation");
-            } else {
-                // Find the most recent timer and set it as the current operation
-                String mostRecentTimer = null;
-                long mostRecentStart = 0;
-
-                for (String key : timerMap.keySet()) {
-                    if (key.endsWith("_start")) {
-                        String timeStr = timerMap.get(key);
-                        long time = Long.parseLong(timeStr);
-                        if (time > mostRecentStart) {
-                            mostRecentStart = time;
-                            // Extract timer name from key "timer_{id}_start"
-                            String timerId2 = key.substring(6, key.length() - 6);
-                            mostRecentTimer = timerMap.get("timer_" + timerId2 + "_name");
-                        }
-                    }
-                }
-
-                if (mostRecentTimer != null) {
-                    MDC.put("currentOperation", mostRecentTimer);
-                }
-            }
         }
+
+        // Clear MDC for this thread
+        MDC.remove("timerId");
+        MDC.remove("operationName");
+        MDC.remove("startTime");
     }
 
     /*
@@ -543,28 +557,19 @@ public class LoggingService {
      */
     public void logSecurityEvent(String eventType, String userId, String ipAddress,
                                  String details, boolean success) {
-        // Save old values to restore after logging
-        String oldUserId = MDC.get("userId");
-        String oldIpAddress = MDC.get("ipAddress");
-        String oldEventType = MDC.get("eventType");
-
-        // Set context for this log entry
         MDC.put("userId", userId);
         MDC.put("ipAddress", ipAddress);
         MDC.put("eventType", eventType);
 
-        try {
-            if (success) {
-                securityLogger.info("Security Event: {} - Success - {}", eventType, details);
-            } else {
-                securityLogger.warn("Security Event: {} - Failed - {}", eventType, details);
-            }
-        } finally {
-            // Restore or clear context
-            restoreMdcValue("userId", oldUserId);
-            restoreMdcValue("ipAddress", oldIpAddress);
-            restoreMdcValue("eventType", oldEventType);
+        if (success) {
+            securityLogger.info("Security Event: {} - Success - {}", eventType, details);
+        } else {
+            securityLogger.warn("Security Event: {} - Failed - {}", eventType, details);
         }
+
+        MDC.remove("userId");
+        MDC.remove("ipAddress");
+        MDC.remove("eventType");
     }
 
     /**
@@ -576,21 +581,13 @@ public class LoggingService {
      * @param action Action performed
      */
     public void logAccess(String userId, String ipAddress, String resource, String action) {
-        // Save old values to restore after logging
-        String oldUserId = MDC.get("userId");
-        String oldIpAddress = MDC.get("ipAddress");
-
-        // Set context for this log entry
         MDC.put("userId", userId);
         MDC.put("ipAddress", ipAddress);
 
-        try {
-            accessLogger.info("Access: {} - {} - {}", userId, resource, action);
-        } finally {
-            // Restore or clear context
-            restoreMdcValue("userId", oldUserId);
-            restoreMdcValue("ipAddress", oldIpAddress);
-        }
+        accessLogger.info("Access: {} - {} - {}", userId, resource, action);
+
+        MDC.remove("userId");
+        MDC.remove("ipAddress");
     }
 
     /**
@@ -612,16 +609,5 @@ public class LoggingService {
     public void clearUserContext() {
         MDC.remove("userId");
         MDC.remove("userRole");
-    }
-
-    /**
-     * Helper method to restore an MDC value
-     */
-    private void restoreMdcValue(String key, String oldValue) {
-        if (oldValue == null) {
-            MDC.remove(key);
-        } else {
-            MDC.put(key, oldValue);
-        }
     }
 }
