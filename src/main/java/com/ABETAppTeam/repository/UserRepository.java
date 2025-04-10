@@ -4,6 +4,7 @@ import com.ABETAppTeam.Admin;
 import com.ABETAppTeam.Professor;
 import com.ABETAppTeam.User;
 import com.ABETAppTeam.util.DataSourceFactory;
+import com.ABETAppTeam.service.LoggingService;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.*;
@@ -14,6 +15,7 @@ import java.util.List;
  * Repository class for handling User data access
  */
 public class UserRepository {
+    private static final LoggingService logger = LoggingService.getInstance();
     private final HikariDataSource dataSource;
 
     /**
@@ -44,7 +46,7 @@ public class UserRepository {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve user with ID " + userId, e);
         }
 
         return null;
@@ -71,7 +73,7 @@ public class UserRepository {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve user with email " + email, e);
         }
 
         return null;
@@ -95,7 +97,7 @@ public class UserRepository {
                 users.add(mapResultSetToUser(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve all users", e);
         }
 
         return users;
@@ -118,14 +120,13 @@ public class UserRepository {
 
             while (rs.next()) {
                 User user = mapResultSetToUser(rs);
-                if (user instanceof Professor) {
-                    Professor professor = (Professor) user;
+                if (user instanceof Professor professor) {
                     loadProfessorCourses(professor);
                     professors.add(professor);
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve all professors", e);
         }
 
         return professors;
@@ -156,7 +157,7 @@ public class UserRepository {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to authenticate user with email " + email, e);
         }
 
         return null;
@@ -202,7 +203,7 @@ public class UserRepository {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to save user: " + user.getEmail(), e);
         }
 
         return null;
@@ -214,7 +215,7 @@ public class UserRepository {
      * @throws SQLException If an error occurs while saving
      */
     private void saveProfessorDetails(Professor professor) throws SQLException {
-        // Add code to save professor-specific details if needed
+        // Add code to save professor-specific details if needed -
         // This might involve inserting into a Professor table or related tables
     }
 
@@ -245,7 +246,7 @@ public class UserRepository {
 
             return affectedRows > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to update user with ID " + user.getUserId(), e);
             return false;
         }
     }
@@ -256,7 +257,7 @@ public class UserRepository {
      * @throws SQLException If an error occurs while updating
      */
     private void updateProfessorDetails(Professor professor) throws SQLException {
-        // Add code to update professor-specific details if needed
+        // Add code to update professor-specific details if needed -
         // This might involve updating a Professor table or related tables
     }
 
@@ -274,7 +275,7 @@ public class UserRepository {
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to delete user with ID " + userId, e);
             return false;
         }
     }
@@ -295,7 +296,7 @@ public class UserRepository {
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to change password for user with ID " + userId, e);
             return false;
         }
     }

@@ -11,6 +11,7 @@ import java.util.Map;
 
 import com.ABETAppTeam.model.Outcome;
 import com.ABETAppTeam.util.DataSourceFactory;
+import com.ABETAppTeam.service.LoggingService;
 import com.zaxxer.hikari.HikariDataSource;
 
 /**
@@ -18,6 +19,7 @@ import com.zaxxer.hikari.HikariDataSource;
  */
 public class OutcomeRepository {
 
+    private static final LoggingService logger = LoggingService.getInstance();
     private final HikariDataSource dataSource;
 
     /**
@@ -47,7 +49,7 @@ public class OutcomeRepository {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve outcome with ID " + outcomeId, e);
         }
 
         return null;
@@ -70,7 +72,7 @@ public class OutcomeRepository {
                 outcomes.add(mapResultSetToOutcome(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve all outcomes", e);
         }
 
         return outcomes;
@@ -97,7 +99,7 @@ public class OutcomeRepository {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve outcomes for course " + courseId, e);
         }
 
         return outcomeIds;
@@ -127,7 +129,7 @@ public class OutcomeRepository {
                 courseOutcomes.get(courseId).add(outcomeId);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve all course outcomes", e);
         }
 
         return courseOutcomes;
@@ -160,7 +162,7 @@ public class OutcomeRepository {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to save outcome: " + outcome.getDescription(), e);
         }
 
         return outcome;
@@ -184,11 +186,12 @@ public class OutcomeRepository {
             int affectedRows = stmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to update outcome with ID " + outcome.getId(), e);
         }
 
         return false;
     }
+
 
     /**
      * Delete an outcome
@@ -207,7 +210,7 @@ public class OutcomeRepository {
             int affectedRows = stmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to delete outcome with ID " + outcomeId, e);
         }
 
         return false;

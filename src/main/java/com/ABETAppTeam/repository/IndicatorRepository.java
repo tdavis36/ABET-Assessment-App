@@ -127,7 +127,7 @@ public class IndicatorRepository {
      * @return The saved indicator with updated ID
      */
     public Indicator save(Indicator indicator) {
-        final String sql = "INSERT INTO indicator (outcome_id, indicator_desc) VALUES (?, ?)";
+        final String sql = "INSERT INTO Indicator (outcome_id, indicator_desc) VALUES (?, ?)";
         String timerId = logger.startTimer("saveIndicator");
 
         try (Connection conn = dataSource.getConnection()) {

@@ -1,7 +1,7 @@
 package com.ABETAppTeam.repository;
 
 import com.ABETAppTeam.Course;
-import com.ABETAppTeam.FCAR;
+import com.ABETAppTeam.service.LoggingService;
 import com.ABETAppTeam.util.DataSourceFactory;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -15,6 +15,7 @@ import java.util.Map;
  * Repository class for Course data access
  */
 public class CourseRepository {
+    private static final LoggingService logger = LoggingService.getInstance();
     private final HikariDataSource dataSource;
 
     /**
@@ -46,7 +47,7 @@ public class CourseRepository {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve course with code " + courseCode, e);
         }
 
         return null;
@@ -76,7 +77,7 @@ public class CourseRepository {
                 loadFCARs(conn, course);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve all courses", e);
         }
 
         return courses;
@@ -109,7 +110,7 @@ public class CourseRepository {
                 loadFCARs(conn, course);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to retrieve courses for department " + deptId, e);
         }
 
         return courses;
@@ -134,7 +135,7 @@ public class CourseRepository {
                 Course existingCourse = findByCourseCode(course.getCourseCode());
 
                 if (existingCourse == null) {
-                    // Insert new course
+                    // Insert a new course
                     String sql = "INSERT INTO Course (course_code, course_name, course_desc, dept_id, credits, semester_offered) " +
                             "VALUES (?, ?, ?, ?, ?, ?)";
                     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -176,13 +177,13 @@ public class CourseRepository {
                 return course;
             } catch (SQLException e) {
                 conn.rollback();
-                e.printStackTrace();
+                logger.error("Failed to save course: " + course.getCourseCode(), e);
                 return null;
             } finally {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to save course: " + course.getCourseCode(), e);
             return null;
         }
     }
@@ -198,7 +199,7 @@ public class CourseRepository {
             conn.setAutoCommit(false);
 
             try {
-                // Delete from Course_Outcome first to maintain referential integrity
+                // Delete it from Course_Outcome first to maintain referential integrity
                 String sql = "DELETE FROM Course_Outcome WHERE course_code = ?";
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.setString(1, courseCode);
@@ -216,13 +217,13 @@ public class CourseRepository {
                 }
             } catch (SQLException e) {
                 conn.rollback();
-                e.printStackTrace();
+                logger.error("Failed to delete course: " + courseCode, e);
                 return false;
             } finally {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to delete course: " + courseCode, e);
             return false;
         }
     }

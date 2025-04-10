@@ -40,10 +40,10 @@
 
         if (user instanceof Admin) {
             // Admin can see all FCARs
-            allFCARs = fcarRepository.getAllFCARs();
+            allFCARs = fcarRepository.findAll();
         } else if (user instanceof Professor) {
             // Professor can only see their own FCARs
-            allFCARs = fcarRepository.getFCARsByProfessorId(user.getUserId());
+            allFCARs = fcarRepository.findByInstructorId(user.getUserId());
         }
 
         // Set the allFCARs attribute for JSTL access
