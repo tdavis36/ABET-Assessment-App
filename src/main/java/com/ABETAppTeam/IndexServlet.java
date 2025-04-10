@@ -124,7 +124,7 @@ public class IndexServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/AdminServlet");
                 } else {
                     // Generic user type - redirect to a default page
-                    response.sendRedirect(request.getContextPath() + "/");
+                    response.sendRedirect(request.getContextPath() + "/index");
                 }
                 return;
             } else {
