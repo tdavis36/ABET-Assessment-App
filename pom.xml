@@ -155,12 +155,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.glassfish.web</groupId>
-            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-            <version>3.0.1</version>
-        </dependency>
-
         <!-- Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -221,6 +215,7 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
+                    <excludes>org/eclipse/tags/shaded/**</excludes>
                 </configuration>
             </plugin>
 
@@ -316,7 +311,7 @@
                         <!-- ensures JSP is loaded -->
                         <module>jsp</module>
                     </modules>
-                    <jvmArgs>-Dorg.eclipse.jetty.server.webapp.ContainerExcludeJarPattern=^.*(jakarta.servlet.jsp.jstl-3\.0\.1\.jar).*$</jvmArgs>
+                    <jvmArgs>-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=ERROR</jvmArgs>
                     <systemProperties>
                         <systemProperty>
                             <name>java.util.logging.config.file</name>
@@ -325,6 +320,25 @@
                         <systemProperty>
                             <name>xml.catalog.files</name>
                             <value>${project.basedir}/src/main/resources/catalog.xml</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>org.slf4j.simpleLogger.log.org.eclipse.tags.shaded</name>
+                            <value>ERROR</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>org.slf4j.simpleLogger.log.org.eclipse.jetty.annotations.AnnotationParser</name>
+                            <value>ERROR</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>org.eclipse.jetty.util.log.LEVEL</name>
+                            <value>INFO</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>java.util.logging.config.file</name>
+                            <value>${project.basedir}/src/main/resources/jetty-logging.properties</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <tmpDir>${project.build.directory}/tmp</tmpDir>
                         </systemProperty>
                     </systemProperties>
                 </configuration>

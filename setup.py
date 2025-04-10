@@ -317,14 +317,14 @@ def docker_compose_operation(operation):
 services:
   db:
     container_name: abetapp_db
-    image: mariadb:10.11  # Use MariaDB instead of PostgreSQL to match your project
+    image: mariadb:10.11
     environment:
       MARIADB_DATABASE: abetapp
       MARIADB_USER: user
       MARIADB_PASSWORD: pass
       MARIADB_ROOT_PASSWORD: rootpassword
     ports:
-      - "3306:3306"  # Use MariaDB port instead of PostgreSQL
+      - "3306:3306"
     volumes:
       - mariadbdata:/var/lib/mysql
     restart: unless-stopped

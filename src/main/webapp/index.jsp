@@ -6,6 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ABET Assessment Application</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
+    <style>
+        /* Local styles for error message - can be moved to global styles.css */
+        .error-message {
+            color: var(--danger);
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: rgba(220, 53, 69, 0.1); /* --danger with opacity */
+            border-radius: 5px;
+            border: 1px solid var(--danger);
+        }
+    </style>
 </head>
 <body>
 <div class="dashboard">
@@ -17,13 +28,13 @@
         <h2>Sign In</h2>
 
         <% if (request.getAttribute("error") != null) { %>
-        <div style="color: var(--danger); margin-bottom: 20px; padding: 10px; background-color: #ffebee; border-radius: 5px; border: 1px solid #ffcdd2;">
-            <%= request.getAttribute("error") %>s
+        <div class="error-message">
+            <%= request.getAttribute("error") %>
         </div>
         <% } %>
 
         <div class="form-container">
-            <form action="${pageContext.request.contextPath}/index" method="post">
+            <form action="${pageContext.request.contextPath}/" method="post">
                 <div class="form-group">
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" required>

@@ -44,6 +44,12 @@ public class IndexServlet extends HttpServlet {
         String timerId = logger.startTimer("indexServlet.doGet");
         HttpSession session = request.getSession(false);
 
+        String action = request.getParameter("action");
+        if ("logout".equals(action)) {
+            handleLogout(request, response);
+            return;
+        }
+
         try {
             // Check if user is already logged in
             if (session != null && session.getAttribute("user") != null) {
@@ -53,7 +59,7 @@ public class IndexServlet extends HttpServlet {
 
                 logger.info("User already logged in (userId={}, role={}), redirecting to dashboard", userId, userRole);
 
-                // Redirect based on user role
+                // Redirect based on a user role
                 if (user instanceof Admin) {
                     logger.debug("Redirecting admin to AdminServlet");
                     response.sendRedirect(request.getContextPath() + "/AdminServlet");
@@ -65,7 +71,7 @@ public class IndexServlet extends HttpServlet {
                 }
             }
 
-            // If no valid session or user not logged in, show login page
+            // Forwards user to index with auth error
             logger.debug("No valid session or user not logged in, showing login page");
             request.getRequestDispatcher("/WEB-INF/index.jsp").forward(request, response);
         } catch (Exception e) {
@@ -84,92 +90,53 @@ public class IndexServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String timerId = logger.startTimer("indexServlet.doPost");
         String email = request.getParameter("email");
         String password = request.getParameter("password");
-        String ipAddress = getClientIpAddress(request);
+
+        // Basic validation
+        if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
+            request.setAttribute("error", "Please enter both email and password");
+            request.getRequestDispatcher("/index.jsp").forward(request, response);
+            return;
+        }
 
         try {
-            // Basic validation
-            if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
-                logger.warn("Login attempt failed: missing email or password from IP {}", ipAddress);
+            // Authenticate user
+            User user = userRepository.authenticate(email, password);
 
-                // Log security event
-                logger.logSecurityEvent("LOGIN_ATTEMPT", "anonymous", ipAddress,
-                        "Missing email or password", false);
-
-                request.setAttribute("error", "Please enter both email and password");
-                request.getRequestDispatcher("/WEB-INF/index.jsp").forward(request, response);
-                return;
-            }
-
-            try {
-                // Authenticate user
-                User user = userRepository.authenticate(email, password);
-
-                if (user != null) {
-                    String userId = String.valueOf(user.getUserId());
-                    String userRole = user.getRoleName();
-
-                    logger.info("User authenticated successfully: email={}, userId={}, role={}",
-                            email, userId, userRole);
-
-                    // Log successful security event
-                    logger.logSecurityEvent("LOGIN_SUCCESS", userId, ipAddress,
-                            "User logged in successfully", true);
-
-                    // Create a new session (invalidate any existing session first)
-                    HttpSession session = request.getSession(false);
-                    if (session != null) {
-                        logger.debug("Invalidating existing session: {}", session.getId());
-                        session.invalidate();
-                    }
-
-                    session = request.getSession(true);
-                    logger.debug("Created new session: {}", session.getId());
-
-                    session.setAttribute("user", user);
-                    session.setAttribute("userId", user.getUserId());
-
-                    // Set additional attributes based on user type
-                    if (user instanceof Professor) {
-                        session.setAttribute("professorName", user.getFirstName() + " " + user.getLastName());
-                        logger.debug("Redirecting professor to ProfessorServlet");
-                        response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
-                    } else if (user instanceof Admin) {
-                        session.setAttribute("adminName", user.getFirstName() + " " + user.getLastName());
-                        logger.debug("Redirecting admin to AdminServlet");
-                        response.sendRedirect(request.getContextPath() + "/AdminServlet");
-                    } else {
-                        // Generic user type - redirect to a default page
-                        logger.debug("Redirecting generic user to index");
-                        response.sendRedirect(request.getContextPath() + "/index");
-                    }
-                    return;
-                } else {
-                    // Authentication failed
-                    logger.warn("Login failed: Invalid credentials for email={} from IP={}", email, ipAddress);
-
-                    // Log failed security event
-                    logger.logSecurityEvent("LOGIN_FAILURE", "unknown", ipAddress,
-                            "Invalid email or password", false);
-
-                    request.setAttribute("error", "Invalid email or password");
-                    request.getRequestDispatcher("/WEB-INF/index.jsp").forward(request, response);
+            if (user != null) {
+                // Create a new session (invalidate any existing session first)
+                HttpSession session = request.getSession(false);
+                if (session != null) {
+                    session.invalidate();
                 }
-            } catch (Exception e) {
-                // Log the error
-                logger.error("Error during authentication: {}", e.getMessage(), e);
 
-                // Log security event
-                logger.logSecurityEvent("LOGIN_ERROR", "unknown", ipAddress,
-                        "Error during authentication: " + e.getMessage(), false);
+                session = request.getSession(true);
+                session.setAttribute("user", user);
+                session.setAttribute("userId", user.getUserId());
 
-                request.setAttribute("error", "An error occurred during authentication. Please try again.");
-                request.getRequestDispatcher("/WEB-INF/index.jsp").forward(request, response);
+                // Set additional attributes based on a user type
+                if (user instanceof Professor) {
+                    session.setAttribute("professorName", user.getFirstName() + " " + user.getLastName());
+                    response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
+                } else if (user instanceof Admin) {
+                    session.setAttribute("adminName", user.getFirstName() + " " + user.getLastName());
+                    response.sendRedirect(request.getContextPath() + "/AdminServlet");
+                } else {
+                    // Generic user type - redirect to a default page
+                    response.sendRedirect(request.getContextPath() + "/");
+                }
+                return;
+            } else {
+                // Authentication failed - specify a clear error message
+                request.setAttribute("error", "Error: Incorrect email or password");
+                request.getRequestDispatcher("/index.jsp").forward(request, response);
             }
-        } finally {
-            logger.stopTimer(timerId, "email=" + (email != null ? email : "null"));
+        } catch (Exception e) {
+            // Log the error
+            getServletContext().log("Error during authentication: " + e.getMessage(), e);
+            request.setAttribute("error", "Error: Authentication failed. Please try again.");
+            request.getRequestDispatcher("/index.jsp").forward(request, response);
         }
     }
 
@@ -203,7 +170,7 @@ public class IndexServlet extends HttpServlet {
                 logger.debug("No active session found during logout attempt");
             }
 
-            response.sendRedirect(request.getContextPath() + "/index");
+            response.sendRedirect(request.getContextPath() + "/");
         } finally {
             logger.stopTimer(timerId, null);
         }
