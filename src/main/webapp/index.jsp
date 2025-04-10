@@ -34,7 +34,7 @@
         <% } %>
 
         <div class="form-container">
-            <form action="${pageContext.request.contextPath}/" method="post">
+            <form action="${pageContext.request.contextPath}/index" method="post">
                 <div class="form-group">
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" required>

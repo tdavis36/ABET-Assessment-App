@@ -73,7 +73,7 @@ public class IndexServlet extends HttpServlet {
 
             // Forwards user to index with auth error
             logger.debug("No valid session or user not logged in, showing login page");
-            request.getRequestDispatcher("/WEB-INF/index.jsp").forward(request, response);
+            request.getRequestDispatcher("/index.jsp").forward(request, response);
         } catch (Exception e) {
             logger.error("Error in IndexServlet.doGet: {}", e.getMessage(), e);
             throw e;
