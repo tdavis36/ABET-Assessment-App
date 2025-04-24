@@ -7,7 +7,8 @@ import shutil
 import tempfile
 import time
 import re
-import winreg
+if platform.system() == 'Windows':
+    import winreg
 from pathlib import Path
 
 # First check if required dependencies are installed
@@ -62,7 +63,7 @@ def docker_compose_command():
 def detect_python_command():
     """
     Detect which Python command is available on Windows.
-    For Windows, tries 'py' first, then falls back to 'python' or 'python3'.
+    For Windows, try 'py' first, then fall back to 'python' or 'python3'.
     Returns the first working command.
     """
     import subprocess

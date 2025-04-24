@@ -62,11 +62,11 @@ public class IndexServlet extends HttpServlet {
                 // Redirect based on a user role
                 if (user instanceof Admin) {
                     logger.debug("Redirecting admin to AdminServlet");
-                    response.sendRedirect(request.getContextPath() + "/AdminServlet");
+                    response.sendRedirect(request.getContextPath() + "/admin");
                     return;
                 } else if (user instanceof Professor) {
                     logger.debug("Redirecting professor to ProfessorServlet");
-                    response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
+                    response.sendRedirect(request.getContextPath() + "/professor");
                     return;
                 }
             }
@@ -118,10 +118,10 @@ public class IndexServlet extends HttpServlet {
                 // Set additional attributes based on a user type
                 if (user instanceof Professor) {
                     session.setAttribute("professorName", user.getFirstName() + " " + user.getLastName());
-                    response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
+                    response.sendRedirect(request.getContextPath() + "/professor");
                 } else if (user instanceof Admin) {
                     session.setAttribute("adminName", user.getFirstName() + " " + user.getLastName());
-                    response.sendRedirect(request.getContextPath() + "/AdminServlet");
+                    response.sendRedirect(request.getContextPath() + "/admin");
                 } else {
                     // Generic user type - redirect to a default page
                     response.sendRedirect(request.getContextPath() + "/index");
