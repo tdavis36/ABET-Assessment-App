@@ -426,73 +426,216 @@ def mariadb_operation(operation):
     # Get service name
     service_name = get_mariadb_service_name()
 
+    # Find mysql client executable
+    mysql_client = shutil.which("mysql") or shutil.which("mariadb")
+    if not mysql_client:
+        # Try to find in installation directory
+        install_path = get_mariadb_install_path()
+        if install_path:
+            bin_path = os.path.join(install_path, "bin")
+            potential_clients = [os.path.join(bin_path, "mysql.exe"),
+                                 os.path.join(bin_path, "mariadb.exe")]
+            for client in potential_clients:
+                if os.path.exists(client):
+                    mysql_client = client
+                    break
+
+    if not mysql_client:
+        print("MariaDB client executable not found. Make sure MariaDB is properly installed and 'mysql' is in your PATH.")
+        return False
+
+    # Maximum number of attempts for database operations
+    max_attempts = 3
+
     try:
         if operation == "start":
             print(f"Starting MariaDB service ({service_name})...")
 
             # Check if service is already running
-            if is_mariadb_service_running():
-                print("MariaDB service is already running.")
-                return True
+            is_running = is_mariadb_service_running()
 
-            # Start the service
-            result = subprocess.run(
-                ["sc", "start", service_name],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False
-            )
-
-            if result.returncode != 0:
-                print(f"Failed to start MariaDB service: {result.stderr}")
-                return False
-
-            # Wait a moment for the service to start
-            time.sleep(3)
-
-            # Create database and user if they don't exist
-            try:
-                # Connect as root to create database and user
-                # Get root password from db_params
-                root_password = db_params['db_root_password']
-
-                # Prepare commands to create database and user
-                commands = [
-                    f"CREATE DATABASE IF NOT EXISTS {db_params['db_name']};",
-                    f"CREATE USER IF NOT EXISTS '{db_params['db_username']}'@'localhost' IDENTIFIED BY '{db_params['db_password']}';",
-                    f"CREATE USER IF NOT EXISTS '{db_params['db_username']}'@'%' IDENTIFIED BY '{db_params['db_password']}';",
-                    f"GRANT ALL PRIVILEGES ON {db_params['db_name']}.* TO '{db_params['db_username']}'@'localhost';",
-                    f"GRANT ALL PRIVILEGES ON {db_params['db_name']}.* TO '{db_params['db_username']}'@'%';",
-                    f"FLUSH PRIVILEGES;"
-                ]
-
-                # Join commands into a single string
-                sql_commands = " ".join(commands)
-
-                # Build the MySQL command
-                mysql_cmd = [
-                    "mysql",
-                    "-u", "root",
-                    f"-p{root_password}",
-                    "-e", sql_commands
-                ]
-
-                # Run the command
-                subprocess.run(
-                    mysql_cmd,
+            if not is_running:
+                # Start the service
+                result = subprocess.run(
+                    ["sc", "start", service_name],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
                     check=False
                 )
 
-                print(f"Database '{db_params['db_name']}' and user '{db_params['db_username']}' created/configured.")
-            except Exception as e:
-                print(f"Warning: Could not set up database and user: {e}")
-                print("You may need to manually create the database and user.")
+                if result.returncode != 0:
+                    print(f"Failed to start MariaDB service: {result.stderr}")
+                    return False
 
-            print("MariaDB service started successfully.")
+                # Wait for the service to be fully started
+                print("Waiting for MariaDB service to start...")
+                wait_attempts = 0
+                while not is_mariadb_service_running() and wait_attempts < 10:
+                    time.sleep(1)
+                    wait_attempts += 1
+
+                if not is_mariadb_service_running():
+                    print("Warning: MariaDB service did not start within the expected time.")
+                    return False
+
+                print("MariaDB service started.")
+                # Additional wait for the server to be ready for connections
+                time.sleep(5)
+            else:
+                print("MariaDB service is already running.")
+
+            # Verify the server is accepting connections before proceeding
+            connection_check = False
+            for attempt in range(3):
+                try:
+                    # Try a simple command to check connection
+                    check_cmd = [
+                        mysql_client,
+                        "-u", "root",
+                        f"-p{db_params['db_root_password']}",
+                        "-e", "SELECT 1;"
+                    ]
+
+                    check_result = subprocess.run(
+                        check_cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        check=False
+                    )
+
+                    if check_result.returncode == 0:
+                        connection_check = True
+                        break
+                    else:
+                        print(f"Waiting for MariaDB to accept connections (attempt {attempt + 1}/{3})...")
+                        time.sleep(3)
+                except Exception as e:
+                    print(f"Connection attempt {attempt + 1} failed: {e}")
+                    time.sleep(3)
+
+            if not connection_check:
+                print("Warning: Could not establish a connection to MariaDB after starting the service.")
+                print(f"Please verify the root password (current: {db_params['db_root_password']}).")
+                return False
+
+            # Now check if the database exists
+            database_exists = False
+            try:
+                # Check if database exists
+                check_db_cmd = [
+                    mysql_client,
+                    "-u", "root",
+                    f"-p{db_params['db_root_password']}",
+                    "-e", f"SHOW DATABASES LIKE '{db_params['db_name']}';"
+                ]
+
+                check_db_result = subprocess.run(
+                    check_db_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=False
+                )
+
+                # If database exists, output will contain database name
+                database_exists = db_params['db_name'] in check_db_result.stdout
+            except Exception as e:
+                print(f"Error checking if database exists: {e}")
+
+            if database_exists:
+                print(f"Database '{db_params['db_name']}' already exists.")
+            else:
+                print(f"Database '{db_params['db_name']}' does not exist. Creating it now...")
+
+                # Create database and user if they don't exist
+                for attempt in range(max_attempts):
+                    try:
+                        # Prepare commands to create database and user
+                        commands = [
+                            f"CREATE DATABASE IF NOT EXISTS {db_params['db_name']};",
+                            f"CREATE USER IF NOT EXISTS '{db_params['db_username']}'@'localhost' IDENTIFIED BY '{db_params['db_password']}';",
+                            f"CREATE USER IF NOT EXISTS '{db_params['db_username']}'@'%' IDENTIFIED BY '{db_params['db_password']}';",
+                            f"GRANT ALL PRIVILEGES ON {db_params['db_name']}.* TO '{db_params['db_username']}'@'localhost';",
+                            f"GRANT ALL PRIVILEGES ON {db_params['db_name']}.* TO '{db_params['db_username']}'@'%';",
+                            f"FLUSH PRIVILEGES;"
+                        ]
+
+                        # Execute each command individually for better error handling
+                        success = True
+                        for cmd in commands:
+                            mysql_cmd = [
+                                mysql_client,
+                                "-u", "root",
+                                f"-p{db_params['db_root_password']}",
+                                "-e", cmd
+                            ]
+
+                            cmd_result = subprocess.run(
+                                mysql_cmd,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                text=True,
+                                check=False
+                            )
+
+                            if cmd_result.returncode != 0:
+                                print(f"Command failed: {cmd}")
+                                print(f"Error: {cmd_result.stderr}")
+                                success = False
+                                break
+
+                        if success:
+                            print(f"Database '{db_params['db_name']}' and user '{db_params['db_username']}' created/configured successfully.")
+                            break
+                        elif attempt < max_attempts - 1:
+                            print(f"Retrying database creation (attempt {attempt + 2}/{max_attempts})...")
+                            time.sleep(2)
+                        else:
+                            print("Failed to create database after multiple attempts.")
+                            print("You may need to manually create the database and user with these commands:")
+                            for cmd in commands:
+                                print(f"    {cmd}")
+                            return False
+
+                    except Exception as e:
+                        if attempt < max_attempts - 1:
+                            print(f"Error during database creation (attempt {attempt + 1}): {e}")
+                            print(f"Retrying in 2 seconds...")
+                            time.sleep(2)
+                        else:
+                            print(f"Failed to create database after {max_attempts} attempts: {e}")
+                            print("You may need to manually create the database and user.")
+                            return False
+
+            # Verify the user can connect with the specified credentials
+            try:
+                user_check_cmd = [
+                    mysql_client,
+                    "-u", db_params['db_username'],
+                    f"-p{db_params['db_password']}",
+                    db_params['db_name'],
+                    "-e", "SELECT 1;"
+                ]
+
+                user_check_result = subprocess.run(
+                    user_check_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=False
+                )
+
+                if user_check_result.returncode == 0:
+                    print(f"Verified that user '{db_params['db_username']}' can connect to database '{db_params['db_name']}'.")
+                else:
+                    print(f"Warning: User '{db_params['db_username']}' cannot connect to database '{db_params['db_name']}'.")
+                    print(f"Error: {user_check_result.stderr}")
+                    print("You may need to check your credentials or permissions.")
+            except Exception as e:
+                print(f"Error verifying user connection: {e}")
+
             return True
 
         elif operation == "stop":
@@ -516,6 +659,16 @@ def mariadb_operation(operation):
                 print(f"Failed to stop MariaDB service: {result.stderr}")
                 return False
 
+            # Wait for the service to fully stop
+            wait_attempts = 0
+            while is_mariadb_service_running() and wait_attempts < 10:
+                time.sleep(1)
+                wait_attempts += 1
+
+            if is_mariadb_service_running():
+                print("Warning: MariaDB service did not stop within the expected time.")
+                return False
+
             print("MariaDB service stopped successfully.")
             return True
 
@@ -531,9 +684,12 @@ def mariadb_operation(operation):
 
             # Stop the service if it's running
             if is_mariadb_service_running():
-                mariadb_operation("stop")
-                # Wait a moment for the service to stop
-                time.sleep(3)
+                if not mariadb_operation("stop"):
+                    print("Failed to stop MariaDB service for restart. Trying to start anyway...")
+                else:
+                    # Wait a moment for the service to fully stop
+                    print("Waiting for service to fully stop before restart...")
+                    time.sleep(3)
 
             # Start the service
             return mariadb_operation("start")
@@ -541,9 +697,8 @@ def mariadb_operation(operation):
         else:
             print(f"Unknown operation: {operation}")
             return False
-
     except Exception as e:
-        print(f"Error performing MariaDB operation: {e}")
+        print(f"Error performing MariaDB operation '{operation}': {e}")
         return False
 
 # Function to handle DB operations based on platform
@@ -661,7 +816,6 @@ volumes:
 
     return False
 
-
 # Database migration operations
 def run_flyway_operation(operation, db_params=None):
     """Run a Flyway database operation using Maven"""
@@ -669,13 +823,35 @@ def run_flyway_operation(operation, db_params=None):
         db_params = get_db_connection_params()
 
     # Check if mvn is available
-    if not shutil.which("mvn"):
-        click.echo("Maven is not available. Please install Maven.")
+    mvn_executable = shutil.which("mvn")
+    if not mvn_executable:
+        click.echo("Maven (mvn) is not found in your PATH.")
+        click.echo("Please install Maven and add it to your PATH or provide the full path to mvn.cmd")
+
+        # Try to find Maven in common installation locations on Windows
+        if OS_SETTINGS['platform'] == 'windows':
+            potential_locations = [
+                r"C:\Program Files\apache-maven\bin\mvn.cmd",
+                r"C:\Program Files\Maven\bin\mvn.cmd",
+                r"C:\maven\bin\mvn.cmd",
+                r"C:\ProgramData\chocolatey\bin\mvn.cmd"
+            ]
+
+            for location in potential_locations:
+                if os.path.exists(location):
+                    click.echo(f"Found Maven at: {location}")
+                    mvn_executable = location
+                    break
+
+            if not mvn_executable and click.confirm("Would you like to open the Maven download page?"):
+                import webbrowser
+                webbrowser.open("https://maven.apache.org/download.cgi")
+
         return False
 
     # Build the Maven command
     mvn_cmd = [
-        "mvn",  # Use direct string instead of OS_SETTINGS["mvn_cmd"]
+        mvn_executable,  # Use the actual path to mvn executable
         f"flyway:{operation}",
         f"-Dflyway.url=jdbc:mariadb://{db_params['db_host']}:{db_params['db_port']}/{db_params['db_name']}",
         f"-Dflyway.user={db_params['db_username']}",
@@ -689,13 +865,19 @@ def run_flyway_operation(operation, db_params=None):
 
     # Run the Maven command
     click.echo(f"Running Flyway {operation}...")
-    result = run_command(mvn_cmd, cwd=PROJECT_ROOT, capture_output=False)
+    click.echo(f"Using Maven command: {mvn_executable}")
 
-    if result:
-        click.echo(f"Flyway {operation} completed successfully.")
-        return True
-    else:
-        click.echo(f"Flyway {operation} failed.")
+    try:
+        result = run_command(mvn_cmd, cwd=PROJECT_ROOT, capture_output=False)
+
+        if result:
+            click.echo(f"Flyway {operation} completed successfully.")
+            return True
+        else:
+            click.echo(f"Flyway {operation} failed.")
+            return False
+    except Exception as e:
+        click.echo(f"Error running Maven command: {e}")
         return False
 
 # Create the main command group
