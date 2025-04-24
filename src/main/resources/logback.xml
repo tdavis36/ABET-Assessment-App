@@ -3,7 +3,7 @@
     <!-- Properties for dynamic configuration -->
     <property name="LOG_DIR" value="${LOG_DIR:-logs}" />
     <property name="LOG_ARCHIVE" value="${LOG_DIR}/archive" />
-    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{userId}] [%X{requestId}] - %msg%n" />
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36}%replace(%X{userId}){'^.+$',' [$0]'}%replace(%X{requestId}){'^.+$',' [$0]'} - %msg%n" />
     <property name="LOG_PATTERN_SQL" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
 
     <!-- Console appender -->
@@ -94,7 +94,7 @@
         <appender-ref ref="CONSOLE" />
     </logger>
 
-    <logger name="com.ABETAppTeam.database" level="DEBUG" additivity="false">
+    <logger name="com.ABETAppTeam.database" level="INFO" additivity="false">
         <appender-ref ref="SQL_FILE" />
         <appender-ref ref="CONSOLE" />
     </logger>

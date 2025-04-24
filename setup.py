@@ -7,6 +7,7 @@ import shutil
 import tempfile
 import time
 import re
+import winreg
 from pathlib import Path
 
 # First check if required dependencies are installed
@@ -173,8 +174,8 @@ def get_os_specific_settings():
         settings['shell_config_file'] = str(Path.home() / ".bashrc")
 
     print(f"Using settings for {settings['platform']}: Python command = {settings['python_command']}, "
-          f"Shell = {settings['shell_type']}, Docker command = {settings['docker_cmd']}, "
-          f"Docker Compose command = {settings['docker_compose_cmd']}, "
+          f"Shell = {settings['shell_type']}, Docker command = {settings.get('docker_cmd', 'N/A')}, "
+          f"Docker Compose command = {settings.get('docker_compose_cmd', 'N/A')}, "
           f"Maven command = {settings['mvn_cmd']}")
     return settings
 
@@ -285,14 +286,277 @@ def get_db_connection_params():
     return {
         "db_name": env_vars.get("DB_NAME", "abetapp"),
         "db_username": env_vars.get("DB_USERNAME", "user"),
-        "db_password": env_vars.get("DB_PASSWORD", ""),
+        "db_password": env_vars.get("DB_PASSWORD", "pass"),
         "db_root_password": env_vars.get("DB_ROOT_PASSWORD", "rootpassword"),
         "db_host": env_vars.get("DB_HOST", "localhost"),
         "db_port": env_vars.get("DB_PORT", "3306")
     }
 
-# Here are the changes needed to fix the docker-compose operation function:
+# Function to check for MariaDB installation on Windows
+def is_mariadb_installed_windows():
+    """Check if MariaDB is installed on Windows by looking at the registry"""
+    try:
+        # Check for both 32-bit and 64-bit registry
+        reg_paths = [r"SOFTWARE\MariaDB", r"SOFTWARE\Wow6432Node\MariaDB"]
 
+        for reg_path in reg_paths:
+            try:
+                registry_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path)
+                return True
+            except FileNotFoundError:
+                continue
+            except Exception as e:
+                print(f"Error checking registry: {e}")
+
+        # Also check for common installation paths
+        common_paths = [
+            r"C:\Program Files\MariaDB",
+            r"C:\Program Files (x86)\MariaDB",
+            r"C:\MariaDB"
+        ]
+
+        for path in common_paths:
+            if os.path.exists(path):
+                return True
+
+        # Check if mysql/mariadb client is in PATH
+        if shutil.which("mysql") or shutil.which("mariadb"):
+            return True
+
+        return False
+    except Exception as e:
+        print(f"Error checking MariaDB installation: {e}")
+        return False
+
+# Function to get MariaDB service name on Windows
+def get_mariadb_service_name():
+    """Get the MariaDB service name from Windows registry or return the default"""
+    try:
+        # Try to find service name in registry
+        reg_paths = [r"SOFTWARE\MariaDB", r"SOFTWARE\Wow6432Node\MariaDB"]
+
+        for reg_path in reg_paths:
+            try:
+                registry_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path)
+                service_name, _ = winreg.QueryValueEx(registry_key, "ServiceName")
+                return service_name
+            except (FileNotFoundError, WindowsError):
+                continue
+            except Exception:
+                pass
+
+        # Default service name for MariaDB
+        return "MariaDB"
+    except Exception:
+        # Return default if anything fails
+        return "MariaDB"
+
+# Function to get MariaDB installation path on Windows
+def get_mariadb_install_path():
+    """Get the MariaDB installation path from Windows registry or check common locations"""
+    try:
+        # Try to find installation path in registry
+        reg_paths = [r"SOFTWARE\MariaDB", r"SOFTWARE\Wow6432Node\MariaDB"]
+
+        for reg_path in reg_paths:
+            try:
+                registry_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path)
+                install_location, _ = winreg.QueryValueEx(registry_key, "InstallLocation")
+                return install_location
+            except (FileNotFoundError, WindowsError):
+                continue
+            except Exception:
+                pass
+
+        # Check common installation paths
+        common_paths = [
+            r"C:\Program Files\MariaDB 10.11",
+            r"C:\Program Files\MariaDB",
+            r"C:\Program Files (x86)\MariaDB",
+            r"C:\MariaDB"
+        ]
+
+        for path in common_paths:
+            if os.path.exists(path):
+                return path
+
+        # If we can't find it, return None
+        return None
+    except Exception:
+        return None
+
+# Function to check if MariaDB service is running on Windows
+def is_mariadb_service_running():
+    """Check if the MariaDB service is running on Windows"""
+    try:
+        service_name = get_mariadb_service_name()
+        result = subprocess.run(
+            ["sc", "query", service_name],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False
+        )
+
+        if result.returncode != 0:
+            return False
+
+        # Check if the output contains RUNNING
+        return "RUNNING" in result.stdout
+    except Exception as e:
+        print(f"Error checking MariaDB service: {e}")
+        return False
+
+# New function for MariaDB direct installation operations
+def mariadb_operation(operation):
+    """Manage MariaDB operations for native Windows installation"""
+    if OS_SETTINGS['platform'] != 'windows':
+        print("This function is only for Windows. On other platforms, use docker_compose_operation.")
+        return False
+
+    # Get connection parameters
+    db_params = get_db_connection_params()
+
+    # Check if MariaDB is installed
+    if not is_mariadb_installed_windows():
+        print("MariaDB is not installed on this system.")
+        print("Please install MariaDB 10.11 from https://mariadb.org/download/")
+        return False
+
+    # Get service name
+    service_name = get_mariadb_service_name()
+
+    try:
+        if operation == "start":
+            print(f"Starting MariaDB service ({service_name})...")
+
+            # Check if service is already running
+            if is_mariadb_service_running():
+                print("MariaDB service is already running.")
+                return True
+
+            # Start the service
+            result = subprocess.run(
+                ["sc", "start", service_name],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False
+            )
+
+            if result.returncode != 0:
+                print(f"Failed to start MariaDB service: {result.stderr}")
+                return False
+
+            # Wait a moment for the service to start
+            time.sleep(3)
+
+            # Create database and user if they don't exist
+            try:
+                # Connect as root to create database and user
+                # Get root password from db_params
+                root_password = db_params['db_root_password']
+
+                # Prepare commands to create database and user
+                commands = [
+                    f"CREATE DATABASE IF NOT EXISTS {db_params['db_name']};",
+                    f"CREATE USER IF NOT EXISTS '{db_params['db_username']}'@'localhost' IDENTIFIED BY '{db_params['db_password']}';",
+                    f"CREATE USER IF NOT EXISTS '{db_params['db_username']}'@'%' IDENTIFIED BY '{db_params['db_password']}';",
+                    f"GRANT ALL PRIVILEGES ON {db_params['db_name']}.* TO '{db_params['db_username']}'@'localhost';",
+                    f"GRANT ALL PRIVILEGES ON {db_params['db_name']}.* TO '{db_params['db_username']}'@'%';",
+                    f"FLUSH PRIVILEGES;"
+                ]
+
+                # Join commands into a single string
+                sql_commands = " ".join(commands)
+
+                # Build the MySQL command
+                mysql_cmd = [
+                    "mysql",
+                    "-u", "root",
+                    f"-p{root_password}",
+                    "-e", sql_commands
+                ]
+
+                # Run the command
+                subprocess.run(
+                    mysql_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=False
+                )
+
+                print(f"Database '{db_params['db_name']}' and user '{db_params['db_username']}' created/configured.")
+            except Exception as e:
+                print(f"Warning: Could not set up database and user: {e}")
+                print("You may need to manually create the database and user.")
+
+            print("MariaDB service started successfully.")
+            return True
+
+        elif operation == "stop":
+            print(f"Stopping MariaDB service ({service_name})...")
+
+            # Check if service is running
+            if not is_mariadb_service_running():
+                print("MariaDB service is not running.")
+                return True
+
+            # Stop the service
+            result = subprocess.run(
+                ["sc", "stop", service_name],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False
+            )
+
+            if result.returncode != 0:
+                print(f"Failed to stop MariaDB service: {result.stderr}")
+                return False
+
+            print("MariaDB service stopped successfully.")
+            return True
+
+        elif operation == "status":
+            # Check if service is running
+            is_running = is_mariadb_service_running()
+            status = "running" if is_running else "stopped"
+            print(f"MariaDB service ({service_name}) is {status}.")
+            return is_running
+
+        elif operation == "restart":
+            print(f"Restarting MariaDB service ({service_name})...")
+
+            # Stop the service if it's running
+            if is_mariadb_service_running():
+                mariadb_operation("stop")
+                # Wait a moment for the service to stop
+                time.sleep(3)
+
+            # Start the service
+            return mariadb_operation("start")
+
+        else:
+            print(f"Unknown operation: {operation}")
+            return False
+
+    except Exception as e:
+        print(f"Error performing MariaDB operation: {e}")
+        return False
+
+# Function to handle DB operations based on platform
+def db_operation(operation):
+    """Execute database operations using Docker container or native MariaDB based on platform"""
+    if OS_SETTINGS['platform'] == 'windows':
+        # Use native MariaDB on Windows
+        return mariadb_operation(operation)
+    else:
+        # Use Docker container on other platforms
+        return docker_compose_operation(operation)
+
+# Docker Compose operation function (for non-Windows platforms)
 def docker_compose_operation(operation):
     """Run Docker Compose operations with error handling and status reporting."""
     import subprocess
@@ -434,97 +698,6 @@ def run_flyway_operation(operation, db_params=None):
         click.echo(f"Flyway {operation} failed.")
         return False
 
-    # Get the Docker Compose command
-    compose_cmd = docker_compose_command()  # Use the function that properly detects compose command
-
-    # Generate a temporary docker-compose file with our configuration
-    with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.yml') as temp:
-        temp_file = temp.name
-        # Write the docker-compose configuration - Remove 'version' attribute
-        temp.write("""
-services:
-  db:
-    container_name: abetapp_db
-    image: mariadb:10.11
-    environment:
-      MARIADB_DATABASE: abetapp
-      MARIADB_USER: user
-      MARIADB_PASSWORD: pass
-      MARIADB_ROOT_PASSWORD: rootpassword
-    ports:
-      - "3306:3306"
-    volumes:
-      - mariadbdata:/var/lib/mysql
-    restart: unless-stopped
-
-volumes:
-  mariadbdata:
-""")
-
-    try:
-        # Perform the requested operation
-        if operation == "start":
-            print("Starting database container...")
-            # Check if the container is already running
-            container_name = "abetapp_db"
-            check_cmd = [OS_SETTINGS["docker_cmd"], "ps", "-q", "--filter", f"name={container_name}"]
-            result = subprocess.run(check_cmd, check=True, capture_output=True, text=True)
-
-            if result.stdout.strip():
-                print(f"Container {container_name} is already running.")
-                return True
-
-            # Use proper list concatenation for commands
-            cmd = compose_cmd + ["-f", temp_file, "up", "-d"]
-            result = subprocess.run(cmd, check=True, text=True, capture_output=True)
-            print("Database container started.")
-            return True
-
-        elif operation == "stop":
-            print("Stopping database container...")
-            cmd = compose_cmd + ["-f", temp_file, "down"]
-            result = subprocess.run(cmd, check=True, text=True, capture_output=True)
-            print("Database container stopped.")
-            return True
-
-        elif operation == "status":
-            # Check if the container is running
-            container_name = "abetapp_db"
-            try:
-                result = subprocess.run(
-                    [OS_SETTINGS["docker_cmd"], "ps", "-a", "--filter", f"name={container_name}", "--format",
-                     "{{.Names}}"],
-                    check=True, capture_output=True, text=True
-                )
-                if container_name in result.stdout:
-                    status_result = subprocess.run(
-                        [OS_SETTINGS["docker_cmd"], "inspect", "-f", "{{.State.Running}}", container_name],
-                        check=True, capture_output=True, text=True
-                    )
-                    is_running = status_result.stdout.strip() == "true"
-                    print(f"Container {container_name} is {'running' if is_running else 'stopped'}.")
-                    return is_running
-                print(f"Container {container_name} does not exist.")
-                return False
-            except subprocess.CalledProcessError as e:
-                print(f"Command failed: {e}")
-                if e.stderr:
-                    print(f"Error output: {e.stderr}")
-                return False
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing docker-compose operation: {e}")
-        if e.stderr:
-            print(f"Error details: {e.stderr}")
-        return False
-    finally:
-        # Clean up the temporary file
-        try:
-            os.unlink(temp_file)
-        except Exception:
-            pass
-
-    return False
-
 # Create the main command group
 @click.group()
 @click.version_option(version="1.0.0")
@@ -544,38 +717,32 @@ def db():
 
 @db.command()
 def start():
-    """Start the database container using Docker."""
-    click.echo("Starting database container...")
+    """Start the database (MariaDB service on Windows, container on other platforms)."""
+    click.echo("Starting database...")
 
-    # Check if docker is available
-    if not shutil.which(OS_SETTINGS["docker_cmd"]):
-        click.echo("Docker is not installed or not in PATH. Please install Docker first.")
-        return
+    if OS_SETTINGS['platform'] == 'windows':
+        if not is_mariadb_installed_windows():
+            click.echo("MariaDB is not installed. Please install MariaDB 10.11 from https://mariadb.org/download/")
+            if click.confirm("Would you like to open the MariaDB download page?"):
+                import webbrowser
+                webbrowser.open("https://mariadb.org/download/")
+            return
+    else:
+        # Check if docker is available for non-Windows platforms
+        if not shutil.which(OS_SETTINGS["docker_cmd"]):
+            click.echo("Docker is not installed or not in PATH. Please install Docker first.")
+            return
 
-    # Start the database container
-    docker_compose_operation("start")
+    # Start the database
+    db_operation("start")
 
 @db.command()
 @click.option("--user", "-u", default=None, help="Database username")
 @click.option("--password", "-p", default=None, help="Database password")
 @click.option("--database", "-d", default=None, help="Database name")
 def connect(user, password, database):
-    """Connect to the MariaDB database container using flags."""
+    """Connect to the MariaDB database using command-line client."""
     click.echo("Connecting to MariaDB database...")
-
-    # Check if docker is available, start container if necessary, etc.
-    if not shutil.which(OS_SETTINGS["docker_cmd"]):
-        click.echo("Docker is not installed or not in PATH.")
-        return
-
-    # Check if the container is running
-    check_cmd = ["docker", "ps", "--filter", "name=abetapp_db", "--format", "{{.Names}}"]
-    result = run_command(check_cmd, capture_output=True)
-    if not result or "abetapp_db" not in result:
-        click.echo("Database container is not running. Starting it now...")
-        if not docker_compose_operation("start"):
-            click.echo("Failed to start database container. Please run 'dbstart' first.")
-            return
 
     # Load database connection parameters and override with flags if provided
     db_params = get_db_connection_params()
@@ -586,15 +753,66 @@ def connect(user, password, database):
     if database is not None:
         db_params['db_name'] = database
 
-    # Build command to connect to MariaDB
-    connect_cmd = [
-        "docker", "exec", "-it", "abetapp_db",
-        "mariadb",
-        f"-u{db_params['db_username']}"
-    ]
-    if db_params['db_password']:
-        connect_cmd.append(f"-p{db_params['db_password']}")
-    connect_cmd.append(db_params['db_name'])
+    # Platform-specific database connection
+    if OS_SETTINGS['platform'] == 'windows':
+        # Check if MariaDB is installed
+        if not is_mariadb_installed_windows():
+            click.echo("MariaDB is not installed or not in PATH.")
+            return
+
+        # Check if the service is running
+        if not is_mariadb_service_running():
+            click.echo("MariaDB service is not running. Starting it now...")
+            if not mariadb_operation("start"):
+                click.echo("Failed to start MariaDB service. Please start it manually.")
+                return
+
+        # Find client exe
+        mysql_client = shutil.which("mysql") or shutil.which("mariadb")
+        if not mysql_client:
+            # Try to find in installation directory
+            install_path = get_mariadb_install_path()
+            if install_path:
+                bin_path = os.path.join(install_path, "bin")
+                potential_clients = [os.path.join(bin_path, "mysql.exe"),
+                                     os.path.join(bin_path, "mariadb.exe")]
+                for client in potential_clients:
+                    if os.path.exists(client):
+                        mysql_client = client
+                        break
+
+            if not mysql_client:
+                click.echo("MariaDB client not found in PATH or installation directory.")
+                return
+
+        # Build command to connect
+        connect_cmd = [
+            mysql_client,
+            f"-u{db_params['db_username']}"
+        ]
+        if db_params['db_password']:
+            connect_cmd.append(f"-p{db_params['db_password']}")
+        connect_cmd.append(db_params['db_name'])
+    else:
+        # For non-Windows platforms, use Docker
+        # Check if the container is running
+        check_cmd = ["docker", "ps", "--filter", "name=abetapp_db", "--format", "{{.Names}}"]
+        result = run_command(check_cmd, capture_output=True)
+        if not result or "abetapp_db" not in result:
+            click.echo("Database container is not running. Starting it now...")
+            if not docker_compose_operation("start"):
+                click.echo("Failed to start database container. Please run 'db start' first.")
+                return
+
+        # Build command to connect to MariaDB in Docker container
+        connect_cmd = [
+            "docker", "exec", "-it", "abetapp_db",
+            "mariadb",
+            f"-u{db_params['db_username']}"
+        ]
+        if db_params['db_password']:
+            connect_cmd.append(f"-p{db_params['db_password']}")
+        connect_cmd.append(db_params['db_name'])
 
     click.echo(f"Connecting to database {db_params['db_name']} as {db_params['db_username']}...")
 
@@ -607,16 +825,19 @@ def connect(user, password, database):
 
 @db.command()
 def stop():
-    """Stop the database container."""
-    click.echo("Stopping database container...")
+    """Stop the database (MariaDB service on Windows, container on other platforms)."""
+    click.echo("Stopping database...")
 
-    # Check if docker is available
-    if not shutil.which(OS_SETTINGS["docker_cmd"]):
-        click.echo("Docker is not installed or not in PATH.")
-        return
+    # Check platform and execute appropriate stop command
+    db_operation("stop")
 
-    # Stop the database container
-    docker_compose_operation("stop")
+@db.command()
+def status():
+    """Check the database status (MariaDB service on Windows, container on other platforms)."""
+    click.echo("Checking database status...")
+
+    # Check platform and execute appropriate status command
+    db_operation("status")
 
 @db.command()
 def migrate():
@@ -642,7 +863,7 @@ def restart():
     """Restart the database and run migrations."""
     click.echo("Restarting database and running migrations...")
 
-    if docker_compose_operation("restart"):
+    if db_operation("restart"):
         # Wait a moment for the database to be ready
         time.sleep(5)
         run_flyway_operation("migrate")
@@ -661,7 +882,7 @@ def setup():
     # Get user input with defaults
     db_name = click.prompt("Database name", default="abetapp")
     db_user = click.prompt("Database username", default="user")
-    db_password = click.prompt("Database password", default="", hide_input=True)
+    db_password = click.prompt("Database password", default="pass")
     db_root_password = click.prompt("Database root password", default="rootpassword", hide_input=True)
     db_host = click.prompt("Database host", default="localhost")
     db_port = click.prompt("Database port", default="3306")
@@ -681,7 +902,7 @@ def setup():
     click.echo(f"Environment file created at: {env_file}")
 
     if click.confirm("Do you want to start the database with these settings now?"):
-        start()
+        db.start.callback()
         # Wait a moment for the database to be ready
         time.sleep(5)
         if click.confirm("Do you want to run database migrations now?"):
@@ -823,8 +1044,8 @@ def install():
             "",
             "function Show-AbetDbHelp {",
             "    Write-Host 'Database management commands:' -ForegroundColor Cyan",
-            "    Write-Host '  dbstart   - Start the database container' -ForegroundColor Cyan",
-            "    Write-Host '  dbstop    - Stop the database container' -ForegroundColor Cyan",
+            "    Write-Host '  dbstart   - Start the database' -ForegroundColor Cyan",
+            "    Write-Host '  dbstop    - Stop the database' -ForegroundColor Cyan",
             "    Write-Host '  dbmigrate - Run database migrations' -ForegroundColor Cyan",
             "    Write-Host '  dbinfo    - Show migration status' -ForegroundColor Cyan",
             "    Write-Host '  dbclean   - Clean the database' -ForegroundColor Cyan",
@@ -868,8 +1089,8 @@ def install():
             "# Function to show available commands",
             "dbhelp() {",
             "  echo 'Database management commands:'",
-            "  echo '  dbstart   - Start the database container'",
-            "  echo '  dbstop    - Stop the database container'",
+            "  echo '  dbstart   - Start the database'",
+            "  echo '  dbstop    - Stop the database'",
             "  echo '  dbmigrate - Run database migrations'",
             "  echo '  dbinfo    - Show migration status'",
             "  echo '  dbclean   - Clean the database'",

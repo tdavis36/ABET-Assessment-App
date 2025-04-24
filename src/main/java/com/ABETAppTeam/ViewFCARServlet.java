@@ -27,15 +27,15 @@ public class ViewFCARServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     // Get the controllers
-    private DisplaySystemController getDisplayController() {
+    DisplaySystemController getDisplayController() {
         return DisplaySystemController.getInstance();
     }
 
-    private FCARController getFCARController() {
+    FCARController getFCARController() {
         return FCARController.getInstance();
     }
 
-    private OutcomeController getOutcomeController() {
+    OutcomeController getOutcomeController() {
         return OutcomeController.getInstance();
     }
 
