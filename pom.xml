@@ -349,6 +349,10 @@
                         <systemProperty>
                             <tmpDir>${project.build.directory}/tmp</tmpDir>
                         </systemProperty>
+                        <systemProperty>
+                            <name>jakarta.servlet.context.tempdir</name>
+                            <value>${project.build.directory}/tmp</value>
+                        </systemProperty>
                     </systemProperties>
                 </configuration>
             </plugin>
