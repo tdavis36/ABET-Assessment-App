@@ -1,12 +1,14 @@
+com\ABETAppTeam\accesscontrol\FCARAccessControlImpl.class
+com\ABETAppTeam\filter\NoCacheFilter.class
 com\ABETAppTeam\model\Outcome.class
 com\ABETAppTeam\ProfessorServlet.class
 com\ABETAppTeam\main.class
+com\ABETAppTeam\filter\LoggingFilter.class
 com\ABETAppTeam\service\FCARService.class
 com\ABETAppTeam\ViewFCARServlet.class
 com\ABETAppTeam\AdminServlet.class
 com\ABETAppTeam\repository\UserRepository.class
 com\ABETAppTeam\model\Indicator.class
-com\ABETAppTeam\util\JDBCLogger.class
 com\ABETAppTeam\filter\AuthenticationFilter.class
 com\ABETAppTeam\FCARFactory.class
 com\ABETAppTeam\repository\CourseRepository.class
@@ -18,6 +20,7 @@ com\ABETAppTeam\ReportFactory.class
 com\ABETAppTeam\ReportsServlet.class
 com\ABETAppTeam\util\SQLExceptionHandler$ErrorInfo.class
 com\ABETAppTeam\controller\FCARController.class
+com\ABETAppTeam\service\LoggingService.class
 com\ABETAppTeam\util\SQLExceptionHandler.class
 com\ABETAppTeam\controller\DisplaySystemController.class
 com\ABETAppTeam\service\AuthenticationService.class
@@ -25,6 +28,7 @@ com\ABETAppTeam\Professor.class
 com\ABETAppTeam\Course.class
 com\ABETAppTeam\repository\impl\InMemoryFCARRepository.class
 com\ABETAppTeam\util\DataSourceFactory$DatabaseConfig.class
+com\ABETAppTeam\accesscontrol\FCARFieldAccessControl.class
 com\ABETAppTeam\util\DataSourceFactory.class
 com\ABETAppTeam\repository\IFCARRepository.class
 com\ABETAppTeam\controller\OutcomeController.class
@@ -34,4 +38,3 @@ com\ABETAppTeam\FCAR.class
 com\ABETAppTeam\IndexServlet.class
 com\ABETAppTeam\controller\IndicatorController.class
 com\ABETAppTeam\repository\OutcomeRepository.class
-com\ABETAppTeam\util\DatabaseLogger.class

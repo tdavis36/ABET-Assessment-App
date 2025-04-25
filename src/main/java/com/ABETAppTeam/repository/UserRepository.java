@@ -1,15 +1,19 @@
 package com.ABETAppTeam.repository;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.ABETAppTeam.Admin;
 import com.ABETAppTeam.Professor;
 import com.ABETAppTeam.User;
-import com.ABETAppTeam.util.DataSourceFactory;
 import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.DataSourceFactory;
 import com.zaxxer.hikari.HikariDataSource;
-
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Repository class for handling User data access
@@ -27,6 +31,7 @@ public class UserRepository {
 
     /**
      * Find a user by ID
+     * 
      * @param userId The ID of the user to find
      * @return The found user or null if not found
      */
@@ -37,7 +42,7 @@ public class UserRepository {
                 "WHERE u.user_id = ?";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -54,6 +59,7 @@ public class UserRepository {
 
     /**
      * Find a user by email
+     * 
      * @param email The email to find
      * @return The found user or null if not found
      */
@@ -64,7 +70,7 @@ public class UserRepository {
                 "WHERE u.email = ?";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -81,6 +87,7 @@ public class UserRepository {
 
     /**
      * Find all users
+     * 
      * @return List of all users
      */
     public List<User> findAll() {
@@ -90,8 +97,8 @@ public class UserRepository {
                 "JOIN Department d ON u.dept_id = d.dept_id";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 users.add(mapResultSetToUser(rs));
@@ -105,6 +112,7 @@ public class UserRepository {
 
     /**
      * Find all professors
+     * 
      * @return List of professors
      */
     public List<Professor> findAllProfessors() {
@@ -115,8 +123,8 @@ public class UserRepository {
                 "WHERE r.role_name = 'Professor'";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 User user = mapResultSetToUser(rs);
@@ -134,26 +142,41 @@ public class UserRepository {
 
     /**
      * Authenticate a user
-     * @param email User's email
+     * 
+     * @param email    User's email
      * @param password User's password (unhashed)
      * @return The authenticated user or null if authentication fails
      */
     public User authenticate(String email, String password) {
         // In a real application, you would hash the password here
         // and compare the hashed values
-        String sql = "SELECT u.*, r.role_name, d.dept_name FROM User u " +
+        logger.info("Attempting to authenticate user: {}", email);
+        logger.info("Using password: {}", password);
+
+        // First check if the user exists
+        String checkUserSql = "SELECT u.*, r.role_name, d.dept_name FROM User u " +
                 "JOIN Role r ON u.role_id = r.role_id " +
                 "JOIN Department d ON u.dept_id = d.dept_id " +
-                "WHERE u.email = ? AND u.password_hash = ? AND u.is_active = TRUE";
+                "WHERE u.email = ?";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, email);
-            stmt.setString(2, password); // In reality, this would be hashed
+                PreparedStatement checkStmt = conn.prepareStatement(checkUserSql)) {
+            checkStmt.setString(1, email);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapResultSetToUser(rs);
+            try (ResultSet checkRs = checkStmt.executeQuery()) {
+                if (checkRs.next()) {
+                    String storedHash = checkRs.getString("password_hash");
+                    logger.info("Found user with email: {}. Stored password hash: {}", email, storedHash);
+
+                    // Now check if the password matches
+                    if (password.equals(storedHash)) {
+                        logger.info("Password matches! Authentication successful.");
+                        return mapResultSetToUser(checkRs);
+                    } else {
+                        logger.info("Password does not match. Authentication failed.");
+                    }
+                } else {
+                    logger.info("No user found with email: {}", email);
                 }
             }
         } catch (SQLException e) {
@@ -165,6 +188,7 @@ public class UserRepository {
 
     /**
      * Save a new user
+     * 
      * @param user The user to save
      * @return The saved user with updated ID
      */
@@ -173,7 +197,7 @@ public class UserRepository {
                 "role_id, dept_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, user.getFirstName());
             stmt.setString(2, user.getLastName());
             stmt.setString(3, user.getEmail());
@@ -211,6 +235,7 @@ public class UserRepository {
 
     /**
      * Save professor-specific details
+     * 
      * @param professor The professor to save details for
      * @throws SQLException If an error occurs while saving
      */
@@ -221,6 +246,7 @@ public class UserRepository {
 
     /**
      * Update an existing user
+     * 
      * @param user The user to update
      * @return true if update was successful, false otherwise
      */
@@ -229,7 +255,7 @@ public class UserRepository {
                 "role_id = ?, dept_id = ?, is_active = ? WHERE user_id = ?";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, user.getFirstName());
             stmt.setString(2, user.getLastName());
             stmt.setString(3, user.getEmail());
@@ -253,6 +279,7 @@ public class UserRepository {
 
     /**
      * Update professor-specific details
+     * 
      * @param professor The professor to update details for
      * @throws SQLException If an error occurs while updating
      */
@@ -263,6 +290,7 @@ public class UserRepository {
 
     /**
      * Delete a user
+     * 
      * @param userId The ID of the user to delete
      * @return true if deletion was successful, false otherwise
      */
@@ -270,7 +298,7 @@ public class UserRepository {
         String sql = "DELETE FROM User WHERE user_id = ?";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);
 
             return stmt.executeUpdate() > 0;
@@ -282,7 +310,8 @@ public class UserRepository {
 
     /**
      * Change a user's password
-     * @param userId The ID of the user
+     * 
+     * @param userId          The ID of the user
      * @param newPasswordHash The new password hash
      * @return true if password change was successful, false otherwise
      */
@@ -290,7 +319,7 @@ public class UserRepository {
         String sql = "UPDATE User SET password_hash = ? WHERE user_id = ?";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, newPasswordHash);
             stmt.setInt(2, userId);
 
@@ -303,6 +332,7 @@ public class UserRepository {
 
     /**
      * Map a ResultSet to a User object
+     * 
      * @param rs The ResultSet to map
      * @return The mapped User object (either Admin or Professor)
      * @throws SQLException If an error occurs during mapping
@@ -337,6 +367,7 @@ public class UserRepository {
 
     /**
      * Load courses for a professor
+     * 
      * @param professor The professor to load courses for
      */
     private void loadProfessorCourses(Professor professor) {

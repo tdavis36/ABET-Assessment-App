@@ -1,49 +1,3 @@
--- Updated V1 migration with consistent naming conventions
-SET FOREIGN_KEY_CHECKS = 0;
-
--- Drop old tables if they exist to ensure clean startup
-DROP TABLE IF EXISTS ReportSnapshot;
-DROP TABLE IF EXISTS FCAR;
-DROP TABLE IF EXISTS ImprovementAction;
-DROP TABLE IF EXISTS FinalDetail;
-DROP TABLE IF EXISTS ReportDetail;
-DROP TABLE IF EXISTS AssignmentDetail;
-DROP TABLE IF EXISTS ExamDetail;
-DROP TABLE IF EXISTS AssessmentMethod;
-DROP TABLE IF EXISTS MethodType;
-DROP TABLE IF EXISTS TargetGoal;
-DROP TABLE IF EXISTS StudentExpectation;
-DROP TABLE IF EXISTS Expectation;
-DROP TABLE IF EXISTS ExpectationType;
-DROP TABLE IF EXISTS Indicator;
-DROP TABLE IF EXISTS Outcome;
-DROP TABLE IF EXISTS Course_Outcome;
-DROP TABLE IF EXISTS Course;
-DROP TABLE IF EXISTS User;
-DROP TABLE IF EXISTS Role;
-DROP TABLE IF EXISTS Permission;
-DROP TABLE IF EXISTS Department;
-
--- Drop any duplicate tables with plural/alternate names
-DROP TABLE IF EXISTS FCAR_Data;
-DROP TABLE IF EXISTS User_Data;
-DROP TABLE IF EXISTS Role_Data;
-DROP TABLE IF EXISTS Assessment_Methods;
-DROP TABLE IF EXISTS Assignment_Details;
-DROP TABLE IF EXISTS Exam_Details;
-DROP TABLE IF EXISTS Final_Details;
-DROP TABLE IF EXISTS Indicators;
-DROP TABLE IF EXISTS Method_Type;
-DROP TABLE IF EXISTS Outcomes;
-DROP TABLE IF EXISTS Report_Details;
-DROP TABLE IF EXISTS Report_Snapshot;
-DROP TABLE IF EXISTS Improvement_Actions;
-DROP TABLE IF EXISTS Target_Goals;
-DROP TABLE IF EXISTS Expectation_Type;
-DROP TABLE IF EXISTS Expectations;
-DROP TABLE IF EXISTS Student_Expectations;
-DROP TABLE IF EXISTS Permission_Status;
-
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- User Management
@@ -257,6 +211,7 @@ CREATE TABLE ReportSnapshot (
 CREATE TABLE FCAR_Status (
                              fcar_id INT PRIMARY KEY,
                              status VARCHAR(50) NOT NULL DEFAULT 'Draft',
+                             comments TEXT,
                              FOREIGN KEY (fcar_id) REFERENCES FCAR(fcar_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 

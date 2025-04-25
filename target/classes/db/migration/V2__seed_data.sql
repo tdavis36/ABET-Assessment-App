@@ -18,7 +18,7 @@ INSERT INTO Permission (permission_desc) VALUES
 -- ===================================
 -- Role
 -- ===================================
--- Assume role_id 1 = Admin, 2 = Professor, 3 = Viewer, etc.
+-- Corrected permission_id references to match Permission table
 INSERT INTO Role (role_name, permission_id) VALUES
                                                 ('Admin', 1),       -- "Manage Everything"
                                                 ('Professor', 2),   -- "Manage Courses"
@@ -113,17 +113,19 @@ INSERT INTO MethodType (method_type)
 VALUES
     ('Exam'),
     ('Assignment'),
-    ('Project'),
-    ('Report');
+    ('Report'),
+    ('Final');
 
 -- ===================================
 -- AssessmentMethod
 -- ===================================
+-- Create Assessment Methods with correct type_id references
 INSERT INTO AssessmentMethod (type_id)
 VALUES
     (1),   -- Exam
     (2),   -- Assignment
-    (4);   -- Report
+    (3),   -- Report
+    (4);   -- Final (adding this since FinalDetail references it)
 
 -- ===================================
 -- ExamDetail
@@ -154,8 +156,8 @@ VALUES
 -- ===================================
 INSERT INTO FinalDetail (method_id, final_type)
 VALUES
-    (1, 'Final Exam'),
-    (3, 'Final Report');
+    (4, 'Final Exam'),
+    (4, 'Final Report');
 
 -- ===================================
 -- ImprovementAction
