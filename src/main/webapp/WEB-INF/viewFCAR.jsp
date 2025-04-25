@@ -65,6 +65,7 @@
     </style>
 </head>
 <body>
+
 <div class="container">
     <h1>FCAR Details</h1>
 
@@ -73,7 +74,7 @@
         User user = (User) session.getAttribute("user");
         String dashboardUrl = "";
 
-        // Determine dashboard URL based on user role
+        // Determine dashboard URL based on a user role
         if (user instanceof Admin) {
             dashboardUrl = request.getContextPath() + "/AdminServlet";
         } else if (user instanceof Professor) {
@@ -83,7 +84,7 @@
             dashboardUrl = request.getContextPath() + "/index";
         }
 
-        // Load FCARs from the database based on user role
+        // Load FCARs from the database based on a user role
         List<FCAR> allFCARs = null;
         FCARRepository fcarRepository = new FCARRepository();
 

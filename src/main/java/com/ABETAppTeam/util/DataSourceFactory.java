@@ -170,7 +170,7 @@ public class DataSourceFactory {
             config.port = "3306";
             config.name = "abetapp";
             config.username = "user";
-            config.password = "";
+            config.password = "pass";
         } finally {
             // Stop the timer
             logger.stopTimer(timerId, null);

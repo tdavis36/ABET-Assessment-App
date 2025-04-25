@@ -104,7 +104,7 @@ public class FCARController {
      * @param year The year
      * @return The created FCAR
      */
-    public FCAR createFCAR(String courseCode, String professorId, String semester, int year) {
+    public FCAR createFCAR(String courseCode, int professorId, String semester, int year) {
         return fcarService.createFCAR(courseCode, professorId, semester, year);
     }
 
