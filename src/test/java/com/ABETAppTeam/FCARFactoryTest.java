@@ -1,293 +1,240 @@
 package com.ABETAppTeam;
 
+import com.ABETAppTeam.repository.IFCARRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
-import java.util.Map;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 
-class FCARFactoryTest {
+public class FCARFactoryTest {
 
+    /**
+     * Tests the createFCAR method in the FCARFactory class.
+     * <p>
+     * The createFCAR method is responsible for creating a new FCAR object
+     * and saving it to the repository.
+     */
     @Test
-    void testCreateFCARSuccessfully() {
+    void testCreateFCAR_Success() {
         // Arrange
-        String courseId = "CS101";
-        String professorId = "P001";
-        String semester = "Fall";
-        int year = 2023;
+        IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
+        FCAR testFCAR = new FCAR(0, "CS101", 2, "Fall", 2023);
+        FCAR savedFCAR = new FCAR(1, "CS101", 2, "Fall", 2023);
+        Mockito.when(mockRepository.save(any(FCAR.class))).thenReturn(savedFCAR);
+
+        // Replace static repository with mock (if permitted through testing setup)
+        FCARFactory factory = new FCARFactory() {
+            @Override
+            protected IFCARRepository getRepository() {
+                return mockRepository;
+            }
+        };
 
         // Act
-        FCAR createdFCAR = FCARFactory.createFCAR(courseId, professorId, semester, year);
-
-        // Assert
-        assertNotNull(createdFCAR);
-        assertNotNull(createdFCAR.getFcarId());
-        assertEquals(courseId, createdFCAR.getCourseId());
-        assertEquals(professorId, createdFCAR.getProfessorId());
-        assertEquals(semester, createdFCAR.getSemester());
-        assertEquals(year, createdFCAR.getYear());
-        assertEquals("Draft", createdFCAR.getStatus());
-    }
-
-    @Test
-    void testCreateFCARAddsToMap() {
-        // Arrange
-        String courseId = "CS102";
-        String professorId = "P002";
-        String semester = "Spring";
-        int year = 2024;
-
-        // Act
-        FCAR createdFCAR = FCARFactory.createFCAR(courseId, professorId, semester, year);
-
-        // Assert
-        assertNotNull(createdFCAR);
-        assertNotNull(FCARFactory.getFCAR(createdFCAR.getFcarId()));
-    }
-
-    @Test
-    void testCreateFCARWithSameParametersDoesNotConflict() {
-        // Arrange
-        String courseId = "CS103";
-        String professorId = "P003";
-        String semester = "Fall";
-        int year = 2024;
-
-        // Act
-        FCAR fcar1 = FCARFactory.createFCAR(courseId, professorId, semester, year);
-        FCAR fcar2 = FCARFactory.createFCAR(courseId, professorId, semester, year);
-
-        // Assert
-        assertNotNull(fcar1);
-        assertNotNull(fcar2);
-        assertNotEquals(fcar1.getFcarId(), fcar2.getFcarId());
-    }
-
-    @Test
-    void testGetFCARValidIdReturnsCorrectFCAR() {
-        // Arrange
-        String courseId = "CS104";
-        String professorId = "P004";
-        String semester = "Summer";
-        int year = 2024;
-
-        FCAR createdFCAR = FCARFactory.createFCAR(courseId, professorId, semester, year);
-        String fcarId = createdFCAR.getFcarId();
-
-        // Act
-        FCAR retrievedFCAR = FCARFactory.getFCAR(fcarId);
-
-        // Assert
-        assertNotNull(retrievedFCAR);
-        assertEquals(fcarId, retrievedFCAR.getFcarId());
-        assertEquals(courseId, retrievedFCAR.getCourseId());
-        assertEquals(professorId, retrievedFCAR.getProfessorId());
-        assertEquals(semester, retrievedFCAR.getSemester());
-        assertEquals(year, retrievedFCAR.getYear());
-    }
-
-    @Test
-    void testGetFCARInvalidIdReturnsNull() {
-        // Act
-        FCAR retrievedFCAR = FCARFactory.getFCAR("Invalid-ID");
-
-        // Assert
-        assertNull(retrievedFCAR);
-    }
-
-    @Test
-    void testUpdateFCARSucceedsWithValidFCAR() {
-        // Arrange
-        String courseId = "CS105";
-        String professorId = "P005";
-        String semester = "Winter";
-        int year = 2024;
-
-        FCAR createdFCAR = FCARFactory.createFCAR(courseId, professorId, semester, year);
-        createdFCAR.setStatus("Submitted");
-
-        // Act
-        boolean updated = FCARFactory.updateFCAR(createdFCAR);
-
-        // Assert
-        assertTrue(updated);
-        FCAR updatedFCAR = FCARFactory.getFCAR(createdFCAR.getFcarId());
-        assertNotNull(updatedFCAR);
-        assertEquals("Submitted", updatedFCAR.getStatus());
-    }
-
-    @Test
-    void testUpdateFCARFailsForNonExistentFCAR() {
-        // Arrange
-        FCAR nonExistentFCAR = new FCAR("NonExistentID", "CS200", "P200", "Spring", 2025);
-
-        // Act
-        boolean updated = FCARFactory.updateFCAR(nonExistentFCAR);
-
-        // Assert
-        assertFalse(updated);
-    }
-
-    @Test
-    void testUpdateFCARFailsForNullInput() {
-        // Act
-        FCARFactory.updateFCAR(null);
-        boolean updated = false;
-
-        // Assert
-        assertFalse(updated);
-    }
-
-    @Test
-    void testDeleteFCARSuccessfullyDeletesExistingFCAR() {
-        // Arrange
-        String courseId = "CS106";
-        String professorId = "P006";
-        String semester = "Fall";
-        int year = 2024;
-
-        FCAR createdFCAR = FCARFactory.createFCAR(courseId, professorId, semester, year);
-        String fcarId = createdFCAR.getFcarId();
-
-        // Act
-        boolean deleted = FCARFactory.deleteFCAR(fcarId);
-
-        // Assert
-        assertTrue(deleted);
-        assertNull(FCARFactory.getFCAR(fcarId));
-    }
-
-    @Test
-    void testDeleteFCARFailsForNonExistentFCARId() {
-        // Act
-        boolean result = FCARFactory.deleteFCAR("Non-Existent-ID");
-
-        // Assert
-        assertFalse(result);
-    }
-
-    @Test
-    void testDeleteFCARFailsForNullId() {
-        // Act
-        FCARFactory.deleteFCAR(null);
-        boolean result = false;
-
-        // Assert
-        assertFalse(result);
-    }
-
-    @Test
-    void testGetFCARsForCourseReturnsCorrectResults() {
-        // Arrange
-        String courseId = "CS107";
-        String professorId1 = "P007";
-        String professorId2 = "P008";
-        String semester = "Fall";
-        int year = 2024;
-
-        FCAR fcar1 = FCARFactory.createFCAR(courseId, professorId1, semester, year);
-        FCAR fcar2 = FCARFactory.createFCAR(courseId, professorId2, semester, year);
-
-        // Act
-        Map<String, FCAR> result = FCARFactory.getFCARsForCourse(courseId);
+        FCAR result = FCARFactory.createFCAR("CS101", 2, "Fall", 2023);
 
         // Assert
         assertNotNull(result);
-        assertEquals(2, result.size());
-        assertTrue(result.containsKey(fcar1.getFcarId()));
-        assertTrue(result.containsKey(fcar2.getFcarId()));
+        assertEquals(1, result.getFcarId());
+        assertEquals("CS101", result.getCourseCode());
+        assertEquals(2, result.getInstructorId());
+        assertEquals("Fall", result.getSemester());
+        assertEquals(2023, result.getYear());
+        Mockito.verify(mockRepository, Mockito.times(1)).save(any(FCAR.class));
     }
 
     @Test
-    void testGetFCARsForCourseForNonExistentCourseIdReturnsEmpty() {
-        // Act
-        Map<String, FCAR> result = FCARFactory.getFCARsForCourse("NonExistentCourse");
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testGetFCARsByProfessorReturnsCorrectResults() {
+    void testCreateFCAR_NullCourseId() {
         // Arrange
-        String professorId = "P009";
-        String courseId1 = "CS108";
-        String courseId2 = "CS109";
-        String semester = "Spring";
-        int year = 2024;
+        IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
+        Mockito.when(mockRepository.save(any(FCAR.class))).thenReturn(null);
 
-        FCAR fcar1 = FCARFactory.createFCAR(courseId1, professorId, semester, year);
-        FCAR fcar2 = FCARFactory.createFCAR(courseId2, professorId, semester, year);
+        // Replace static repository with mock (if permitted through testing setup)
+        FCARFactory factory = new FCARFactory() {
+            @Override
+            protected IFCARRepository getRepository() {
+                return mockRepository;
+            }
+        };
 
         // Act
-        Map<String, FCAR> result = FCARFactory.getFCARsByProfessor(professorId);
+        FCAR result = FCARFactory.createFCAR(null, 2, "Fall", 2023);
 
         // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertTrue(result.containsKey(fcar1.getFcarId()));
-        assertTrue(result.containsKey(fcar2.getFcarId()));
+        assertNull(result);
+        Mockito.verify(mockRepository, Mockito.times(1)).save(any(FCAR.class));
     }
 
     @Test
-    void testGetFCARsByProfessorReturnsEmptyForNonExistentProfessorId() {
-        // Act
-        Map<String, FCAR> result = FCARFactory.getFCARsByProfessor("NonExistentProfessor");
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testGetFCARsByProfessorReturnsEmptyForNullProfessorId() {
-        // Act
-        Map<String, FCAR> result = FCARFactory.getFCARsByProfessor(null);
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testGetFCARsBySemesterReturnsCorrectResults() {
+    void testCreateFCAR_InvalidYear() {
         // Arrange
-        String semester = "Fall";
-        int year = 2024;
+        IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
+        Mockito.when(mockRepository.save(any(FCAR.class))).thenReturn(null);
 
-        FCAR fcar1 = FCARFactory.createFCAR("CS110", "P010", semester, year);
-        FCAR fcar2 = FCARFactory.createFCAR("CS111", "P011", semester, year);
+        // Replace static repository with mock (if permitted through testing setup)
+        FCARFactory factory = new FCARFactory() {
+            @Override
+            protected IFCARRepository getRepository() {
+                return mockRepository;
+            }
+        };
 
         // Act
-        Map<String, FCAR> results = FCARFactory.getFCARsBySemester(semester, year);
+        FCAR result = FCARFactory.createFCAR("CS101", 2, "Spring", 1800);
+
+        // Assert
+        assertNull(result);
+        Mockito.verify(mockRepository, Mockito.times(1)).save(any(FCAR.class));
+    }
+
+    @Test
+    void testCreateFCAR_DuplicateEntry() {
+        // Arrange
+        IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
+        FCAR duplicateFCAR = new FCAR(1, "CS101", 2, "Fall", 2023);
+        Mockito.when(mockRepository.save(any(FCAR.class))).thenReturn(duplicateFCAR);
+
+        FCARFactory factory = new FCARFactory() {
+            @Override
+            protected IFCARRepository getRepository() {
+                return mockRepository;
+            }
+        };
+
+        // Act
+        FCAR result = FCARFactory.createFCAR("CS101", 2, "Fall", 2023);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getFcarId());
+        Mockito.verify(mockRepository, Mockito.times(1)).save(any(FCAR.class));
+    }
+
+    @Test
+    void testCreateFCAR_InvalidCourseCode() {
+        // Arrange
+        IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
+        Mockito.when(mockRepository.save(any(FCAR.class))).thenReturn(null);
+
+        FCARFactory factory = new FCARFactory() {
+            @Override
+            protected IFCARRepository getRepository() {
+                return mockRepository;
+            }
+        };
+
+        // Act
+        FCAR result = FCARFactory.createFCAR("", 2, "Spring", 2023);
+
+        // Assert
+        assertNull(result);
+        Mockito.verify(mockRepository, Mockito.times(1)).save(any(FCAR.class));
+    }
+
+    @Test
+    void testCreateFCAR_WithNullSemester() {
+        // Arrange
+        IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
+        Mockito.when(mockRepository.save(any(FCAR.class))).thenReturn(null);
+
+        FCARFactory factory = new FCARFactory() {
+            @Override
+            protected IFCARRepository getRepository() {
+                return mockRepository;
+            }
+        };
+
+        // Act
+        FCAR result = FCARFactory.createFCAR("CS101", 2, null, 2023);
+
+        // Assert
+        assertNull(result);
+        Mockito.verify(mockRepository, Mockito.times(1)).save(any(FCAR.class));
+    }
+
+    @Test
+    void testGetFCARsBySemester_Found() {
+        // Arrange
+        IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
+        List<FCAR> allFCARs = List.of(
+                new FCAR(1, "CS101", 2, "Fall", 2023),
+                new FCAR(2, "CS102", 3, "Spring", 2023),
+                new FCAR(3, "CS103", 4, "Fall", 2023)
+        );
+        Mockito.when(mockRepository.findAll()).thenReturn(allFCARs);
+
+        FCARFactory factory = new FCARFactory() {
+            @Override
+            protected IFCARRepository getRepository() {
+                return mockRepository;
+            }
+        };
+
+        // Act
+        List<FCAR> results = FCARFactory.getFCARsBySemester("Fall", 2023);
 
         // Assert
         assertNotNull(results);
         assertEquals(2, results.size());
-        assertTrue(results.containsKey(fcar1.getFcarId()));
-        assertTrue(results.containsKey(fcar2.getFcarId()));
+        assertEquals("Fall", results.get(0).getSemester());
+        assertEquals(2023, results.get(0).getYear());
+        assertEquals("Fall", results.get(1).getSemester());
+        assertEquals(2023, results.get(1).getYear());
+        Mockito.verify(mockRepository, Mockito.times(1)).findAll();
     }
 
     @Test
-    void testGetFCARsBySemesterReturnsEmptyForNonExistentSemesterAndYear() {
+    void testGetFCARsBySemester_NotFound() {
+        // Arrange
+        IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
+        List<FCAR> allFCARs = List.of(
+                new FCAR(1, "CS101", 2, "Spring", 2023),
+                new FCAR(2, "CS102", 3, "Spring", 2023)
+        );
+        Mockito.when(mockRepository.findAll()).thenReturn(allFCARs);
+
+        FCARFactory factory = new FCARFactory() {
+            @Override
+            protected IFCARRepository getRepository() {
+                return mockRepository;
+            }
+        };
+
         // Act
-        Map<String, FCAR> results = FCARFactory.getFCARsBySemester("NonExistentSemester", 2030);
+        List<FCAR> results = FCARFactory.getFCARsBySemester("Fall", 2023);
 
         // Assert
         assertNotNull(results);
         assertTrue(results.isEmpty());
+        Mockito.verify(mockRepository, Mockito.times(1)).findAll();
     }
 
     @Test
-    void testGetFCARsBySemesterReturnsEmptyForNullSemester() {
+    void testGetFCARsBySemester_NullSemester() {
+        // Arrange
+        IFCARRepository mockRepository = Mockito.mock(IFCARRepository.class);
+        List<FCAR> allFCARs = List.of(
+                new FCAR(1, "CS101", 2, "Spring", 2023),
+                new FCAR(2, "CS102", 3, "Fall", 2023)
+        );
+        Mockito.when(mockRepository.findAll()).thenReturn(allFCARs);
+
+        FCARFactory factory = new FCARFactory() {
+            @Override
+            protected IFCARRepository getRepository() {
+                return mockRepository;
+            }
+        };
+
         // Act
-        Map<String, FCAR> results = FCARFactory.getFCARsBySemester(null, 2024);
+        List<FCAR> results = FCARFactory.getFCARsBySemester(null, 2023);
 
         // Assert
         assertNotNull(results);
         assertTrue(results.isEmpty());
+        Mockito.verify(mockRepository, Mockito.times(1)).findAll();
     }
-
-
 }

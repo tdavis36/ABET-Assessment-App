@@ -619,3 +619,4 @@ FodyWeavers.xsd
 *.sln.iml
 
 */target/*
+.env

@@ -1,246 +1,238 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="com.ABETAppTeam.FCAR" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page import="com.ABETAppTeam.repository.FCARRepository" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
+<%@ page import="com.ABETAppTeam.User" %>
+<%@ page import="com.ABETAppTeam.Admin" %>
+<%@ page import="com.ABETAppTeam.Professor" %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>View FCARs</title>
+    <title>FCAR View</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
+    <!-- Add custom styles to override button width -->
     <style>
-        .fcar-list {
-            list-style-type: none;
-            padding: 0;
+        /* Override button width to prevent full-width on all screens */
+        .btn {
+            width: auto !important;
+            max-width: none !important;
         }
-        .fcar-item {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f9f9f9;
-        }
-        .fcar-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-        .fcar-details {
-            margin-top: 15px;
-        }
-        .fcar-section {
-            margin-bottom: 15px;
-        }
-        .fcar-section h3 {
-            margin-bottom: 5px;
-            color: #333;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-        .status-draft { background-color: #f0f0f0; color: #666; }
-        .status-submitted { background-color: #cce5ff; color: #004085; }
-        .status-approved { background-color: #d4edda; color: #155724; }
-        .status-rejected { background-color: #f8d7da; color: #721c24; }
-        .achievement-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .achievement-table th, .achievement-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-        .achievement-table th {
-            background-color: #f2f2f2;
-        }
+
+        /* Specific styling for the toggle-details button */
         .toggle-details {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 14px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 4px;
+            width: auto !important;
+            display: inline-block !important;
+            margin-left: auto !important;
+            flex-grow: 0 !important;
+        }
+
+        /* Maintain spacing between buttons */
+        .fcar-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* Ensure buttons remain a reasonable size on mobile */
+        @media (max-width: 768px) {
+            .btn {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+
+            /* Improve responsive layout for action buttons */
+            .fcar-actions {
+                justify-content: flex-start;
+            }
+
+            /* Ensure the fcar-header stays as a row even on mobile */
+            .fcar-header {
+                flex-wrap: nowrap !important;
+                gap: 10px;
+            }
+
+            /* Keep toggle button from growing */
+            .toggle-details {
+                flex-shrink: 0;
+                flex-basis: auto;
+            }
         }
     </style>
 </head>
 <body>
-<h1>Faculty Course Assessment Reports (FCARs)</h1>
-<div style="display: flex; gap: 10px; margin-bottom: 20px;">
-    <a href="${pageContext.request.contextPath}/ProfessorServlet" class="btn">Back to Professor Dashboard</a>
-    <a href="${pageContext.request.contextPath}/AdminServlet" class="btn">Back to Admin Dashboard</a>
-</div>
 
-<div class="section">
-    <h2>Existing FCARs</h2>
-    <c:choose>
-        <c:when test="${not empty allFCARs}">
-            <ul class="fcar-list">
-                <c:forEach var="fcar" items="${allFCARs}" varStatus="status">
-                    <li class="fcar-item">
-                        <div class="fcar-header">
-                            <div>
-                                <h3>FCAR #${status.index + 1}: ${fcar.courseId}</h3>
+<div class="container">
+    <h1>FCAR Details</h1>
+
+    <%
+        // Retrieve the authenticated user from the session
+        User user = (User) session.getAttribute("user");
+        String dashboardUrl = "";
+
+        // Determine dashboard URL based on a user role
+        if (user instanceof Admin) {
+            dashboardUrl = request.getContextPath() + "/AdminServlet";
+        } else if (user instanceof Professor) {
+            dashboardUrl = request.getContextPath() + "/ProfessorServlet";
+        } else {
+            // Fallback to index if no specific role found
+            dashboardUrl = request.getContextPath() + "/index";
+        }
+
+        // Load FCARs from the database based on a user role
+        List<FCAR> allFCARs = null;
+        FCARRepository fcarRepository = new FCARRepository();
+
+        if (user instanceof Admin) {
+            // Admin can see all FCARs
+            allFCARs = fcarRepository.findAll();
+        } else if (user instanceof Professor) {
+            // Professor can only see their own FCARs
+            allFCARs = fcarRepository.findByInstructorId(user.getUserId());
+        }
+
+        // Set the allFCARs attribute for JSTL access
+        request.setAttribute("allFCARs", allFCARs);
+    %>
+
+    <div class="section">
+        <h2>Existing FCARs</h2>
+        <c:choose>
+            <c:when test="${not empty allFCARs}">
+                <ul class="fcar-list">
+                    <c:forEach var="fcar" items="${allFCARs}" varStatus="status">
+                        <li class="fcar-item">
+                            <!-- Header with title and basic info -->
+                            <div class="fcar-header" style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
-                                    <strong>Professor:</strong> ${fcar.professorId} |
-                                    <strong>Semester:</strong> ${fcar.semester} ${fcar.year} |
-                                    <strong>Status:</strong> 
-                                    <span class="status-badge status-${fcar.status.toLowerCase()}">${fcar.status}</span>
+                                    <h3>FCAR #${status.index + 1}: ${fcar.courseCode}</h3>
+                                    <div>
+                                        <strong>Professor ID:</strong> ${fcar.instructorId} |
+                                        <strong>Semester:</strong> ${fcar.semester} ${fcar.year} |
+                                        <strong>Status:</strong>
+                                        <span class="status-badge status-${fn:toLowerCase(fcar.status)}">${fcar.status}</span>
+                                    </div>
                                 </div>
+                                <button class="btn toggle-details" style="width: auto !important; flex-shrink: 0;" onclick="toggleDetails('fcar-${fcar.fcarId}')">Show Details</button>
                             </div>
-                            <button class="toggle-details" onclick="toggleDetails('fcar-${status.index}')">Show Details</button>
-                        </div>
-                        
-                        <div id="fcar-${status.index}" class="fcar-details" style="display: none;">
-                            <!-- Outcome and Indicator Section -->
-                            <c:if test="${not empty fcar.assessmentMethods['outcome']}">
+
+                            <!-- Details section that toggles visibility -->
+                            <div id="fcar-${fcar.fcarId}" class="fcar-details" style="display: none; margin-top: 10px;">
+                                <!-- Actions Section - Moved to top for better visibility -->
                                 <div class="fcar-section">
-                                    <h3>Outcome and Indicator</h3>
-                                    <p><strong>Outcome:</strong> ${fcar.assessmentMethods['outcome']}</p>
-                                    <p><strong>Indicator:</strong> ${fcar.assessmentMethods['indicator']}</p>
-                                    <p><strong>Target Goal:</strong> ${fcar.assessmentMethods['targetGoal']}%</p>
+                                    <div class="fcar-actions">
+                                        <!-- Only show edit button if the user is the author or an admin -->
+                                        <c:if test="${user.userId == fcar.instructorId || user.roleId == 1}">
+                                            <form method="get" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
+                                                <input type="hidden" name="action" value="editFCAR"/>
+                                                <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>
+                                                <button type="submit" class="btn">Edit FCAR</button>
+                                            </form>
+                                        </c:if>
+
+                                        <!-- Only show approve/reject buttons for admins and submitted FCARs -->
+                                        <c:if test="${user.roleId == 1 && fcar.status == 'Submitted'}">
+                                            <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
+                                                <input type="hidden" name="action" value="approveFCAR"/>
+                                                <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>
+                                                <button type="submit" class="btn" style="background-color: #28a745;">Approve</button>
+                                            </form>
+                                            <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
+                                                <input type="hidden" name="action" value="rejectFCAR"/>
+                                                <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>
+                                                <button type="submit" class="btn" style="background-color: #dc3545;">Reject</button>
+                                            </form>
+                                        </c:if>
+                                    </div>
                                 </div>
-                            </c:if>
-                            
-                            <!-- Assessment Method Section -->
-                            <c:if test="${not empty fcar.assessmentMethods['workUsed']}">
+
+                                <!-- FCAR Details Section -->
                                 <div class="fcar-section">
-                                    <h3>Assessment Method</h3>
-                                    <p><strong>Work Used:</strong> ${fcar.assessmentMethods['workUsed']}</p>
-                                    <p><strong>Description:</strong> ${fcar.assessmentMethods['assessmentDescription']}</p>
-                                </div>
-                            </c:if>
-                            
-                            <!-- Achievement Levels Section -->
-                            <c:if test="${not empty fcar.assessmentMethods['level4']}">
-                                <div class="fcar-section">
-                                    <h3>Achievement Levels</h3>
-                                    <table class="achievement-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Exemplary (4)</th>
-                                                <th>Satisfactory (3)</th>
-                                                <th>Developing (2)</th>
-                                                <th>Unsatisfactory (1)</th>
-                                                <th>Not Applicable (0)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>${fcar.assessmentMethods['level4']}</td>
-                                                <td>${fcar.assessmentMethods['level3']}</td>
-                                                <td>${fcar.assessmentMethods['level2']}</td>
-                                                <td>${fcar.assessmentMethods['level1']}</td>
-                                                <td>${fcar.assessmentMethods['level0']}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </c:if>
-                            
-                            <!-- Results Section -->
-                            <c:if test="${not empty fcar.assessmentMethods['totalStudents']}">
-                                <div class="fcar-section">
-                                    <h3>Results</h3>
-                                    <p><strong>Total Students:</strong> ${fcar.assessmentMethods['totalStudents']}</p>
-                                    <p><strong>Students Meeting Target (Level 3 or 4):</strong> ${fcar.assessmentMethods['studentsMetTarget']}</p>
-                                    <p><strong>Percentage Meeting Target:</strong> ${fcar.assessmentMethods['percentageMetTarget']}%</p>
-                                    <p><strong>Target Goal Met:</strong> ${fcar.assessmentMethods['targetMet']}</p>
-                                </div>
-                            </c:if>
-                            
-                            <!-- Summary and Improvement Actions Section -->
-                            <c:if test="${not empty fcar.improvementActions['summary']}">
-                                <div class="fcar-section">
-                                    <h3>Summary and Improvement Actions</h3>
-                                    <p><strong>Summary:</strong> ${fcar.improvementActions['summary']}</p>
-                                    <c:if test="${not empty fcar.improvementActions['actions']}">
-                                        <p><strong>Improvement Actions:</strong> ${fcar.improvementActions['actions']}</p>
+                                    <h4>FCAR Information</h4>
+                                    <p><strong>Course Code:</strong> ${fcar.courseCode}</p>
+                                    <p><strong>Instructor ID:</strong> ${fcar.instructorId}</p>
+                                    <p><strong>Semester/Year:</strong> ${fcar.semester} ${fcar.year}</p>
+                                    <p><strong>Status:</strong> ${fcar.status}</p>
+                                    <p><strong>Date Created:</strong> ${fcar.createdAt}</p>
+                                    <c:if test="${not empty fcar.updatedAt}">
+                                        <p><strong>Last Updated:</strong> ${fcar.updatedAt}</p>
                                     </c:if>
                                 </div>
-                            </c:if>
-                            
-                            <!-- Major Breakdown Section -->
-                            <c:set var="hasMajors" value="false" />
-                            <c:forEach var="method" items="${fcar.assessmentMethods}">
-                                <c:if test="${method.key.startsWith('major_')}">
-                                    <c:set var="hasMajors" value="true" />
-                                </c:if>
-                            </c:forEach>
-                            
-                            <c:if test="${hasMajors}">
-                                <div class="fcar-section">
-                                    <h3>Achievement Levels by Major</h3>
-                                    <c:set var="majorIndex" value="0" />
-                                    <c:set var="majorPrefix" value="major_${majorIndex}_" />
-                                    
-                                    <c:forEach begin="0" end="10" varStatus="loop">
-                                        <c:set var="currentPrefix" value="major_${loop.index}_" />
-                                        <c:if test="${not empty fcar.assessmentMethods[currentPrefix.concat('name')]}">
-                                            <div style="margin-top: 15px;">
-                                                <h4>${fcar.assessmentMethods[currentPrefix.concat('name')]}</h4>
-                                                <table class="achievement-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Exemplary (4)</th>
-                                                            <th>Satisfactory (3)</th>
-                                                            <th>Developing (2)</th>
-                                                            <th>Unsatisfactory (1)</th>
-                                                            <th>Not Applicable (0)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td>${fcar.assessmentMethods[currentPrefix.concat('level4')]}</td>
-                                                            <td>${fcar.assessmentMethods[currentPrefix.concat('level3')]}</td>
-                                                            <td>${fcar.assessmentMethods[currentPrefix.concat('level2')]}</td>
-                                                            <td>${fcar.assessmentMethods[currentPrefix.concat('level1')]}</td>
-                                                            <td>${fcar.assessmentMethods[currentPrefix.concat('level0')]}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </c:if>
-                                    </c:forEach>
-                                </div>
-                            </c:if>
-                        </div>
-                    </li>
-                </c:forEach>
-            </ul>
-        </c:when>
-        <c:otherwise>
-            <p>No FCARs available.</p>
-        </c:otherwise>
-    </c:choose>
-</div>
 
-<script>
-    function toggleDetails(id) {
-        const details = document.getElementById(id);
-        const button = event.target;
-        
-        if (details.style.display === "none") {
-            details.style.display = "block";
-            button.textContent = "Hide Details";
-        } else {
-            details.style.display = "none";
-            button.textContent = "Show Details";
+                                <!-- Student Learning Outcomes Section -->
+                                <c:if test="${not empty fcar.outcomeId}">
+                                    <div class="fcar-section">
+                                        <h4>Student Learning Outcomes</h4>
+                                        <p><strong>Outcome ID:</strong> ${fcar.outcomeId}</p>
+                                        <p><strong>Indicator ID:</strong> ${fcar.indicatorId}</p>
+                                    </div>
+                                </c:if>
+
+                                <!-- Assessment Methods Section -->
+                                <c:if test="${not empty fcar.assessmentMethods}">
+                                    <div class="fcar-section">
+                                        <h4>Assessment Methods</h4>
+                                        <c:forEach var="method" items="${fcar.assessmentMethods}">
+                                            <p><strong>${method.key}:</strong> ${method.value}</p>
+                                        </c:forEach>
+                                    </div>
+                                </c:if>
+
+                                <!-- Student Outcomes Section -->
+                                <c:if test="${not empty fcar.studentOutcomes}">
+                                    <div class="fcar-section">
+                                        <h4>Student Achievement Levels</h4>
+                                        <c:forEach var="outcome" items="${fcar.studentOutcomes}">
+                                            <p><strong>${outcome.key}:</strong> ${outcome.value}</p>
+                                        </c:forEach>
+                                    </div>
+                                </c:if>
+
+                                <!-- Improvement Actions Section -->
+                                <c:if test="${not empty fcar.improvementActions}">
+                                    <div class="fcar-section">
+                                        <h4>Improvement Actions</h4>
+                                        <c:forEach var="action" items="${fcar.improvementActions}">
+                                            <p><strong>${action.key}:</strong> ${action.value}</p>
+                                        </c:forEach>
+                                    </div>
+                                </c:if>
+                            </div>
+                        </li>
+                    </c:forEach>
+                </ul>
+            </c:when>
+            <c:otherwise>
+                <p class="no-data">No FCARs found. Please create a new FCAR.</p>
+            </c:otherwise>
+        </c:choose>
+    </div>
+
+    <!-- Add navigation button back to dashboard -->
+    <div class="actions">
+        <a href="<%= dashboardUrl %>" class="btn">Back to Dashboard</a>
+    </div>
+
+    <!-- JavaScript for expanding/collapsing FCAR details -->
+    <script>
+        function toggleDetails(id) {
+            const details = document.getElementById(id);
+            const button = event.currentTarget;
+
+            if (details.style.display === "none") {
+                details.style.display = "block";
+                button.textContent = "Hide Details";
+            } else {
+                details.style.display = "none";
+                button.textContent = "Show Details";
+            }
         }
-    }
-</script>
+    </script>
+</div>
 </body>
 </html>

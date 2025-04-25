@@ -1,5 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="jakarta.servlet.http.HttpSession" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -93,8 +97,9 @@
 <h1>Faculty Course Assessment Report (FCAR)</h1>
     <p>Complete the assessment form below for the course.</p>
     
-    <form action="${pageContext.request.contextPath}/ProfessorServlet" method="post">
+    <form action="${pageContext.request.contextPath}/ProfessorServlet" method="post" id="fcarForm">
         <input type="hidden" name="action" value="submitFCAR"/>
+        <input type="hidden" name="saveAction" id="saveActionInput" value="submit"/>
         
         <!-- Basic Information Section -->
         <div class="form-section">
@@ -129,28 +134,202 @@
             </div>
         </div>
         
-        <!-- Outcome and Indicator Section -->
+        <!-- Outcomes and Indicators Section -->
         <div class="form-section">
-            <h2>Outcome and Indicator</h2>
-            <div class="form-group">
-                <label for="outcome">Student Learning Outcome:</label>
-                <select id="outcome" name="outcome" required onchange="updateIndicators()">
-                    <option value="">Select an outcome</option>
-                    <option value="outcome1" ${fcar.assessmentMethods['outcome'] == 'outcome1' ? 'selected' : ''}>Analyze a complex computing problem and to apply principles of computing and other relevant disciplines to identify solutions.</option>
-                    <option value="outcome2" ${fcar.assessmentMethods['outcome'] == 'outcome2' ? 'selected' : ''}>Design, implement, and evaluate a computing-based solution to meet a given set of computing requirements in the context of the program's discipline.</option>
-                    <option value="outcome3" ${fcar.assessmentMethods['outcome'] == 'outcome3' ? 'selected' : ''}>Communicate effectively in a variety of professional contexts.</option>
-                    <option value="outcome4" ${fcar.assessmentMethods['outcome'] == 'outcome4' ? 'selected' : ''}>Recognize professional responsibilities and make informed judgments in computing practice based on legal and ethical principles.</option>
-                    <option value="outcome5" ${fcar.assessmentMethods['outcome'] == 'outcome5' ? 'selected' : ''}>Function effectively as a member or leader of a team engaged in activities appropriate to the program's discipline.</option>
-                    <option value="outcome6" ${fcar.assessmentMethods['outcome'] == 'outcome6' ? 'selected' : ''}>Apply computer science theory and software development fundamentals to produce computing-based solutions.</option>
-                </select>
-            </div>
+            <h2>Outcomes and Indicators</h2>
+            <p>The following outcomes and indicators are assigned to this FCAR based on the course. These cannot be changed.</p>
             
-            <div class="form-group">
-                <label for="indicator">Performance Indicator:</label>
-                <select id="indicator" name="indicator" required>
-                    <option value="">Select an outcome first</option>
-                </select>
-                <input type="hidden" id="savedIndicator" value="${fcar.assessmentMethods['indicator']}" />
+            <div id="assignedOutcomesContainer" style="margin-top: 15px;">
+                <c:if test="${not empty fcar.assessmentMethods['selectedOutcomes']}">
+                    <input type="hidden" name="selectedOutcomes" value="${fcar.assessmentMethods['selectedOutcomes']}" />
+                    
+                    <!-- Check if user is admin or professor -->
+                    <c:set var="isAdmin" value="${sessionScope.userRole == 'admin'}" />
+                    
+                    <c:forEach var="outcomeId" items="${fcar.assessmentMethods['selectedOutcomes'].split(',')}" varStatus="status">
+                        <div style="margin-bottom: 20px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;">
+                            <div style="font-weight: bold; margin-bottom: 10px;">
+                                <c:choose>
+                                    <c:when test="${outcomeId == '1'}">
+                                        <c:if test="${isAdmin}">
+                                            <input type="checkbox" id="outcome_1" name="outcome_1" value="1" checked 
+                                                   onchange="document.getElementById('indicators_1').style.display = this.checked ? 'block' : 'none'; updateSelectedOutcomes();" />
+                                        </c:if>
+                                        <label for="outcome_1">Outcome 1: Analyze a complex computing problem and to apply principles of computing and other relevant disciplines to identify solutions.</label>
+                                    </c:when>
+                                    <c:when test="${outcomeId == '2'}">
+                                        <c:if test="${isAdmin}">
+                                            <input type="checkbox" id="outcome_2" name="outcome_2" value="2" checked 
+                                                   onchange="document.getElementById('indicators_2').style.display = this.checked ? 'block' : 'none'; updateSelectedOutcomes();" />
+                                        </c:if>
+                                        <label for="outcome_2">Outcome 2: Design, implement, and evaluate a computing-based solution to meet a given set of computing requirements in the context of the program's discipline.</label>
+                                    </c:when>
+                                    <c:when test="${outcomeId == '3'}">
+                                        <c:if test="${isAdmin}">
+                                            <input type="checkbox" id="outcome_3" name="outcome_3" value="3" checked 
+                                                   onchange="document.getElementById('indicators_3').style.display = this.checked ? 'block' : 'none'; updateSelectedOutcomes();" />
+                                        </c:if>
+                                        <label for="outcome_3">Outcome 3: Communicate effectively in a variety of professional contexts.</label>
+                                    </c:when>
+                                    <c:when test="${outcomeId == '4'}">
+                                        <c:if test="${isAdmin}">
+                                            <input type="checkbox" id="outcome_4" name="outcome_4" value="4" checked 
+                                                   onchange="document.getElementById('indicators_4').style.display = this.checked ? 'block' : 'none'; updateSelectedOutcomes();" />
+                                        </c:if>
+                                        <label for="outcome_4">Outcome 4: Recognize professional responsibilities and make informed judgments in computing practice based on legal and ethical principles.</label>
+                                    </c:when>
+                                    <c:when test="${outcomeId == '5'}">
+                                        <c:if test="${isAdmin}">
+                                            <input type="checkbox" id="outcome_5" name="outcome_5" value="5" checked 
+                                                   onchange="document.getElementById('indicators_5').style.display = this.checked ? 'block' : 'none'; updateSelectedOutcomes();" />
+                                        </c:if>
+                                        <label for="outcome_5">Outcome 5: Function effectively as a member or leader of a team engaged in activities appropriate to the program's discipline.</label>
+                                    </c:when>
+                                    <c:when test="${outcomeId == '6'}">
+                                        <c:if test="${isAdmin}">
+                                            <input type="checkbox" id="outcome_6" name="outcome_6" value="6" checked 
+                                                   onchange="document.getElementById('indicators_6').style.display = this.checked ? 'block' : 'none'; updateSelectedOutcomes();" />
+                                        </c:if>
+                                        <label for="outcome_6">Outcome 6: Apply computer science theory and software development fundamentals to produce computing-based solutions.</label>
+                                    </c:when>
+                                </c:choose>
+                            </div>
+                            
+                            <!-- Display indicators for this outcome -->
+                            <div id="indicators_${outcomeId}" style="margin-left: 20px;">
+                                <c:set var="hasIndicators" value="false" />
+                                
+                                <!-- Loop through all possible indicators for this outcome -->
+                                <c:forEach var="i" begin="1" end="7">
+                                    <c:set var="indicatorKey" value="indicator_${outcomeId}.${i}" />
+                                    <c:set var="isSelected" value="${not empty fcar.assessmentMethods[indicatorKey]}" />
+                                    
+                                    <c:if test="${isSelected || isAdmin}">
+                                        <div style="margin-bottom: 5px;">
+                                            <c:set var="hasIndicators" value="true" />
+                                            <c:set var="indicatorText" value="" />
+                                            
+                                            <c:choose>
+                                                <c:when test="${outcomeId == '1' && i == 1}">
+                                                    <c:set var="indicatorText" value="1.1 Student can correctly interpret a computational problem and define its parameters" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '1' && i == 2}">
+                                                    <c:set var="indicatorText" value="1.2 Student can analyze a computational problem in order to choose mathematical and algorithmic principles that can be applied to solve the problem" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '1' && i == 3}">
+                                                    <c:set var="indicatorText" value="1.3 Student can define a solution to a computational problem" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '1' && i == 4}">
+                                                    <c:set var="indicatorText" value="1.4 Student can effectively collect and document system requirements" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '1' && i == 5}">
+                                                    <c:set var="indicatorText" value="1.5 Student can effectively analyze and model a problem domain" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '1' && i == 6}">
+                                                    <c:set var="indicatorText" value="1.6 Student can identify the relative efficiency of different algorithms using asymptotic notation" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '2' && i == 1}">
+                                                    <c:set var="indicatorText" value="2.1 Student can identify and evaluate appropriate technologies to be used in a system" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '2' && i == 2}">
+                                                    <c:set var="indicatorText" value="2.2 Student can effectively construct a design model of a system" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '2' && i == 3}">
+                                                    <c:set var="indicatorText" value="2.3 Student can effectively incorporate requirements outside the problem domain (e.g., a user interface) into the design model" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '2' && i == 4}">
+                                                    <c:set var="indicatorText" value="2.4 Student can plan and implement a testing strategy to ensure that system meets its quality goal" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '2' && i == 5}">
+                                                    <c:set var="indicatorText" value="2.5 Student can collect and analyze runtime benchmark data to characterize the efficiency of an algorithm or data structure" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '2' && i == 6}">
+                                                    <c:set var="indicatorText" value="2.6 Student can specify appropriate security concerns and requirements for a component or system" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '2' && i == 7}">
+                                                    <c:set var="indicatorText" value="2.7 Student can evaluate a component or system to identify security characteristics and identify vulnerabilities" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '3' && i == 1}">
+                                                    <c:set var="indicatorText" value="3.1 Student can write a clear and well-organized technical report" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '3' && i == 2}">
+                                                    <c:set var="indicatorText" value="3.2 Student can create and present a clear and well-organized technical presentation using appropriate visual, textual, and spoken content" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '3' && i == 3}">
+                                                    <c:set var="indicatorText" value="3.3 Student can communicate technical content to peers" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '3' && i == 4}">
+                                                    <c:set var="indicatorText" value="3.4 Student can communicate technical content to general audiences" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '4' && i == 1}">
+                                                    <c:set var="indicatorText" value="4.1 Student can analyze and explain the ethical issues surrounding a particular computing topic (for example, peer-to-peer file sharing)" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '4' && i == 2}">
+                                                    <c:set var="indicatorText" value="4.2 Student demonstrates recognition of his or her professional responsibilities as a member of the computing profession" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '5' && i == 1}">
+                                                    <c:set var="indicatorText" value="5.1 Student demonstrates an ability to participate in and implement processes for team communication and coordination" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '5' && i == 2}">
+                                                    <c:set var="indicatorText" value="5.2 Student demonstrates an ability to work closely with other students to solve technical problems" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '6' && i == 1}">
+                                                    <c:set var="indicatorText" value="6.1 Student is proficient in a current programming language" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '6' && i == 2}">
+                                                    <c:set var="indicatorText" value="6.2 Student can create user interfaces using current platforms" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '6' && i == 3}">
+                                                    <c:set var="indicatorText" value="6.3 Student can write programs that use concurrency" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '6' && i == 4}">
+                                                    <c:set var="indicatorText" value="6.4 Student can implement automated tests to satisfy the goals of a testing strategy" />
+                                                </c:when>
+                                                <c:when test="${outcomeId == '6' && i == 5}">
+                                                    <c:set var="indicatorText" value="6.5 Student can use appropriate implementation techniques and practices to meet security requirements and/or mitigate discovered vulnerabilities" />
+                                                </c:when>
+                                            </c:choose>
+                                            
+                                            <c:if test="${not empty indicatorText}">
+                                                <c:if test="${isAdmin}">
+                                                    <input type="checkbox" id="indicator_${outcomeId}_${i}" name="indicator_${outcomeId}_${i}" 
+                                                           value="${outcomeId}.${i}" ${isSelected ? 'checked' : ''} />
+                                                </c:if>
+                                                <c:if test="${isSelected}">
+                                                    <input type="hidden" name="indicator_${outcomeId}.${i}" value="selected" />
+                                                </c:if>
+                                                <label for="indicator_${outcomeId}_${i}">${indicatorText}</label>
+                                            </c:if>
+                                        </div>
+                                    </c:if>
+                                </c:forEach>
+                                
+                                <c:if test="${!hasIndicators}">
+                                    <p>No indicators selected for this outcome.</p>
+                                </c:if>
+                            </div>
+                        </div>
+                    </c:forEach>
+                    
+                    <c:if test="${isAdmin}">
+                        <script>
+                            function updateSelectedOutcomes() {
+                                const selectedOutcomes = [];
+                                for (let outcomeId = 1; outcomeId <= 6; outcomeId++) {
+                                    const checkbox = document.getElementById(`outcome_${outcomeId}`);
+                                    if (checkbox && checkbox.checked) {
+                                        selectedOutcomes.push(outcomeId);
+                                    }
+                                }
+                                document.getElementsByName('selectedOutcomes')[0].value = selectedOutcomes.join(',');
+                            }
+                        </script>
+                    </c:if>
+                </c:if>
+                
+                <c:if test="${empty fcar.assessmentMethods['selectedOutcomes']}">
+                    <p>No outcomes have been assigned to this FCAR. Please contact an administrator.</p>
+                </c:if>
             </div>
             
             <div class="form-group">
@@ -181,23 +360,23 @@
             <table class="achievement-table">
                 <thead>
                     <tr>
-                        <th>Exemplary (4)</th>
-                        <th>Satisfactory (3)</th>
-                        <th>Developing (2)</th>
-                        <th>Unsatisfactory (1)</th>
-                        <th>Not Applicable (0)</th>
+                        <th>Exceeds Expectations</th>
+                        <th>Meets Expectations</th>
+                        <th>Below Expectations</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><input type="number" name="level4" min="0" value="${not empty fcar.assessmentMethods['level4'] ? fcar.assessmentMethods['level4'] : '0'}" required /></td>
                         <td><input type="number" name="level3" min="0" value="${not empty fcar.assessmentMethods['level3'] ? fcar.assessmentMethods['level3'] : '0'}" required /></td>
                         <td><input type="number" name="level2" min="0" value="${not empty fcar.assessmentMethods['level2'] ? fcar.assessmentMethods['level2'] : '0'}" required /></td>
                         <td><input type="number" name="level1" min="0" value="${not empty fcar.assessmentMethods['level1'] ? fcar.assessmentMethods['level1'] : '0'}" required /></td>
-                        <td><input type="number" name="level0" min="0" value="${not empty fcar.assessmentMethods['level0'] ? fcar.assessmentMethods['level0'] : '0'}" required /></td>
                     </tr>
                 </tbody>
             </table>
+            
+            <!-- Hidden fields to maintain backward compatibility -->
+            <input type="hidden" name="level4" value="0" />
+            <input type="hidden" name="level0" value="0" />
             
             <div class="form-group" style="margin-top: 15px;">
                 <label>
@@ -269,7 +448,10 @@
             </div>
         </div>
         
-        <button type="submit" class="btn-submit">Submit FCAR</button>
+        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+            <button type="submit" class="btn-submit" onclick="setAction('submit')">Submit FCAR</button>
+            <button type="button" class="btn-submit" onclick="saveAndExit()" style="background-color: #2196F3;">Save and Exit</button>
+        </div>
     </form>
 </div>
 
@@ -434,6 +616,26 @@
     document.getElementsByName('level1')[0].addEventListener('input', calculateResults);
     document.getElementsByName('level0')[0].addEventListener('input', calculateResults);
     document.getElementById('targetGoal').addEventListener('input', calculateResults);
+    
+    // Function to set the save action
+    function setAction(action) {
+        document.getElementById('saveActionInput').value = action;
+    }
+    
+    // Function to save and exit without validation
+    function saveAndExit() {
+        // Set the action to 'save'
+        setAction('save');
+        
+        // Remove required attributes from all form elements
+        const requiredElements = document.querySelectorAll('[required]');
+        requiredElements.forEach(element => {
+            element.removeAttribute('required');
+        });
+        
+        // Submit the form
+        document.getElementById('fcarForm').submit();
+    }
     
     // Initialize the form
     document.addEventListener('DOMContentLoaded', function() {
