@@ -1,17 +1,17 @@
 package com.ABETAppTeam;
 
-import com.ABETAppTeam.controller.DisplaySystemController;
-import com.ABETAppTeam.controller.FCARController;
-import com.ABETAppTeam.controller.OutcomeController;
-import com.ABETAppTeam.service.LoggingService;
-import com.ABETAppTeam.util.SQLExceptionHandler;
-
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import com.ABETAppTeam.controller.DisplaySystemController;
+import com.ABETAppTeam.controller.FCARController;
+import com.ABETAppTeam.controller.OutcomeController;
+import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.SQLExceptionHandler;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -62,7 +62,8 @@ public class AdminServlet extends HttpServlet {
 
             // Check if user is an admin
             if (!(user instanceof Admin)) {
-                logger.warn("Unauthorized access attempt to AdminServlet by user ID {}", user != null ? user.getUserId() : "unknown");
+                logger.warn("Unauthorized access attempt to AdminServlet by user ID {}",
+                        user != null ? user.getUserId() : "unknown");
                 logger.logSecurityEvent("UNAUTHORIZED_ACCESS",
                         user != null ? String.valueOf(user.getUserId()) : "unknown",
                         getClientIpAddress(request),
@@ -147,8 +148,8 @@ public class AdminServlet extends HttpServlet {
                 return;
             } else if ("createFCAR".equals(action)) {
                 // Get available courses and professors for the form
-                logger.debug("Forwarding to createFCAR.jsp");
-                request.getRequestDispatcher("/WEB-INF/createFCAR.jsp").forward(request, response);
+                logger.debug("Forwarding to viewFCAR.jsp");
+                request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
                 return;
             }
             // Default: display the admin dashboard
@@ -184,7 +185,8 @@ public class AdminServlet extends HttpServlet {
 
             // Check if user is an admin
             if (!(user instanceof Admin)) {
-                logger.warn("Unauthorized POST attempt to AdminServlet by user ID {}", user != null ? user.getUserId() : "unknown");
+                logger.warn("Unauthorized POST attempt to AdminServlet by user ID {}",
+                        user != null ? user.getUserId() : "unknown");
                 logger.logSecurityEvent("UNAUTHORIZED_ACCESS",
                         user != null ? String.valueOf(user.getUserId()) : "unknown",
                         getClientIpAddress(request),
@@ -205,13 +207,13 @@ public class AdminServlet extends HttpServlet {
 
                 // Validate inputs
                 if (courseCode == null || courseCode.isEmpty() ||
-                    professorIdStr == null || professorIdStr.isEmpty() ||
-                    semester == null || semester.isEmpty() ||
-                    yearStr == null || yearStr.isEmpty()) {
+                        professorIdStr == null || professorIdStr.isEmpty() ||
+                        semester == null || semester.isEmpty() ||
+                        yearStr == null || yearStr.isEmpty()) {
 
                     logger.warn("Missing required parameters for FCAR creation");
                     request.setAttribute("error", "All fields are required to create an FCAR");
-                    request.getRequestDispatcher("/WEB-INF/createFCAR.jsp").forward(request, response);
+                    request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
                     return;
                 }
 
@@ -264,11 +266,10 @@ public class AdminServlet extends HttpServlet {
                 } catch (NumberFormatException e) {
                     logger.warn("Invalid number format in FCAR creation: {}", e.getMessage());
                     request.setAttribute("error", "Invalid professor ID or year format");
-                    request.getRequestDispatcher("/WEB-INF/createFCAR.jsp").forward(request, response);
+                    request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
                     return;
                 }
-            }
-            else if ("updateFCAR".equals(action)) {
+            } else if ("updateFCAR".equals(action)) {
                 // Extract FCAR ID and ensure it's valid
                 int fcarId = Integer.parseInt(request.getParameter("fcarId"));
                 if (fcarId <= 0) {
@@ -372,8 +373,7 @@ public class AdminServlet extends HttpServlet {
                 logger.debug("Redirecting to AdminServlet with message=FCARUpdated");
                 response.sendRedirect(request.getContextPath() + "/AdminServlet?message=FCARUpdated");
                 return;
-            }
-            else if ("approveFCAR".equals(action)) {
+            } else if ("approveFCAR".equals(action)) {
                 int fcarId = Integer.parseInt(request.getParameter("fcarId"));
                 logger.info("Admin user ID {} approving FCAR ID {}", user.getUserId(), fcarId);
 
@@ -391,8 +391,7 @@ public class AdminServlet extends HttpServlet {
                 logger.debug("Redirecting to AdminServlet?action=viewFCARs with message=FCARApproved");
                 response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARApproved");
                 return;
-            }
-            else if ("rejectFCAR".equals(action)) {
+            } else if ("rejectFCAR".equals(action)) {
                 int fcarId = Integer.parseInt(request.getParameter("fcarId"));
                 String feedback = request.getParameter("feedback");
 
@@ -413,8 +412,7 @@ public class AdminServlet extends HttpServlet {
                 logger.debug("Redirecting to AdminServlet?action=viewFCARs with message=FCARRejected");
                 response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARRejected");
                 return;
-            }
-            else if ("deleteFCAR".equals(action)) {
+            } else if ("deleteFCAR".equals(action)) {
                 int fcarId = Integer.parseInt(request.getParameter("fcarId"));
                 logger.info("Admin user ID {} deleting FCAR ID {}", user.getUserId(), fcarId);
 
@@ -439,7 +437,7 @@ public class AdminServlet extends HttpServlet {
             doGet(request, response);
         } catch (Exception e) {
             if (e instanceof SQLException) {
-                String errorMessage = SQLExceptionHandler.analyzeException((SQLException)e, null, null);
+                String errorMessage = SQLExceptionHandler.analyzeException((SQLException) e, null, null);
                 logger.error("SQL error in AdminServlet: {}", errorMessage);
                 request.setAttribute("error", "Database error: " + errorMessage);
                 request.getRequestDispatcher("/WEB-INF/error.jsp").forward(request, response);
