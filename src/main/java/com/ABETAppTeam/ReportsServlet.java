@@ -5,6 +5,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.util.Map;
@@ -18,6 +19,22 @@ public class ReportsServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+    
+        // Set cache control headers
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+    
+        // Add security check - reports should only be accessible to admins
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null || 
+            !(session.getAttribute("user") instanceof Admin)) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Admin access required");
+        return;
+    }
+    
+    // Rest of the method remains unchanged
+    // ...
 
         // Check for any action parameters to generate or export reports
         String action = request.getParameter("action");

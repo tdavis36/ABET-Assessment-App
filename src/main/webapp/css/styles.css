@@ -609,3 +609,80 @@ textarea {
         page-break-inside: avoid;
     }
 }
+
+/* Button styles */
+.button-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.btn-save {
+    background-color: #6c757d; /* Grey */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.btn-save:hover {
+    background-color: #5a6268;
+}
+
+.btn-submit {
+    background-color: #007bff; /* Blue */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.btn-submit:hover {
+    background-color: #0069d9;
+}
+
+.btn-cancel {
+    background-color: #dc3545; /* Red */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 16px;
+    text-align: center;
+}
+
+.btn-cancel:hover {
+    background-color: #c82333;
+}
+
+/* Message styling */
+.success-message {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: rgba(40, 167, 69, 0.1); /* Light green background */
+    border-radius: 5px;
+    border: 1px solid #28a745;
+    color: #28a745;
+}
+
+.error-message {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: rgba(220, 53, 69, 0.1); /* Light red background */
+    border-radius: 5px;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+}
+
+/* Make readonly fields visually distinct */
+input[readonly], textarea[readonly] {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+}

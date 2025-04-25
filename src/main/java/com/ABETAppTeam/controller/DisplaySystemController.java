@@ -20,8 +20,6 @@ public class DisplaySystemController {
     // Singleton instance
     private static DisplaySystemController instance;
 
-    // Reference to repositories and services
-    private final FCARService fcarService;
     private final IFCARRepository fcarRepository;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
@@ -34,7 +32,8 @@ public class DisplaySystemController {
      * Private constructor for singleton pattern
      */
     private DisplaySystemController() {
-        this.fcarService = new FCARService();
+        // Reference to repositories and services
+        FCARService fcarService = new FCARService();
         this.fcarRepository = new FCARRepository();
         this.courseRepository = new CourseRepository();
         this.userRepository = new UserRepository();

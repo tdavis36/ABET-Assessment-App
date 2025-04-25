@@ -1,5 +1,8 @@
 package com.ABETAppTeam;
 
+import com.ABETAppTeam.accesscontrol.FCARAccessControlImpl;
+import com.ABETAppTeam.accesscontrol.FCARFieldAccessControl;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,11 +37,15 @@ public class FCAR {
     private Map<String, Integer> studentOutcomes; // Outcome ID -> Achievement level (1-5)
     private Map<String, String> assessmentMethods; // Method ID -> Description
     private Map<String, String> improvementActions; // Action ID -> Description
+    // Add this field to your FCAR class
+    private FCARFieldAccessControl accessControl;
 
     /**
      * Default constructor
      */
     public FCAR() {
+        // existing initialization...
+        this.accessControl = new FCARAccessControlImpl();
         this.studentOutcomes = new HashMap<>();
         this.assessmentMethods = new HashMap<>();
         this.improvementActions = new HashMap<>();
@@ -269,5 +276,69 @@ public class FCAR {
     // For backward compatibility
     public void setCourseId(String courseId) {
         this.courseCode = courseId;
+    }
+    /**
+     * Checks if the given user can edit the specified field
+     * @param fieldName The name of the field to check
+     * @param user The user requesting to edit
+     * @return true if the user has permission to edit the field
+     */
+    public boolean canEditField(String fieldName, User user) {
+        return accessControl.canEdit(fieldName, user);
+    }
+
+    /**
+     * Set a field value if the user has permission
+     * @param fieldName The name of the field to edit
+     * @param value The new value
+     * @param user The user attempting to edit
+     * @return true if the edit was successful
+     * @throws SecurityException if user doesn't have edit permission
+     */
+    public boolean setFieldValue(String fieldName, Object value, User user) {
+        if (!canEditField(fieldName, user)) {
+            throw new SecurityException("User does not have permission to edit this field");
+        }
+
+        // Use reflection or a switch statement to set the appropriate field
+        switch(fieldName) {
+            case "courseCode":
+                setCourseCode((String) value);
+                break;
+            case "methodDesc":
+                setMethodDesc((String) value);
+                break;
+            // Add cases for other editable fields
+            case "semester":
+                setSemester((String) value);
+                break;
+            case "year":
+                setYear((Integer) value);
+                break;
+            case "outcomeId":
+                setOutcomeId((Integer) value);
+                break;
+            case "indicatorId":
+                setIndicatorId((Integer) value);
+                break;
+            case "goalId":
+                setGoalId((Integer) value);
+                break;
+            case "studentExpectId":
+                setStudentExpectId((Integer) value);
+                break;
+            case "summaryDesc":
+                setSummaryDesc((String) value);
+                break;
+            case "status":
+                setStatus((String) value);
+                break;
+            default:
+                return false;
+        }
+
+        // Update the "updatedAt" timestamp
+        this.updatedAt = new Date();
+        return true;
     }
 }

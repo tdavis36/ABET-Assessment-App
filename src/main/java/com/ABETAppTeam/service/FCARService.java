@@ -105,7 +105,7 @@ public class FCARService {
                            int outcomeId, int indicatorId) {
         // Verify the professor exists
         User user = userRepository.findById(professorId);
-        if (!(user instanceof Professor)) {
+        if (!(user instanceof Professor professor)) {
             return null;
         }
 
@@ -130,9 +130,8 @@ public class FCARService {
         // Save to the repository
         FCAR savedFCAR = fcarRepository.save(fcar);
 
-        // If saved successfully and user is a Professor, update professor's FCARs
+        // If saved successfully and the user is a Professor, update professor's FCARs
         if (savedFCAR != null) {
-            Professor professor = (Professor) user;
             professor.addFcarId(savedFCAR.getFcarId());
             userRepository.update(professor);
         }
@@ -149,9 +148,9 @@ public class FCARService {
      * @param year        The year
      * @return The created FCAR, or null if creation failed
      */
-    public FCAR createFCAR(String courseCode, String professorId, String semester, int year) {
+    public FCAR createFCAR(String courseCode, int professorId, String semester, int year) {
         try {
-            return createFCAR(courseCode, Integer.parseInt(professorId), semester, year, 0, 0);
+            return createFCAR(courseCode, professorId, semester, year, 0, 0);
         } catch (NumberFormatException e) {
             return null;
         }

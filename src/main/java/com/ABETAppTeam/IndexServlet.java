@@ -160,15 +160,20 @@ public class IndexServlet extends HttpServlet {
                 logger.info("User logout: userId={}, sessionId={}, IP={}",
                         userId, session.getId(), ipAddress);
 
-                // Log security event
-                logger.logSecurityEvent("LOGOUT", userId, ipAddress,
-                        "User logged out successfully", true);
+            // Log security event
+            logger.logSecurityEvent("LOGOUT", userId, ipAddress,
+                    "User logged out successfully", true);
 
                 session.invalidate();
                 logger.debug("Session invalidated during logout");
             } else {
                 logger.debug("No active session found during logout attempt");
             }
+
+            // Set cache control headers to prevent the browser back button from showing protected pages
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+            response.setHeader("Pragma", "no-cache"); // HTTP 1.0
+            response.setDateHeader("Expires", 0); // Proxies
 
             response.sendRedirect(request.getContextPath() + "/");
         } finally {

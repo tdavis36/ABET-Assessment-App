@@ -1,15 +1,17 @@
 package com.ABETAppTeam;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.OutcomeController;
 import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.SQLExceptionHandler;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -53,6 +55,11 @@ public class AdminServlet extends HttpServlet {
         User user = (User) session.getAttribute("user");
 
         try {
+            // Set cache control headers manually in sensitive methods
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            response.setHeader("Pragma", "no-cache");
+            response.setDateHeader("Expires", 0);
+
             // Check if user is an admin
             if (!(user instanceof Admin)) {
                 logger.warn("Unauthorized access attempt to AdminServlet by user ID {}", user != null ? user.getUserId() : "unknown");
@@ -87,7 +94,7 @@ public class AdminServlet extends HttpServlet {
                     }
                 }
 
-                // Replace with our new List
+                // Replace it with our new List
                 dashboardData.put("courses", courseList);
             }
 
@@ -143,23 +150,7 @@ public class AdminServlet extends HttpServlet {
                 logger.debug("Forwarding to createFCAR.jsp");
                 request.getRequestDispatcher("/WEB-INF/createFCAR.jsp").forward(request, response);
                 return;
-            } else if ("viewUsers".equals(action)) {
-                // Get all users for display
-                logger.debug("Forwarding to users.jsp");
-                request.getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
-                return;
-            } else if ("viewCourses".equals(action)) {
-                // Courses are already in the dashboard data
-                logger.debug("Forwarding to courses.jsp");
-                request.getRequestDispatcher("/WEB-INF/courses.jsp").forward(request, response);
-                return;
-            } else if ("viewReports".equals(action)) {
-                // This would display the reporting interface
-                logger.debug("Forwarding to reports.jsp");
-                request.getRequestDispatcher("/WEB-INF/reports.jsp").forward(request, response);
-                return;
             }
-
             // Default: display the admin dashboard
             logger.debug("No specific action, displaying admin dashboard");
             request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
@@ -180,6 +171,11 @@ public class AdminServlet extends HttpServlet {
         String timerId = logger.startTimer("adminServlet.doPost");
 
         try {
+            // Set cache control headers manually in sensitive methods
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            response.setHeader("Pragma", "no-cache");
+            response.setDateHeader("Expires", 0);
+
             // Get action parameter
             String action = request.getParameter("action");
             FCARController fcarController = getFCARController();
@@ -205,48 +201,72 @@ public class AdminServlet extends HttpServlet {
                 String courseCode = request.getParameter("courseCode");
                 String professorIdStr = request.getParameter("professorId");
                 String semester = request.getParameter("semester");
-                int year = Integer.parseInt(request.getParameter("year"));
+                String yearStr = request.getParameter("year");
 
-                logger.info("Admin creating new FCAR: course={}, professor={}, semester={}, year={}",
-                        courseCode, professorIdStr, semester, year);
+                // Validate inputs
+                if (courseCode == null || courseCode.isEmpty() ||
+                    professorIdStr == null || professorIdStr.isEmpty() ||
+                    semester == null || semester.isEmpty() ||
+                    yearStr == null || yearStr.isEmpty()) {
 
-                // Create a new FCAR using the controller
-                FCAR fcar = fcarController.createFCAR(courseCode, professorIdStr, semester, year);
-
-                if (fcar != null) {
-                    logger.info("FCAR created successfully: ID {}", fcar.getFcarId());
-                    request.setAttribute("message", "FCAR created successfully with ID: " + fcar.getFcarId());
-
-                    // If outcome and indicator were specified, add them
-                    String outcomeIdStr = request.getParameter("outcomeId");
-                    String indicatorIdStr = request.getParameter("indicatorId");
-                    if (outcomeIdStr != null && !outcomeIdStr.isEmpty() &&
-                            indicatorIdStr != null && !indicatorIdStr.isEmpty()) {
-                        try {
-                            int outcomeId = Integer.parseInt(outcomeIdStr);
-                            int indicatorId = Integer.parseInt(indicatorIdStr);
-
-                            logger.debug("Setting outcome ID {} and indicator ID {} for FCAR ID {}",
-                                    outcomeId, indicatorId, fcar.getFcarId());
-
-                            fcar.setOutcomeId(outcomeId);
-                            fcar.setIndicatorId(indicatorId);
-                            fcarController.updateFCAR(fcar);
-                        } catch (NumberFormatException e) {
-                            // Log error but continue - outcome/indicator is optional
-                            logger.warn("Invalid outcome or indicator format: {}", e.getMessage());
-                        }
-                    }
-                } else {
-                    logger.error("Failed to create FCAR for course {} and professor {}",
-                            courseCode, professorIdStr);
-                    request.setAttribute("error", "Failed to create FCAR");
+                    logger.warn("Missing required parameters for FCAR creation");
+                    request.setAttribute("error", "All fields are required to create an FCAR");
+                    request.getRequestDispatcher("/WEB-INF/createFCAR.jsp").forward(request, response);
+                    return;
                 }
 
-                // Redirect to admin page with a message
-                logger.debug("Redirecting to AdminServlet with message=FCARCreated");
-                response.sendRedirect(request.getContextPath() + "/AdminServlet?message=FCARCreated");
-                return;
+                try {
+                    // Keep the professor ID as an integer throughout
+                    int professorId = Integer.parseInt(professorIdStr);
+                    int year = Integer.parseInt(yearStr);
+
+                    logger.info("Admin creating new FCAR: course={}, professor={}, semester={}, year={}",
+                            courseCode, professorId, semester, year);
+
+                    // Create a new FCAR using the controller with the correctly typed parameters
+                    // Use the overloaded method that takes an integer directly
+                    FCAR fcar = fcarController.createFCAR(courseCode, professorId, semester, year);
+
+                    if (fcar != null) {
+                        logger.info("FCAR created successfully: ID {}", fcar.getFcarId());
+                        request.setAttribute("message", "FCAR created successfully with ID: " + fcar.getFcarId());
+
+                        // If outcome and indicator were specified, add them
+                        String outcomeIdStr = request.getParameter("outcomeId");
+                        String indicatorIdStr = request.getParameter("indicatorId");
+                        if (outcomeIdStr != null && !outcomeIdStr.isEmpty() &&
+                                indicatorIdStr != null && !indicatorIdStr.isEmpty()) {
+                            try {
+                                int outcomeId = Integer.parseInt(outcomeIdStr);
+                                int indicatorId = Integer.parseInt(indicatorIdStr);
+
+                                logger.debug("Setting outcome ID {} and indicator ID {} for FCAR ID {}",
+                                        outcomeId, indicatorId, fcar.getFcarId());
+
+                                fcar.setOutcomeId(outcomeId);
+                                fcar.setIndicatorId(indicatorId);
+                                fcarController.updateFCAR(fcar);
+                            } catch (NumberFormatException e) {
+                                // Log error but continue - outcome/indicator is optional
+                                logger.warn("Invalid outcome or indicator format: {}", e.getMessage());
+                            }
+                        }
+                    } else {
+                        logger.error("Failed to create FCAR for course {} and professor {}",
+                                courseCode, professorIdStr);
+                        request.setAttribute("error", "Failed to create FCAR");
+                    }
+
+                    // Redirect to admin page with a message
+                    logger.debug("Redirecting to AdminServlet with message=FCARCreated");
+                    response.sendRedirect(request.getContextPath() + "/AdminServlet?message=FCARCreated");
+                    return;
+                } catch (NumberFormatException e) {
+                    logger.warn("Invalid number format in FCAR creation: {}", e.getMessage());
+                    request.setAttribute("error", "Invalid professor ID or year format");
+                    request.getRequestDispatcher("/WEB-INF/createFCAR.jsp").forward(request, response);
+                    return;
+                }
             }
             else if ("updateFCAR".equals(action)) {
                 // Extract FCAR ID and ensure it's valid
@@ -418,8 +438,15 @@ public class AdminServlet extends HttpServlet {
             logger.debug("No specific action matched, forwarding to doGet");
             doGet(request, response);
         } catch (Exception e) {
-            logger.error("Error in AdminServlet.doPost: {}", e.getMessage(), e);
-            throw e;
+            if (e instanceof SQLException) {
+                String errorMessage = SQLExceptionHandler.analyzeException((SQLException)e, null, null);
+                logger.error("SQL error in AdminServlet: {}", errorMessage);
+                request.setAttribute("error", "Database error: " + errorMessage);
+                request.getRequestDispatcher("/WEB-INF/error.jsp").forward(request, response);
+            } else {
+                logger.error("Error in AdminServlet.doPost: {}", e.getMessage(), e);
+                throw e;
+            }
         } finally {
             logger.stopTimer(timerId, "action=" + request.getParameter("action"));
         }
