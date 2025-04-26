@@ -171,8 +171,6 @@ public class ProfessorServlet extends BaseServlet {
         try {
             if ("saveFCAR".equals(action) || "submitFCAR".equals(action)) {
                 handleSaveOrSubmitFCAR(request, response, session, user, action);
-            } else if ("createFCAR".equals(action)) {
-                handleCreateFCAR(request, response, session, user);
             } else if ("updateFCAR".equals(action)) {
                 handleUpdateFCAR(request, response, session, user);
             } else if ("filterBySemester".equals(action)) {
@@ -249,7 +247,7 @@ public class ProfessorServlet extends BaseServlet {
 
     /**
      * Extract a JSON object from a JavaScript constant declaration
-     * 
+     *
      * @param jsCode     The JavaScript code containing the constant declaration
      * @param objectName The name of the constant to extract
      * @return The JSON object as a string

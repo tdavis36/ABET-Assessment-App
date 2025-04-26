@@ -289,13 +289,13 @@ public class FCAR {
 
     /**
      * Set a field value if the user has permission
+     *
      * @param fieldName The name of the field to edit
-     * @param value The new value
-     * @param user The user attempting to edit
-     * @return true if the edit was successful
+     * @param value     The new value
+     * @param user      The user attempting to edit
      * @throws SecurityException if user doesn't have edit permission
      */
-    public boolean setFieldValue(String fieldName, Object value, User user) {
+    public void setFieldValue(String fieldName, Object value, User user) {
         if (!canEditField(fieldName, user)) {
             throw new SecurityException("User does not have permission to edit this field");
         }
@@ -334,11 +334,10 @@ public class FCAR {
                 setStatus((String) value);
                 break;
             default:
-                return false;
+                return;
         }
 
         // Update the "updatedAt" timestamp
         this.updatedAt = new Date();
-        return true;
     }
 }

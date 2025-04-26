@@ -191,14 +191,14 @@ public class FCARService {
             return false;
         }
 
-        // Remove from professor's list if applicable
+        // Remove from the professor's list if applicable
         User user = userRepository.findById(fcar.getInstructorId());
         if (user instanceof Professor professor) {
             professor.removeFcarId(fcarId);
             userRepository.update(professor);
         }
 
-        // Delete from repository
+        // Delete it from the repository
         return fcarRepository.delete(fcarId);
     }
 

@@ -28,7 +28,7 @@ public class ViewFCARServlet extends BaseServlet {
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws IOException {
 
         // Set cache control headers
         setCacheControlHeaders(response);
@@ -154,10 +154,10 @@ public class ViewFCARServlet extends BaseServlet {
         if (fcar != null) {
             // Create a fresh report data structure
             Map<String, Object> reportData = new HashMap<>();
-            reportData.put("fcar", fcar);
-            reportData.put("assessmentMethods", fcar.getAssessmentMethods());
-            reportData.put("studentOutcomes", fcar.getStudentOutcomes());
-            reportData.put("improvementActions", fcar.getImprovementActions());
+            reportData.put("FCAR", fcar);
+            reportData.put("Assessment Methods", fcar.getAssessmentMethods());
+            reportData.put("Student Outcomes", fcar.getStudentOutcomes());
+            reportData.put("Improvement Actions", fcar.getImprovementActions());
 
             // Calculate average achievement level if student outcomes exist
             calculateAndAddAverageAchievement(reportData, fcar);

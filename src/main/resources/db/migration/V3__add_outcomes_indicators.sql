@@ -2,6 +2,7 @@
 
 -- First, clear existing data to avoid conflicts
 DELETE FROM Course_Outcome;
+DELETE FROM Expectation;
 DELETE FROM Indicator;
 DELETE FROM Outcome;
 
