@@ -2,6 +2,11 @@
 
 -- First, clear existing data to avoid conflicts
 DELETE FROM Course_Outcome;
+DELETE FROM FCAR;
+DELETE FROM ImprovementAction;
+DELETE FROM TargetGoal;
+DELETE FROM Course_Outcome;
+DELETE FROM Expectation;
 DELETE FROM Indicator;
 DELETE FROM Outcome;
 
@@ -57,6 +62,18 @@ INSERT INTO Indicator (outcome_id, indicator_num, indicator_desc) VALUES
 (6, 4, 'Student can implement automated tests to satisfy the goals of a testing strategy'),
 (6, 5, 'Student can use appropriate implementation techniques and practices to meet security requirements and/or mitigate discovered vulnerabilities');
 
+INSERT INTO Course (course_code, course_name) VALUES
+('CS201', 'Data Structures and Algorithms'),
+('CS330', 'Computer Security'),
+('CS335', 'Computer Networks'),
+('CS340', 'Operating Systems'),
+('CS350', 'Theory of Computation'),
+('CS360', 'Database Systems'),
+('CS420', 'Computer Architecture'),
+('CS456', 'Ethics in Computing'),
+('CS481', 'Senior Design Project I'),
+('CS400', 'Senior Design Project II');
+
 -- Add course-outcome associations from Table 4-2
 -- CS101 has outcomes 1 and 6
 INSERT INTO Course_Outcome (course_code, outcome_id) VALUES
@@ -67,7 +84,6 @@ INSERT INTO Course_Outcome (course_code, outcome_id) VALUES
 INSERT INTO Course_Outcome (course_code, outcome_id) VALUES
 ('CS201', 1),
 ('CS201', 2),
-('CS201', 3),
 ('CS201', 6);
 
 -- CS320 has outcomes 1, 2, 3, 4, 5, and 6
@@ -75,7 +91,6 @@ INSERT INTO Course_Outcome (course_code, outcome_id) VALUES
 ('CS320', 1),
 ('CS320', 2),
 ('CS320', 3),
-('CS320', 4),
 ('CS320', 5),
 ('CS320', 6);
 
