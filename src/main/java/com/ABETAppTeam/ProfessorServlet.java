@@ -4,8 +4,9 @@ import java.io.IOException;
 import java.io.Serial;
 import java.util.Map;
 
-import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.DisplaySystemController;
+import com.ABETAppTeam.controller.FCARController;
+import com.ABETAppTeam.controller.OutcomeController;
 import com.ABETAppTeam.service.FCARService;
 
 import jakarta.servlet.ServletException;
@@ -90,6 +91,30 @@ public class ProfessorServlet extends BaseServlet {
 
                 // Pass the FCAR to the form
                 request.setAttribute("fcar", fcar);
+
+                // Add outcome data for JavaScript
+                OutcomeController outcomeController = OutcomeController.getInstance();
+                String outcomeData = outcomeController.getOutcomeDataAsJson();
+
+                // Parse the JSON data and add it to the request
+                if (outcomeData != null && !outcomeData.isEmpty()) {
+                    // Extract outcomeDescriptions
+                    String outcomeDescriptionsJson = extractJsonObject(outcomeData, "outcomeDescriptions");
+                    request.setAttribute("outcomeDescriptions", outcomeDescriptionsJson);
+
+                    // Extract outcomeNumbers
+                    String outcomeNumbersJson = extractJsonObject(outcomeData, "outcomeNumbers");
+                    request.setAttribute("outcomeNumbers", outcomeNumbersJson);
+
+                    // Extract indicators
+                    String indicatorsJson = extractJsonObject(outcomeData, "indicators");
+                    request.setAttribute("indicators", indicatorsJson);
+
+                    // Extract courseOutcomes
+                    String courseOutcomesJson = extractJsonObject(outcomeData, "courseOutcomes");
+                    request.setAttribute("courseOutcomes", courseOutcomesJson);
+                }
+
                 request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
             } else {
                 // FCAR not found
@@ -166,7 +191,7 @@ public class ProfessorServlet extends BaseServlet {
      * Handles creating a new FCAR
      */
     private void handleCreateFCAR(HttpServletRequest request, HttpServletResponse response,
-                                  HttpSession session, User currentUser)
+            HttpSession session, User currentUser)
             throws ServletException, IOException {
         // Extract FCAR data from request
         String courseCode = request.getParameter("courseCode");
@@ -223,10 +248,27 @@ public class ProfessorServlet extends BaseServlet {
     }
 
     /**
+     * Extract a JSON object from a JavaScript constant declaration
+     * 
+     * @param jsCode     The JavaScript code containing the constant declaration
+     * @param objectName The name of the constant to extract
+     * @return The JSON object as a string
+     */
+    private String extractJsonObject(String jsCode, String objectName) {
+        String pattern = "const " + objectName + " = (\\{[^;]*\\});";
+        java.util.regex.Pattern r = java.util.regex.Pattern.compile(pattern, java.util.regex.Pattern.DOTALL);
+        java.util.regex.Matcher m = r.matcher(jsCode);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return "{}";
+    }
+
+    /**
      * Handles updating an existing FCAR
      */
     private void handleUpdateFCAR(HttpServletRequest request, HttpServletResponse response,
-                                  HttpSession session, User currentUser)
+            HttpSession session, User currentUser)
             throws ServletException, IOException {
         // Extract FCAR ID and ensure it's valid
         int fcarId = Integer.parseInt(request.getParameter("fcarId"));

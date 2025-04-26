@@ -1,14 +1,14 @@
 package com.ABETAppTeam.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 
-import com.ABETAppTeam.repository.OutcomeRepository;
-import com.ABETAppTeam.repository.IndicatorRepository;
-import com.ABETAppTeam.model.Outcome;
 import com.ABETAppTeam.model.Indicator;
+import com.ABETAppTeam.model.Outcome;
+import com.ABETAppTeam.repository.IndicatorRepository;
+import com.ABETAppTeam.repository.OutcomeRepository;
 
 /**
  * Controller for managing outcomes and indicators
@@ -129,6 +129,20 @@ public class OutcomeController {
         }
         jsonBuilder.append("};\n\n");
 
+        // Build outcomeNumbers JSON
+        jsonBuilder.append("const outcomeNumbers = {");
+        List<Outcome> outcomes = outcomeRepository.findAll();
+        for (Outcome outcome : outcomes) {
+            jsonBuilder.append(outcome.getId())
+                    .append(": \"")
+                    .append(escapeJsonString(outcome.getOutcomeNum()))
+                    .append("\", ");
+        }
+        if (!outcomes.isEmpty()) {
+            jsonBuilder.delete(jsonBuilder.length() - 2, jsonBuilder.length()); // Remove trailing comma and space
+        }
+        jsonBuilder.append("};\n\n");
+
         // Build indicators JSON
         jsonBuilder.append("const indicators = {");
         for (Map.Entry<Integer, List<String>> entry : indicators.entrySet()) {
@@ -187,22 +201,25 @@ public class OutcomeController {
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
     }
+
     /**
      * Gets all outcomes and indicators for use in forms
-     * @return Map containing lists of outcomes and indicators with detailed information
+     * 
+     * @return Map containing lists of outcomes and indicators with detailed
+     *         information
      */
     public Map<String, Object> getAllOutcomesAndIndicatorsForForm() {
         Map<String, Object> result = new HashMap<>();
-        
+
         try {
             // Get all outcomes
             List<Outcome> outcomes = outcomeRepository.findAll();
             result.put("outcomes", outcomes);
-            
+
             // Get all indicators grouped by outcome ID
             Map<Integer, List<Indicator>> indicatorsByOutcome = new HashMap<>();
             List<Indicator> allIndicators = indicatorRepository.findAll();
-            
+
             for (Indicator indicator : allIndicators) {
                 int outcomeId = indicator.getOutcomeId();
                 if (!indicatorsByOutcome.containsKey(outcomeId)) {
@@ -210,39 +227,42 @@ public class OutcomeController {
                 }
                 indicatorsByOutcome.get(outcomeId).add(indicator);
             }
-            
+
             result.put("indicatorsByOutcome", indicatorsByOutcome);
         } catch (Exception e) {
             // Log the error
             System.err.println("Error fetching outcomes and indicators: " + e.getMessage());
         }
-        
+
         return result;
     }
-/**
- * Get all outcomes as a list
- * @return List of Outcome objects
- */
-public List<Outcome> getOutcomes() {
-    return outcomeRepository.findAll();
-}
 
-/**
- * Get all indicators grouped by outcome ID
- * @return Map of outcome IDs to lists of indicators
- */
-public Map<Integer, List<Indicator>> getIndicatorsByOutcome() {
-    Map<Integer, List<Indicator>> result = new HashMap<>();
-    List<Indicator> allIndicators = indicatorRepository.findAll();
-    
-    for (Indicator indicator : allIndicators) {
-        int outcomeId = indicator.getOutcomeId();
-        if (!result.containsKey(outcomeId)) {
-            result.put(outcomeId, new ArrayList<>());
-        }
-        result.get(outcomeId).add(indicator);
+    /**
+     * Get all outcomes as a list
+     * 
+     * @return List of Outcome objects
+     */
+    public List<Outcome> getOutcomes() {
+        return outcomeRepository.findAll();
     }
-    
-    return result;
-}
+
+    /**
+     * Get all indicators grouped by outcome ID
+     * 
+     * @return Map of outcome IDs to lists of indicators
+     */
+    public Map<Integer, List<Indicator>> getIndicatorsByOutcome() {
+        Map<Integer, List<Indicator>> result = new HashMap<>();
+        List<Indicator> allIndicators = indicatorRepository.findAll();
+
+        for (Indicator indicator : allIndicators) {
+            int outcomeId = indicator.getOutcomeId();
+            if (!result.containsKey(outcomeId)) {
+                result.put(outcomeId, new ArrayList<>());
+            }
+            result.get(outcomeId).add(indicator);
+        }
+
+        return result;
+    }
 }

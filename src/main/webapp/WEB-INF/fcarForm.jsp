@@ -9,6 +9,7 @@
 <head>
     <title>Faculty Course Assessment Report (FCAR)</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
+    <script src="${pageContext.request.contextPath}/js/outcome-selector.js"></script>
     <style>
         .form-container {
             max-width: 900px;
@@ -495,41 +496,6 @@
 </div>
 
 <script>
-    // Function to update indicators dropdown based on selected outcome
-    function updateIndicators() {
-        const outcomeSelect = document.getElementById('outcome');
-        const indicatorSelect = document.getElementById('indicator');
-        
-        // Clear existing options
-        indicatorSelect.innerHTML = '';
-        
-        // Get selected outcome
-        const selectedOutcome = outcomeSelect.value;
-        
-        if (selectedOutcome) {
-            // Add default option
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Select an indicator';
-            indicatorSelect.appendChild(defaultOption);
-            
-            // Add indicators for the selected outcome
-            const outcomeIndicators = indicators[selectedOutcome];
-            outcomeIndicators.forEach((indicator, index) => {
-                const option = document.createElement('option');
-                option.value = `${selectedOutcome}_indicator${index + 1}`;
-                option.textContent = indicator;
-                indicatorSelect.appendChild(option);
-            });
-        } else {
-            // If no outcome selected, show default message
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = 'Select an outcome first';
-            indicatorSelect.appendChild(option);
-        }
-    }
-    
     // Function to toggle major breakdown section
     function toggleMajorBreakdown() {
         const checkbox = document.getElementById('breakdownByMajor');
@@ -606,32 +572,42 @@
         }
     }
     
-    // Add event listeners to achievement level inputs
-    document.getElementsByName('level4')[0].addEventListener('input', calculateResults);
-    document.getElementsByName('level3')[0].addEventListener('input', calculateResults);
-    document.getElementsByName('level2')[0].addEventListener('input', calculateResults);
-    document.getElementsByName('level1')[0].addEventListener('input', calculateResults);
-    document.getElementsByName('level0')[0].addEventListener('input', calculateResults);
-    document.getElementById('targetGoal').addEventListener('input', calculateResults);
+    // Initialize outcome data from the server
+    var outcomeData = {
+        outcomeDescriptions: ${outcomeDescriptions != null ? outcomeDescriptions : "{}"},
+        outcomeNumbers: ${outcomeNumbers != null ? outcomeNumbers : "{}"},
+        indicators: ${indicators != null ? indicators : "{}"},
+        courseOutcomes: ${courseOutcomes != null ? courseOutcomes : "{}"}
+    };
     
-// Complete the DOMContentLoaded function at the bottom of your file
-document.addEventListener('DOMContentLoaded', function() {
-    // Update indicators dropdown
-    updateIndicators();
-    
-    // Calculate initial results
-    calculateResults();
-    
-    // Add event listeners to form buttons
-    document.getElementById('fcarForm').addEventListener('submit', function(event) {
-        // Prevent form submission if the action is 'submit' and confirmation is needed
-        if (document.getElementById('saveActionInput').value === 'submit') {
-            if (!confirm('Are you sure you want to submit this FCAR? Once submitted, it may not be editable.')) {
-                event.preventDefault();
-            }
+    // Complete the DOMContentLoaded function at the bottom of your file
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize outcome selector
+        if (typeof initializeOutcomeSelector === 'function') {
+            initializeOutcomeSelector(outcomeData);
         }
+        
+        // Calculate initial results
+        calculateResults();
+        
+        // Add event listeners to achievement level inputs
+        document.getElementsByName('level4')[0].addEventListener('input', calculateResults);
+        document.getElementsByName('level3')[0].addEventListener('input', calculateResults);
+        document.getElementsByName('level2')[0].addEventListener('input', calculateResults);
+        document.getElementsByName('level1')[0].addEventListener('input', calculateResults);
+        document.getElementsByName('level0')[0].addEventListener('input', calculateResults);
+        document.getElementById('targetGoal').addEventListener('input', calculateResults);
+        
+        // Add event listeners to form buttons
+        document.getElementById('fcarForm').addEventListener('submit', function(event) {
+            // Prevent form submission if the action is 'submit' and confirmation is needed
+            if (document.getElementById('saveActionInput').value === 'submit') {
+                if (!confirm('Are you sure you want to submit this FCAR? Once submitted, it may not be editable.')) {
+                    event.preventDefault();
+                }
+            }
+        });
     });
-});
 </script>
 </body>
 </html>

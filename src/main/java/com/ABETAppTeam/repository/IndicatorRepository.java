@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ABETAppTeam.model.Indicator;
-import com.ABETAppTeam.util.DataSourceFactory;
 import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.DataSourceFactory;
 import com.zaxxer.hikari.HikariDataSource;
 
 /**
@@ -127,7 +127,7 @@ public class IndicatorRepository {
      * @return The saved indicator with updated ID
      */
     public Indicator save(Indicator indicator) {
-        final String sql = "INSERT INTO Indicator (outcome_id, indicator_desc) VALUES (?, ?)";
+        final String sql = "INSERT INTO Indicator (outcome_id, indicator_num, indicator_desc) VALUES (?, ?, ?)";
         String timerId = logger.startTimer("saveIndicator");
 
         try (Connection conn = dataSource.getConnection()) {
@@ -140,7 +140,8 @@ public class IndicatorRepository {
 
                 // Set parameters
                 stmt.setInt(1, indicator.getOutcomeId());
-                stmt.setString(2, indicator.getDescription());
+                stmt.setInt(2, indicator.getNumber());
+                stmt.setString(3, indicator.getDescription());
 
                 // Execute and time the update
                 long startTime = System.currentTimeMillis();
@@ -149,7 +150,9 @@ public class IndicatorRepository {
 
                 // Log execution
                 logger.logStatementExecuted(stmt, sql, executionTime);
-                logger.logSqlQuery(sql, new Object[]{indicator.getOutcomeId(), indicator.getDescription()}, executionTime);
+                logger.logSqlQuery(sql,
+                        new Object[] { indicator.getOutcomeId(), indicator.getNumber(), indicator.getDescription() },
+                        executionTime);
 
                 if (affectedRows == 0) {
                     logger.error("Creating indicator failed, no rows affected.");
@@ -168,7 +171,8 @@ public class IndicatorRepository {
                 }
             }
         } catch (SQLException e) {
-            logger.logSqlError(sql, new Object[]{indicator.getOutcomeId(), indicator.getDescription()}, e);
+            logger.logSqlError(sql,
+                    new Object[] { indicator.getOutcomeId(), indicator.getNumber(), indicator.getDescription() }, e);
             logger.error("Error saving indicator: {}", e.getMessage(), e);
             return null;
         } finally {
@@ -183,15 +187,15 @@ public class IndicatorRepository {
      * @return true if updated successfully, false otherwise
      */
     public boolean update(Indicator indicator) {
-        final String sql = "UPDATE indicator SET outcome_id = ?, indicator_desc = ? WHERE indicator_id = ?";
+        final String sql = "UPDATE indicator SET outcome_id = ?, indicator_num = ?, indicator_desc = ? WHERE indicator_id = ?";
         String timerId = logger.startTimer("updateIndicator");
 
         try (Connection conn = dataSource.getConnection()) {
             int rowsAffected = logger.executeUpdate(conn, sql,
                     indicator.getOutcomeId(),
+                    indicator.getNumber(),
                     indicator.getDescription(),
-                    indicator.getIndicatorId()
-            );
+                    indicator.getIndicatorId());
 
             return rowsAffected > 0;
         } catch (SQLException e) {
