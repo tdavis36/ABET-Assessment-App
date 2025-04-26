@@ -5,12 +5,16 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -29,6 +33,7 @@ public class LoggingService {
     private final Logger perfLogger;
     private final Logger securityLogger;
     private final Logger accessLogger;
+    private final Logger errorLogger;  // New dedicated logger for errors
 
     /**
      * Private constructor for a singleton pattern
@@ -39,6 +44,7 @@ public class LoggingService {
         this.perfLogger = LoggerFactory.getLogger("com.ABETAppTeam.performance");
         this.securityLogger = LoggerFactory.getLogger("com.ABETAppTeam.security");
         this.accessLogger = LoggerFactory.getLogger("com.ABETAppTeam.access");
+        this.errorLogger = LoggerFactory.getLogger("com.ABETAppTeam.error");  // New error logger
     }
 
     /**
@@ -65,7 +71,7 @@ public class LoggingService {
         // Set system properties to enable JDBC driver logging
         System.setProperty("org.mariadb.jdbc.logging.type", "slf4j");
 
-        // Get instance to ensure it's created
+        // Get an instance to ensure it's created
         getInstance();
 
         // Log initialization
@@ -252,7 +258,7 @@ public class LoggingService {
      * Check if a parameter might be a password
      */
     private boolean isPasswordParameter(int index, Object[] params) {
-        // If params array is part of a query with named parameters,
+        // If a params array is part of a query with named parameters,
         // the parameter name might be at index-1
         if (index > 0 && params[index-1] instanceof String) {
             String paramName = ((String) params[index-1]).toLowerCase();
@@ -609,5 +615,209 @@ public class LoggingService {
     public void clearUserContext() {
         MDC.remove("userId");
         MDC.remove("userRole");
+    }
+
+    /*
+     * Enhanced Error Logging Methods
+     */
+
+    /**
+     * Log a detailed error with exception and stack trace
+     * 
+     * @param message Error message
+     * @param throwable The exception to log
+     */
+    public void logError(String message, Throwable throwable) {
+        String stackTrace = getStackTraceAsString(throwable);
+        String errorType = throwable.getClass().getName();
+        
+        MDC.put("errorType", errorType);
+        MDC.put("stackTrace", "available");
+        
+        errorLogger.error("ERROR [{}]: {} - {}", errorType, message, throwable.getMessage());
+        errorLogger.debug("Stack trace for [{}]: \n{}", errorType, stackTrace);
+        
+        // Also log to application logger for consistency
+        appLogger.error("{} - {} \n{}", message, throwable.getMessage(), stackTrace);
+        
+        MDC.remove("errorType");
+        MDC.remove("stackTrace");
+    }
+    
+    /**
+     * Log a categorized application error with exception details
+     * 
+     * @param category Error category (e.g., "UI", "Database", "Network", "Security")
+     * @param component Affected component or class
+     * @param message Error message
+     * @param throwable The exception to log
+     */
+    public void logCategorizedError(String category, String component, String message, Throwable throwable) {
+        String errorType = throwable.getClass().getName();
+        String stackTrace = getStackTraceAsString(throwable);
+        
+        MDC.put("errorCategory", category);
+        MDC.put("component", component);
+        MDC.put("errorType", errorType);
+        
+        Map<String, String> errorContext = new HashMap<>();
+        errorContext.put("category", category);
+        errorContext.put("component", component);
+        errorContext.put("type", errorType);
+        errorContext.put("message", throwable.getMessage());
+        
+        String contextStr = formatErrorContext(errorContext);
+        
+        errorLogger.error("ERROR [{}] in {}: {} - {}", category, component, message, throwable.getMessage());
+        errorLogger.debug("Context: {} \nStack trace: \n{}", contextStr, stackTrace);
+        
+        MDC.remove("errorCategory");
+        MDC.remove("component");
+        MDC.remove("errorType");
+    }
+    
+    /**
+     * Format error context map into a readable string
+     */
+    private String formatErrorContext(Map<String, String> context) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> entry : context.entrySet()) {
+            sb.append(entry.getKey()).append("=").append(entry.getValue()).append("; ");
+        }
+        return sb.toString();
+    }
+    
+    /**
+     * Convert a Throwable's stack trace to a string
+     * 
+     * @param throwable The exception to convert
+     * @return String representation of the stack trace
+     */
+    public String getStackTraceAsString(Throwable throwable) {
+        if (throwable == null) {
+            return "";
+        }
+        
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        return sw.toString();
+    }
+    
+    /**
+     * Logs an exception chain (including all caused-by exceptions)
+     * 
+     * @param message Error message
+     * @param throwable The root exception
+     */
+    public void logExceptionChain(String message, Throwable throwable) {
+        if (throwable == null) {
+            error(message);
+            return;
+        }
+        
+        StringBuilder chainMessage = new StringBuilder(message);
+        chainMessage.append("\nException chain:");
+        
+        Throwable current = throwable;
+        int depth = 0;
+        
+        while (current != null) {
+            chainMessage.append("\n  ").append(depth).append(") ")
+                       .append(current.getClass().getName())
+                       .append(": ").append(current.getMessage());
+            
+            depth++;
+            current = current.getCause();
+        }
+        
+        errorLogger.error(chainMessage.toString());
+        errorLogger.debug("Full stack trace: \n{}", getStackTraceAsString(throwable));
+    }
+    
+    /**
+     * Log a SQL error with enhanced details and full stack trace
+     * 
+     * @param sql The SQL query that caused the error
+     * @param e The SQLException that occurred
+     */
+    public void logSqlErrorWithDetails(String sql, SQLException e) {
+        String errorDetails = formatSqlError(e);
+        String stackTrace = getStackTraceAsString(e);
+        
+        MDC.put("sqlState", e.getSQLState());
+        MDC.put("errorCode", String.valueOf(e.getErrorCode()));
+        
+        dbLogger.error("SQL Error: {} - {}", sql, errorDetails);
+        dbLogger.debug("SQL Stack Trace: \n{}", stackTrace);
+        
+        // Also log to error logger for centralized error tracking
+        errorLogger.error("SQL Error [{}]: {} - {}", e.getSQLState(), sql, errorDetails);
+        
+        MDC.remove("sqlState");
+        MDC.remove("errorCode");
+    }
+    
+    /**
+     * Log a critical application error that might require immediate attention
+     * 
+     * @param message Error message
+     * @param throwable The exception to log
+     */
+    public void logCriticalError(String message, Throwable throwable) {
+        String stackTrace = getStackTraceAsString(throwable);
+        String errorType = throwable.getClass().getName();
+        
+        // Add markers to MDC
+        MDC.put("CRITICAL", "true");
+        MDC.put("errorType", errorType);
+        
+        // Log at error level
+        errorLogger.error("CRITICAL ERROR: {} - {} \n{}", message, throwable.getMessage(), stackTrace);
+        
+        // Also log to application logger for consistency
+        appLogger.error("CRITICAL ERROR: {} - {}", message, throwable.getMessage());
+        
+        MDC.remove("CRITICAL");
+        MDC.remove("errorType");
+    }
+
+    /**
+     * Create a contextual exception log with user and request information
+     * 
+     * @param message Error message
+     * @param throwable The exception to log
+     * @param userId User ID (if available)
+     * @param requestInfo Additional request information (URL, parameters, etc.)
+     */
+    public void logContextualError(String message, Throwable throwable, String userId, Map<String, Object> requestInfo) {
+        if (throwable == null) {
+            return;
+        }
+        
+        String stackTrace = getStackTraceAsString(throwable);
+        String errorType = throwable.getClass().getName();
+        
+        // Set context in MDC
+        MDC.put("userId", userId != null ? userId : "unknown");
+        MDC.put("errorType", errorType);
+        
+        // Build context information
+        StringBuilder contextBuilder = new StringBuilder("Context: ");
+        contextBuilder.append("userId=").append(userId != null ? userId : "unknown");
+        
+        if (requestInfo != null) {
+            for (Map.Entry<String, Object> entry : requestInfo.entrySet()) {
+                contextBuilder.append(", ").append(entry.getKey()).append("=").append(entry.getValue());
+            }
+        }
+        
+        // Log the error with context
+        errorLogger.error("{} - {} - {}", message, throwable.getMessage(), contextBuilder.toString());
+        errorLogger.debug("Stack trace: \n{}", stackTrace);
+        
+        // Clean up MDC
+        MDC.remove("userId");
+        MDC.remove("errorType");
     }
 }

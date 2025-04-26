@@ -293,20 +293,6 @@
                 <groupId>org.eclipse.jetty.ee10</groupId>
                 <artifactId>jetty-ee10-maven-plugin</artifactId>
                 <version>${jetty.version}</version>
-                <dependencies>
-                    <!-- For JSP compilation at dev-time -->
-                    <dependency>
-                        <groupId>org.eclipse.jetty.ee10</groupId>
-                        <artifactId>jetty-ee10-apache-jsp</artifactId>
-                        <version>${jetty.version}</version>
-                    </dependency>
-                    <!-- For JSTL tags at dev-time -->
-                    <dependency>
-                        <groupId>org.eclipse.jetty.ee10</groupId>
-                        <artifactId>jetty-ee10-glassfish-jstl</artifactId>
-                        <version>${jetty.version}</version>
-                    </dependency>
-                </dependencies>
                 <configuration>
                     <webApp>
                         <contextPath>/</contextPath>

@@ -4,39 +4,20 @@ import java.io.IOException;
 import java.io.Serial;
 import java.util.Map;
 
-import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
-import com.ABETAppTeam.controller.OutcomeController;
+import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.service.FCARService;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/ProfessorServlet")
-public class ProfessorServlet extends HttpServlet {
+public class ProfessorServlet extends BaseServlet {
     @Serial
     private static final long serialVersionUID = 1L;
-
-    // Get the controllers
-    private FCARController getFCARController() {
-        return FCARController.getInstance();
-    }
-
-    private DisplaySystemController getDisplayController() {
-        return DisplaySystemController.getInstance();
-    }
-
-    private OutcomeController getOutcomeController() {
-        return OutcomeController.getInstance();
-    }
-
-    private FCARService getFCARService() {
-        return new FCARService();
-    }
 
     public ProfessorServlet() {
         super();
@@ -47,22 +28,16 @@ public class ProfessorServlet extends HttpServlet {
             throws ServletException, IOException {
 
         // Set cache control headers
-        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        response.setHeader("Pragma", "no-cache");
-        response.setDateHeader("Expires", 0);
+        setCacheControlHeaders(response);
 
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
-        
+
         // Add a security check to verify the user is a professor
         User user = (User) session.getAttribute("user");
-        if (!(user instanceof Professor)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Professor access required");
+        if (verifyAccess(user, response)) {
             return;
         }
-        
-        // Rest of the method remains unchanged
-        // ...
 
         if ("viewFCARs".equals(action)) {
             // Get professor ID
@@ -91,9 +66,7 @@ public class ProfessorServlet extends HttpServlet {
             Map<String, Object> dashboardData = displayController.generateProfessorDashboard(professorId);
 
             // Add all attributes from the dashboard data to the request
-            for (Map.Entry<String, Object> entry : dashboardData.entrySet()) {
-                request.setAttribute(entry.getKey(), entry.getValue());
-            }
+            addAttributesToRequest(request, dashboardData);
 
             request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
             return;
@@ -111,7 +84,7 @@ public class ProfessorServlet extends HttpServlet {
                     // For status changes, we still need to use FCARService
                     FCARService fcarService = getFCARService();
                     fcarService.returnFCARToDraft(Integer.parseInt(fcarId));
-                    // Refresh the FCAR after status change using DisplaySystemController
+                    // Refresh the FCAR after a status change using DisplaySystemController
                     fcar = displayController.getFCAR(fcarId);
                 }
 
@@ -148,9 +121,7 @@ public class ProfessorServlet extends HttpServlet {
         Map<String, Object> dashboardData = displayController.generateProfessorDashboard(professorId);
 
         // Add all attributes from the dashboard data to the request
-        for (Map.Entry<String, Object> entry : dashboardData.entrySet()) {
-            request.setAttribute(entry.getKey(), entry.getValue());
-        }
+        addAttributesToRequest(request, dashboardData);
 
         // Forward to professor.jsp
         request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
@@ -158,24 +129,142 @@ public class ProfessorServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws IOException {
 
         // Set cache control headers
-        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        response.setHeader("Pragma", "no-cache");
-        response.setDateHeader("Expires", 0);
+        setCacheControlHeaders(response);
 
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
-        
+
         // Add a security check to verify the user is a professor
         User user = (User) session.getAttribute("user");
-        if (!(user instanceof Professor)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Professor access required");
+        if (verifyAccess(user, response)) {
             return;
         }
-        
-        // Rest of the method remains unchanged
-        // ...
+
+        try {
+            if ("saveFCAR".equals(action) || "submitFCAR".equals(action)) {
+                handleSaveOrSubmitFCAR(request, response, session, user, action);
+            } else if ("createFCAR".equals(action)) {
+                handleCreateFCAR(request, response, session, user);
+            } else if ("updateFCAR".equals(action)) {
+                handleUpdateFCAR(request, response, session, user);
+            } else if ("filterBySemester".equals(action)) {
+                handleFilterBySemester(request, response);
+            } else {
+                // Default: redirect to professor dashboard
+                response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
+            }
+        } catch (Exception e) {
+            // Handle errors
+            handleError(response, e);
+        }
+    }
+
+    /**
+     * Handles creating a new FCAR
+     */
+    private void handleCreateFCAR(HttpServletRequest request, HttpServletResponse response,
+                                  HttpSession session, User currentUser)
+            throws ServletException, IOException {
+        // Extract FCAR data from request
+        String courseCode = request.getParameter("courseCode");
+        String semester = request.getParameter("semester");
+        String yearStr = request.getParameter("year");
+
+        // Validate inputs
+        if (courseCode == null || courseCode.isEmpty() ||
+                semester == null || semester.isEmpty() ||
+                yearStr == null || yearStr.isEmpty()) {
+
+            request.setAttribute("error", "All fields are required to create an FCAR");
+            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+            return;
+        }
+
+        try {
+            int year = Integer.parseInt(yearStr);
+            int professorId = currentUser.getUserId();
+
+            // Create a new FCAR using the controller
+            FCARController fcarController = getFCARController();
+            FCAR fcar = fcarController.createFCAR(courseCode, professorId, semester, year);
+
+            if (fcar != null) {
+                // If outcome and indicator were specified, add them
+                String outcomeIdStr = request.getParameter("outcomeId");
+                String indicatorIdStr = request.getParameter("indicatorId");
+                if (outcomeIdStr != null && !outcomeIdStr.isEmpty() &&
+                        indicatorIdStr != null && !indicatorIdStr.isEmpty()) {
+                    try {
+                        int outcomeId = Integer.parseInt(outcomeIdStr);
+                        int indicatorId = Integer.parseInt(indicatorIdStr);
+
+                        fcar.setOutcomeId(outcomeId);
+                        fcar.setIndicatorId(indicatorId);
+                        fcarController.updateFCAR(fcar);
+                    } catch (NumberFormatException e) {
+                        // Outcome/indicator is optional, continue
+                    }
+                }
+
+                session.setAttribute("message", "FCAR created successfully");
+            } else {
+                request.setAttribute("error", "Failed to create FCAR");
+            }
+
+            // Redirect to professor dashboard
+            response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "Invalid year format");
+            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+        }
+    }
+
+    /**
+     * Handles updating an existing FCAR
+     */
+    private void handleUpdateFCAR(HttpServletRequest request, HttpServletResponse response,
+                                  HttpSession session, User currentUser)
+            throws ServletException, IOException {
+        // Extract FCAR ID and ensure it's valid
+        int fcarId = Integer.parseInt(request.getParameter("fcarId"));
+        if (fcarId <= 0) {
+            request.setAttribute("error", "Invalid FCAR ID");
+            request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
+            return;
+        }
+
+        // Get existing FCAR
+        FCARController fcarController = getFCARController();
+        FCAR fcar = fcarController.getFCAR(fcarId);
+        if (fcar == null) {
+            request.setAttribute("error", "FCAR not found");
+            request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
+            return;
+        }
+
+        // Verify this professor owns this FCAR
+        if (fcar.getInstructorId() != currentUser.getUserId()) {
+            request.setAttribute("error", "You can only update your own FCARs");
+            request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
+            return;
+        }
+
+        // Update FCAR from request parameters
+        updateFCARFromRequest(fcar, request, currentUser);
+
+        // Call the controller to update the FCAR
+        boolean updated = fcarController.updateFCAR(fcar);
+
+        if (updated) {
+            session.setAttribute("message", "FCAR updated successfully");
+        } else {
+            request.setAttribute("error", "Failed to update FCAR");
+        }
+
+        // Redirect to professor dashboard
+        response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
     }
 }

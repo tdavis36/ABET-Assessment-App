@@ -187,4 +187,62 @@ public class OutcomeController {
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
     }
+    /**
+     * Gets all outcomes and indicators for use in forms
+     * @return Map containing lists of outcomes and indicators with detailed information
+     */
+    public Map<String, Object> getAllOutcomesAndIndicatorsForForm() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // Get all outcomes
+            List<Outcome> outcomes = outcomeRepository.findAll();
+            result.put("outcomes", outcomes);
+            
+            // Get all indicators grouped by outcome ID
+            Map<Integer, List<Indicator>> indicatorsByOutcome = new HashMap<>();
+            List<Indicator> allIndicators = indicatorRepository.findAll();
+            
+            for (Indicator indicator : allIndicators) {
+                int outcomeId = indicator.getOutcomeId();
+                if (!indicatorsByOutcome.containsKey(outcomeId)) {
+                    indicatorsByOutcome.put(outcomeId, new ArrayList<>());
+                }
+                indicatorsByOutcome.get(outcomeId).add(indicator);
+            }
+            
+            result.put("indicatorsByOutcome", indicatorsByOutcome);
+        } catch (Exception e) {
+            // Log the error
+            System.err.println("Error fetching outcomes and indicators: " + e.getMessage());
+        }
+        
+        return result;
+    }
+/**
+ * Get all outcomes as a list
+ * @return List of Outcome objects
+ */
+public List<Outcome> getOutcomes() {
+    return outcomeRepository.findAll();
+}
+
+/**
+ * Get all indicators grouped by outcome ID
+ * @return Map of outcome IDs to lists of indicators
+ */
+public Map<Integer, List<Indicator>> getIndicatorsByOutcome() {
+    Map<Integer, List<Indicator>> result = new HashMap<>();
+    List<Indicator> allIndicators = indicatorRepository.findAll();
+    
+    for (Indicator indicator : allIndicators) {
+        int outcomeId = indicator.getOutcomeId();
+        if (!result.containsKey(outcomeId)) {
+            result.put(outcomeId, new ArrayList<>());
+        }
+        result.get(outcomeId).add(indicator);
+    }
+    
+    return result;
+}
 }
