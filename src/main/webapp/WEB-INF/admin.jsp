@@ -14,6 +14,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 5px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .btn-submit {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-submit:hover {
+            background-color: #45a049;
+        }
+
+        .course-checkboxes {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .data-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
 </head>
 <body>
 <div class="dashboard" id="adminDashboard">
@@ -21,7 +134,7 @@
         <h1>Admin Dashboard</h1>
         <a href="${pageContext.request.contextPath}/?action=logout" class="btn">Logout</a>
     </div>
-`
+
     <!-- Status Key -->
     <div class="status-key">
         <div><span class="status draft"></span> Draft</div>
@@ -76,6 +189,135 @@
             <input type="hidden" name="action" value="viewAll"/>
             <button type="submit" class="btn">View All FCARs</button>
         </form>
+    </div>
+
+    <!-- 'Manage Users' section -->
+    <div class="section">
+        <h2>Manage Users</h2>
+        <div class="form-section">
+            <h3>Create New Professor Account</h3>
+            <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="createUserForm">
+                <input type="hidden" name="action" value="createUser" />
+
+                <div class="form-group">
+                    <label for="firstName">First Name:</label>
+                    <input type="text" id="firstName" name="firstName" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="lastName">Last Name:</label>
+                    <input type="text" id="lastName" name="lastName" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="department">Department:</label>
+                    <select id="department" name="deptId" required>
+                        <option value="">Select a Department</option>
+                        <option value="1">Computer Science</option>
+                        <option value="2">Mathematics</option>
+                        <option value="3">Engineering</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Assign Courses:</label>
+                    <div class="course-checkboxes">
+                        <%
+                            List<Course> courses = (List<Course>) request.getAttribute("courses");
+                            if (courses != null && !courses.isEmpty()) {
+                                for (Course course : courses) {
+                        %>
+                        <div>
+                            <input type="checkbox" id="course_<%= course.getCourseCode() %>" name="assignedCourses" value="<%= course.getCourseCode() %>" />
+                            <label for="course_<%= course.getCourseCode() %>"><%= course.getCourseCode() %>: <%= course.getCourseName() %></label>
+                        </div>
+                        <%
+                                }
+                            } else {
+                        %>
+                        <div>
+                            <input type="checkbox" id="course_CS101" name="assignedCourses" value="CS101" />
+                            <label for="course_CS101">CS101: Fundamentals of Computer Science I</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" id="course_CS201" name="assignedCourses" value="CS201" />
+                            <label for="course_CS201">CS201: Fundamentals of Computer Science II</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" id="course_CS320" name="assignedCourses" value="CS320" />
+                            <label for="course_CS320">CS320: Software Engineering Design</label>
+                        </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">Create Professor Account</button>
+            </form>
+        </div>
+
+        <!-- Existing Professors List -->
+        <div class="form-section">
+            <h3>Existing Professors</h3>
+            <div class="user-list">
+                <%
+                    List<User> professors = (List<User>) request.getAttribute("professors");
+                    if (professors != null && !professors.isEmpty()) {
+                %>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <%
+                            for (User user : professors) {
+                                if (user instanceof Professor) {
+                                    Professor professor = (Professor) user;
+                        %>
+                        <tr>
+                            <td><%= professor.getUserId() %></td>
+                            <td><%= professor.getFirstName() %> <%= professor.getLastName() %></td>
+                            <td><%= professor.getEmail() %></td>
+                            <td><%= professor.getDeptName() %></td>
+                            <td><%= professor.isActive() ? "Active" : "Inactive" %></td>
+                            <td>
+                                <button type="button" class="btn" onclick="openEditUserModal(<%= professor.getUserId() %>, '<%= professor.getFirstName() %>', '<%= professor.getLastName() %>', '<%= professor.getEmail() %>', <%= professor.getDeptId() %>)">Edit</button>
+                                <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
+                                    <input type="hidden" name="action" value="toggleUserStatus" />
+                                    <input type="hidden" name="userId" value="<%= professor.getUserId() %>" />
+                                    <button type="submit" class="btn" style="background-color: <%= professor.isActive() ? "#dc3545" : "#28a745" %>;">
+                                        <%= professor.isActive() ? "Deactivate" : "Activate" %>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <%
+                                }
+                            }
+                        %>
+                    </tbody>
+                </table>
+                <% } else { %>
+                <p>No professors found.</p>
+                <% } %>
+            </div>
+        </div>
     </div>
 
     <!-- View FCARs Section -->
@@ -146,11 +388,10 @@
                     <select id="courseId" name="courseId" required>
                         <option value="">Select a Course</option>
                         <%
-                            List<Course> courses = (List<Course>) request.getAttribute("courses");
                             if (courses != null && !courses.isEmpty()) {
                                 for (Course course : courses) {
                         %>
-                        <option value="<%= course.getCourseId() %>"><%= course.getCourseCode() %>: <%= course.getCourseName() %></option>
+                        <option value="<%= course.getCourseCode() %>"><%= course.getCourseCode() %>: <%= course.getCourseName() %></option>
                         <%
                             }
                         } %>
@@ -162,19 +403,18 @@
                     <select id="professorId" name="professorId" required>
                         <option value="">Select a Professor</option>
                         <%
-                            List<User> users = (List<User>) request.getAttribute("users");
-                            if (users != null && !users.isEmpty()) {
-                                for (User user : users) {
+                            if (professors != null && !professors.isEmpty()) {
+                                for (User user : professors) {
                                     if (user instanceof Professor) {
                         %>
                         <option value="<%= user.getUserId() %>"><%= user.getFirstName() %> <%= user.getLastName() %></option>
                         <%
+                                    }
                                 }
-                            }
-                        } else {
+                            } else {
                         %>
-                        <option value="Smith">Dr. Smith</option>
-                        <option value="Johnson">Dr. Johnson</option>
+                        <option value="1">Dr. Smith</option>
+                        <option value="2">Dr. Johnson</option>
                         <% } %>
                     </select>
                 </div>
@@ -216,6 +456,60 @@
                 <button type="submit" class="btn-submit">Create FCAR</button>
             </form>
         </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editUserModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditUserModal()">&times;</span>
+        <h2>Edit Professor</h2>
+        <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="editUserForm">
+            <input type="hidden" name="action" value="editUser" />
+            <input type="hidden" name="userId" id="editUserId" />
+
+            <div class="form-group">
+                <label for="editFirstName">First Name:</label>
+                <input type="text" id="editFirstName" name="firstName" required />
+            </div>
+
+            <div class="form-group">
+                <label for="editLastName">Last Name:</label>
+                <input type="text" id="editLastName" name="lastName" required />
+            </div>
+
+            <div class="form-group">
+                <label for="editEmail">Email:</label>
+                <input type="email" id="editEmail" name="email" required />
+            </div>
+
+            <div class="form-group">
+                <label for="editPassword">New Password (leave blank to keep current):</label>
+                <input type="password" id="editPassword" name="password" />
+            </div>
+
+            <div class="form-group">
+                <label for="editDepartment">Department:</label>
+                <select id="editDepartment" name="deptId" required>
+                    <option value="">Select a Department</option>
+                    <option value="1">Computer Science</option>
+                    <option value="2">Mathematics</option>
+                    <option value="3">Engineering</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Assign Courses:</label>
+                <div class="course-checkboxes" id="editCourseCheckboxes">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button type="button" class="btn" onclick="closeEditUserModal()">Cancel</button>
+                <button type="submit" class="btn-submit">Save Changes</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -386,6 +680,81 @@
         document.getElementById('selectedOutcomesInput').value = selectedOutcomes.join(',');
     }
 
+    // Function to open the edit user modal
+    function openEditUserModal(userId, firstName, lastName, email, deptId) {
+        // Set form values
+        document.getElementById('editUserId').value = userId;
+        document.getElementById('editFirstName').value = firstName;
+        document.getElementById('editLastName').value = lastName;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editDepartment').value = deptId;
+
+        // Populate course checkboxes
+        populateEditCourseCheckboxes(userId);
+
+        // Show the modal
+        document.getElementById('editUserModal').style.display = 'block';
+    }
+
+    // Function to close the edit user modal
+    function closeEditUserModal() {
+        document.getElementById('editUserModal').style.display = 'none';
+    }
+
+    // Function to populate course checkboxes in the edit modal
+    function populateEditCourseCheckboxes(userId) {
+        const container = document.getElementById('editCourseCheckboxes');
+        container.innerHTML = '';
+
+        // Add course checkboxes
+        <% if (courses != null && !courses.isEmpty()) { %>
+            <% for (Course course : courses) { %>
+                const courseDiv = document.createElement('div');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = 'edit_course_<%= course.getCourseCode() %>';
+                checkbox.name = 'assignedCourses';
+                checkbox.value = '<%= course.getCourseCode() %>';
+
+                const label = document.createElement('label');
+                label.htmlFor = 'edit_course_<%= course.getCourseCode() %>';
+                label.textContent = '<%= course.getCourseCode() %>: <%= course.getCourseName() %>';
+
+                courseDiv.appendChild(checkbox);
+                courseDiv.appendChild(document.createTextNode(' '));
+                courseDiv.appendChild(label);
+
+                container.appendChild(courseDiv);
+            <% } %>
+        <% } else { %>
+            // Fallback to hardcoded courses
+            const courses = [
+                { code: 'CS101', name: 'Fundamentals of Computer Science I' },
+                { code: 'CS201', name: 'Fundamentals of Computer Science II' },
+                { code: 'CS320', name: 'Software Engineering Design' }
+            ];
+
+            courses.forEach(course => {
+                const courseDiv = document.createElement('div');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `edit_course_${course.code}`;
+                checkbox.name = 'assignedCourses';
+                checkbox.value = course.code;
+
+                const label = document.createElement('label');
+                label.htmlFor = `edit_course_${course.code}`;
+                label.textContent = `${course.code}: ${course.name}`;
+
+                courseDiv.appendChild(checkbox);
+                courseDiv.appendChild(document.createTextNode(' '));
+                courseDiv.appendChild(label);
+
+                container.appendChild(courseDiv);
+            });
+        <% } %>
+    }
+
     // Add event listeners
     document.addEventListener('DOMContentLoaded', function() {
         // Course select dropdown
@@ -402,7 +771,12 @@
                 updateSelectedOutcomesInput();
             });
         }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('editUserModal');
+            if (event.target == modal) {
+                closeEditUserModal();
+            }
+        };
     });
-</script>
-</body>
-</html>
