@@ -5,6 +5,7 @@ package com.ABETAppTeam.model;
  */
 public class Outcome {
     private int outcomeId;
+    private String outcomeNum;
     private String description;
 
     /**
@@ -16,11 +17,13 @@ public class Outcome {
     /**
      * Constructor with parameters
      *
-     * @param outcomeId Outcome ID
+     * @param outcomeId   Outcome ID
+     * @param outcomeNum  Outcome number
      * @param description Outcome description
      */
-    public Outcome(int outcomeId, String description) {
+    public Outcome(int outcomeId, String outcomeNum, String description) {
         this.outcomeId = outcomeId;
+        this.outcomeNum = outcomeNum;
         this.description = description;
     }
 
@@ -60,8 +63,26 @@ public class Outcome {
         this.description = description;
     }
 
+    /**
+     * Get the outcome number
+     *
+     * @return Outcome number
+     */
+    public String getOutcomeNum() {
+        return outcomeNum;
+    }
+
+    /**
+     * Set the outcome number
+     *
+     * @param outcomeNum Outcome number
+     */
+    public void setOutcomeNum(String outcomeNum) {
+        this.outcomeNum = outcomeNum;
+    }
+
     @Override
     public String toString() {
-        return "Outcome [id=" + outcomeId + ", description=" + description + "]";
+        return "Outcome [id=" + outcomeId + ", outcomeNum=" + outcomeNum + ", description=" + description + "]";
     }
 }

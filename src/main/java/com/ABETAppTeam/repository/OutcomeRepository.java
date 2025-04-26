@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.ABETAppTeam.model.Outcome;
-import com.ABETAppTeam.util.DataSourceFactory;
 import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.DataSourceFactory;
 import com.zaxxer.hikari.HikariDataSource;
 
 /**
@@ -39,7 +39,7 @@ public class OutcomeRepository {
         String sql = "SELECT * FROM Outcome WHERE outcome_id = ?";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, outcomeId);
 
@@ -65,8 +65,8 @@ public class OutcomeRepository {
         String sql = "SELECT * FROM Outcome ORDER BY outcome_id";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 outcomes.add(mapResultSetToOutcome(rs));
@@ -89,7 +89,7 @@ public class OutcomeRepository {
         String sql = "SELECT outcome_id FROM Course_Outcome WHERE course_code = ?";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, courseId);
 
@@ -115,8 +115,8 @@ public class OutcomeRepository {
         String sql = "SELECT course_code, outcome_id FROM Course_Outcome ORDER BY course_code, outcome_id";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 String courseId = rs.getString("course_code");
@@ -142,12 +142,13 @@ public class OutcomeRepository {
      * @return The saved outcome with updated ID
      */
     public Outcome save(Outcome outcome) {
-        String sql = "INSERT INTO Outcome (outcome_desc) VALUES (?)";
+        String sql = "INSERT INTO Outcome (outcome_num, outcome_desc) VALUES (?, ?)";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, outcome.getDescription());
+            stmt.setString(1, outcome.getOutcomeNum());
+            stmt.setString(2, outcome.getDescription());
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -175,13 +176,14 @@ public class OutcomeRepository {
      * @return true if updated successfully, false otherwise
      */
     public boolean update(Outcome outcome) {
-        String sql = "UPDATE Outcome SET outcome_desc = ? WHERE outcome_id = ?";
+        String sql = "UPDATE Outcome SET outcome_num = ?, outcome_desc = ? WHERE outcome_id = ?";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, outcome.getDescription());
-            stmt.setInt(2, outcome.getId());
+            stmt.setString(1, outcome.getOutcomeNum());
+            stmt.setString(2, outcome.getDescription());
+            stmt.setInt(3, outcome.getId());
 
             int affectedRows = stmt.executeUpdate();
             return affectedRows > 0;
@@ -191,7 +193,6 @@ public class OutcomeRepository {
 
         return false;
     }
-
 
     /**
      * Delete an outcome
@@ -203,7 +204,7 @@ public class OutcomeRepository {
         String sql = "DELETE FROM Outcome WHERE outcome_id = ?";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, outcomeId);
 
@@ -226,6 +227,7 @@ public class OutcomeRepository {
     private Outcome mapResultSetToOutcome(ResultSet rs) throws SQLException {
         Outcome outcome = new Outcome();
         outcome.setId(rs.getInt("outcome_id"));
+        outcome.setOutcomeNum(rs.getString("outcome_num"));
         outcome.setDescription(rs.getString("outcome_desc"));
         return outcome;
     }

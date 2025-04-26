@@ -48,7 +48,7 @@ public abstract class User {
     }
 
     /**
-     * Authenticate user with provided credentials
+     * Authenticate the user with provided credentials
      *
      * @param email        Email for login
      * @param passwordHash Hashed password for login
@@ -142,7 +142,7 @@ public abstract class User {
     /**
      * Get the full name of the user
      *
-     * @return Full name (first name + last name)
+     * @return Full name (first name plus last name)
      */
     public String getFullName() {
         return firstName + " " + lastName;

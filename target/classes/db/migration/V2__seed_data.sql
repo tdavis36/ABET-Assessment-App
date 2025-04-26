@@ -57,8 +57,7 @@ VALUES
 INSERT INTO Course_Outcome (course_code, outcome_id)
 VALUES
     ('CS101', 1),
-    ('CS102', 1),
-    ('MATH201', 2);
+    ('CS102', 1);
 
 -- ===================================
 -- Indicator

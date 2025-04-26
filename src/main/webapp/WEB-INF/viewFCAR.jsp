@@ -218,6 +218,11 @@
         <a href="<%= dashboardUrl %>" class="btn">Back to Dashboard</a>
     </div>
 
+    <form action="${pageContext.request.contextPath}/ViewFCARServlet" method="post" id="fcarForm">
+        <input type="hidden" name="action" value="saveFCAR" id="actionInput"/>
+        <!-- Rest of your form content... -->
+    </form>
+
     <!-- JavaScript for expanding/collapsing FCAR details -->
     <script>
         function toggleDetails(id) {

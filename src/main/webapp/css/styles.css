@@ -575,6 +575,54 @@ textarea {
     .achievement-table th {
         background-color: #333333;
     }
+    
+    /* Modal dark mode styles */
+    .modal-content {
+        background-color: var(--card-bg);
+        border-color: var(--border);
+        color: var(--text-dark);
+    }
+    
+    .close {
+        color: var(--text-muted);
+    }
+    
+    .close:hover,
+    .close:focus {
+        color: var(--text-dark);
+    }
+    
+    /* Form elements in modals */
+    .modal-content input[type="text"],
+    .modal-content input[type="email"],
+    .modal-content input[type="password"],
+    .modal-content input[type="number"],
+    .modal-content select,
+    .modal-content textarea {
+        background-color: var(--input-bg);
+        border-color: var(--border);
+        color: var(--text-dark);
+    }
+    
+    /* Course checkboxes in modals */
+    .modal-content .course-checkboxes {
+        background-color: var(--input-bg);
+        border-color: var(--border);
+    }
+    
+    /* Data tables in dark mode */
+    .data-table th {
+        background-color: #333333;
+    }
+    
+    .data-table td,
+    .data-table th {
+        border-color: var(--border);
+    }
+    
+    .data-table tr:nth-child(even) {
+        background-color: #2a2a2a;
+    }
 }
 
 /* Print styles */
@@ -685,4 +733,269 @@ input[readonly], textarea[readonly] {
     background-color: #f8f9fa;
     color: #6c757d;
     cursor: not-allowed;
+}
+/* Add these Modal and Admin-specific styles at the end of the styles.css file */
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid var(--border);
+    width: 80%;
+    max-width: 600px;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.close {
+    color: var(--text-muted);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition-speed);
+}
+
+.close:hover,
+.close:focus {
+    color: var(--text-dark);
+    text-decoration: none;
+}
+
+/* Course checkboxes */
+.course-checkboxes {
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--input-border);
+    padding: 10px;
+    border-radius: 4px;
+    background-color: var(--input-bg);
+}
+
+/* Data tables */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.data-table th, 
+.data-table td {
+    border: 1px solid var(--border);
+    padding: 8px;
+    text-align: left;
+}
+
+.data-table th {
+    background-color: var(--form-bg);
+    font-weight: bold;
+}
+
+.data-table tr:nth-child(even) {
+    background-color: var(--form-bg);
+}
+
+/* Form section styles */
+.form-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background-color: var(--form-bg);
+}
+
+/* Professor page specific styles */
+.fcar-box {
+    border: 1px solid var(--border);
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: var(--card-bg);
+}
+
+.fcar-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.fcar-item:last-child {
+    border-bottom: none;
+}
+
+.fcar-actions button {
+    margin-left: 5px;
+}
+
+/* Header container for professor page */
+.header-container-professor {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Button container for edit modal */
+.button-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+/* Inline forms */
+form.inline {
+    display: inline;
+}
+
+/* Outcome checkbox container */
+.outcome-checkbox-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.outcome-checkbox {
+    margin-right: 10px;
+}
+
+/* Responsive table handling for admin tables */
+@media (max-width: 768px) {
+    .data-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .fcar-item {
+        flex-direction: column;
+    }
+    
+    .fcar-actions {
+        margin-top: 10px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-dark: #e0e0e0;
+        --text-light: #b0b0b0;
+        --text-muted: #808080;
+        --background: #121212;
+        --card-bg: #1e1e1e;
+        --form-bg: #262626;
+        --input-bg: #333333;
+        --border: #444444;
+        --shadow: rgba(0, 0, 0, 0.3);
+    }
+
+    /* Override specific colors for dark mode */
+    .btn {
+        background-color: var(--primary);
+    }
+
+    input, select, textarea {
+        color: var(--text-dark);
+        background-color: var(--input-bg);
+        border-color: var(--border);
+    }
+
+    .form-section {
+        background-color: #2a2a2a;
+    }
+
+    .fcar-section, .fcar-details {
+        background-color: #2a2a2a;
+    }
+
+    .achievement-table th {
+        background-color: #333333;
+    }
+    
+    /* Modal dark mode styles */
+    .modal-content {
+        background-color: var(--card-bg);
+        border-color: var(--border);
+        color: var(--text-dark);
+    }
+    
+    .close {
+        color: var(--text-muted);
+    }
+    
+    .close:hover,
+    .close:focus {
+        color: var(--text-dark);
+    }
+    
+    /* Form elements in modals */
+    .modal-content input[type="text"],
+    .modal-content input[type="email"],
+    .modal-content input[type="password"],
+    .modal-content input[type="number"],
+    .modal-content select,
+    .modal-content textarea {
+        background-color: var(--input-bg);
+        border-color: var(--border);
+        color: var(--text-dark);
+    }
+    
+    /* Course checkboxes in modals */
+    .course-checkboxes {
+        background-color: var(--input-bg);
+        border-color: var(--border);
+    }
+    
+    /* Data tables in dark mode */
+    .data-table th {
+        background-color: #333333;
+    }
+    
+    .data-table td,
+    .data-table th {
+        border-color: var(--border);
+    }
+    
+    .data-table tr:nth-child(even) {
+        background-color: #2a2a2a;
+    }
+    
+    /* FCAR box */
+    .fcar-box {
+        border-color: var(--border);
+        background-color: var(--card-bg);
+    }
+    
+    .fcar-item {
+        border-color: var(--border);
+    }
+}
+/* Button color variations */
+.btn-success {
+    background-color: var(--success);
+}
+
+.btn-success:hover {
+    background-color: var(--success-hover);
+}
+
+.btn-danger {
+    background-color: var(--danger);
+}
+
+.btn-danger:hover {
+    background-color: #bd2130;
 }
