@@ -19,9 +19,9 @@
 <div class="dashboard" id="adminDashboard">
     <div class="header-container">
         <h1>Admin Dashboard</h1>
-        <a href="${pageContext.request.contextPath}/" class="btn">Logout</a>
+        <a href="${pageContext.request.contextPath}/?action=logout" class="btn">Logout</a>
     </div>
-
+`
     <!-- Status Key -->
     <div class="status-key">
         <div><span class="status draft"></span> Draft</div>
@@ -153,14 +153,7 @@
                         <option value="<%= course.getCourseId() %>"><%= course.getCourseCode() %>: <%= course.getCourseName() %></option>
                         <%
                             }
-                        } else {
-                        %>
-                        <option value="CS101">CS101 - Fundamentals of Computer Science I</option>
-                        <option value="CS201">CS201 - Fundamentals of Computer Science II</option>
-                        <option value="CS320">CS320 - Software Engineering Design</option>
-                        <option value="CS330">CS330 - Network/App Protocols</option>
-                        <option value="CS335">CS335 - Cybersecurity Analysis & Application</option>
-                        <% } %>
+                        } %>
                     </select>
                 </div>
 
@@ -234,75 +227,13 @@
         // Output the data from the controller
         out.println(outcomeData);
     } else {
-        // Fallback to hardcoded data if controller data is not available
+        // Fallback to an empty data structure if controller data is not available
     %>
-    // Outcome descriptions
-    const outcomeDescriptions = {
-        1: "Analyze a complex computing problem and to apply principles of computing and other relevant disciplines to identify solutions.",
-        2: "Design, implement, and evaluate a computing-based solution to meet a given set of computing requirements in the context of the program's discipline.",
-        3: "Communicate effectively in a variety of professional contexts.",
-        4: "Recognize professional responsibilities and make informed judgments in computing practice based on legal and ethical principles.",
-        5: "Function effectively as a member or leader of a team engaged in activities appropriate to the program's discipline.",
-        6: "Apply computer science theory and software development fundamentals to produce computing-based solutions."
-    };
-
-    // Indicators for each outcome
-    const indicators = {
-        1: [
-            "1.1 Student can correctly interpret a computational problem and define its parameters",
-            "1.2 Student can analyze a computational problem in order to choose mathematical and algorithmic principles that can be applied to solve the problem",
-            "1.3 Student can define a solution to a computational problem",
-            "1.4 Student can effectively collect and document system requirements",
-            "1.5 Student can effectively analyze and model a problem domain",
-            "1.6 Student can identify the relative efficiency of different algorithms using asymptotic notation"
-        ],
-        2: [
-            "2.1 Student can identify and evaluate appropriate technologies to be used in a system",
-            "2.2 Student can effectively construct a design model of a system",
-            "2.3 Student can effectively incorporate requirements outside the problem domain (e.g., a user interface) into the design model",
-            "2.4 Student can plan and implement a testing strategy to ensure that system meets its quality goal",
-            "2.5 Student can collect and analyze runtime benchmark data to characterize the efficiency of an algorithm or data structure",
-            "2.6 Student can specify appropriate security concerns and requirements for a component or system",
-            "2.7 Student can evaluate a component or system to identify security characteristics and identify vulnerabilities"
-        ],
-        3: [
-            "3.1 Student can write a clear and well-organized technical report",
-            "3.2 Student can create and present a clear and well-organized technical presentation using appropriate visual, textual, and spoken content",
-            "3.3 Student can communicate technical content to peers",
-            "3.4 Student can communicate technical content to general audiences"
-        ],
-        4: [
-            "4.1 Student can analyze and explain the ethical issues surrounding a particular computing topic (for example, peer-to-peer file sharing)",
-            "4.2 Student demonstrates recognition of his or her professional responsibilities as a member of the computing profession"
-        ],
-        5: [
-            "5.1 Student demonstrates an ability to participate in and implement processes for team communication and coordination",
-            "5.2 Student demonstrates an ability to work closely with other students to solve technical problems"
-        ],
-        6: [
-            "6.1 Student is proficient in a current programming language",
-            "6.2 Student can create user interfaces using current platforms",
-            "6.3 Student can write programs that use concurrency",
-            "6.4 Student can implement automated tests to satisfy the goals of a testing strategy",
-            "6.5 Student can use appropriate implementation techniques and practices to meet security requirements and/or mitigate discovered vulnerabilities"
-        ]
-    };
-
-    // Course to outcomes mapping
-    const courseOutcomes = {
-        "CS101": [1, 6],
-        "CS201": [1, 2, 6],
-        "CS320": [1, 2, 3, 5, 6],
-        "CS330": [2, 4],
-        "CS335": [2, 4, 6],
-        "CS340": [6],
-        "CS350": [1],
-        "CS360": [1, 2],
-        "CS420": [6],
-        "CS456": [4],
-        "CS481": [1, 2, 3, 5, 6],
-        "CS400": [1, 2, 3, 5, 6]
-    };
+    // Empty data structures for fallback
+    const outcomeDescriptions = {};
+    const outcomeNumbers = {};
+    const indicators = {};
+    const courseOutcomes = {};
     <% } %>
 
     // Function to show the outcomes for the selected course

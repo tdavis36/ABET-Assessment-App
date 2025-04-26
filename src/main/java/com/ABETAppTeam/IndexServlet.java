@@ -11,6 +11,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Cookie;
 
 /**
  * Servlet implementation for handling index page requests and authentication
@@ -214,7 +215,17 @@ public class IndexServlet extends BaseServlet {
             // Set cache control headers using method from BaseServlet
             setCacheControlHeaders(response);
 
-            response.sendRedirect(request.getContextPath() + "/");
+           Cookie[] cookies = request.getCookies();
+           if (cookies != null) {
+               for (Cookie cookie : cookies) {
+                   cookie.setValue("");
+                   cookie.setPath("/");
+                   cookie.setMaxAge(0);
+                   response.addCookie(cookie);
+               }
+           }
+
+            response.sendRedirect(request.getContextPath() + "/index.jsp?loggedOut=true");
         } finally {
             logger.stopTimer(timerId, null);
         }
