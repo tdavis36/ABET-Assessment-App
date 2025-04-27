@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
-                             https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
-         version="5.0">
+         xsi:schemaLocation="
+           https://jakarta.ee/xml/ns/jakartaee
+           https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
 
     <!-- Application Display Name -->
     <display-name>ABET App</display-name>
@@ -23,11 +24,6 @@
         <servlet-name>ProfessorServlet</servlet-name>
         <servlet-class>com.ABETAppTeam.ProfessorServlet</servlet-class>
     </servlet>
-    
-    <servlet>
-        <servlet-name>TestServlet</servlet-name>
-        <servlet-class>com.ABETAppTeam.TestServlet</servlet-class>
-    </servlet>
 
     <!-- Servlet Mappings -->
     <servlet-mapping>
@@ -44,14 +40,8 @@
         <servlet-name>ProfessorServlet</servlet-name>
         <url-pattern>/professor</url-pattern>
     </servlet-mapping>
-    
-    <servlet-mapping>
-        <servlet-name>TestServlet</servlet-name>
-        <url-pattern>/test</url-pattern>
-    </servlet-mapping>
 
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
-
 </web-app>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <rewriteSystem systemIdStartString="http://www.w3.org/2001/XMLSchema.dtd"
+                   rewritePrefix="file://${project.basedir}/src/main/resources/schemas/"/>
+    <rewriteSystem systemIdStartString="http://www.w3.org/2001/datatypes.dtd"
+                   rewritePrefix="file://${project.basedir}/src/main/resources/schemas/"/>
+    <rewriteSystem systemIdStartString="http://www.w3.org/2001/xml.xsd"
+                   rewritePrefix="file://${project.basedir}/src/main/resources/schemas/"/>
+</catalog>

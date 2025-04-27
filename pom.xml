@@ -2,6 +2,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.ABETAppTeam</groupId>
@@ -13,52 +14,209 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <jetty.version>11.0.24</jetty.version>
-        <jakarta.servlet.version>5.0.0</jakarta.servlet.version>
-        <mockito.version>5.15.2</mockito.version>
+
+        <!-- Align Jetty plugin and modules to 12.0.9 (EE10 / Jakarta Servlet 6.0) -->
+        <jetty.version>12.0.9</jetty.version>
+
+        <!-- Align a Jakarta Servlet version. 6.0.x is correct for Jakarta EE10 -->
+        <jakarta.servlet.version>6.0.0</jakarta.servlet.version>
+
+        <hikaricp.version>5.1.0</hikaricp.version>
+        <flyway.version>11.5.0</flyway.version>
+        <mariadb.version>3.4.1</mariadb.version>
+
+        <!-- App config -->
+        <app.port>8081</app.port>
+
+        <!-- Env config -->
+        <db.name>${env.DB_NAME}</db.name>
+        <db.username>${env.DB_USERNAME}</db.username>
+        <db.password>${env.DB_PASSWORD}</db.password>
+        <db.host>${env.DB_HOST}</db.host>
+        <db.port>${env.DB_PORT}</db.port>
+
+        <db.name>abetapp</db.name>
+        <db.username>user</db.username>
+        <db.password>pass</db.password>
+        <db.url>jdbc:mariadb://localhost:3306/${db.name}</db.url>
+
     </properties>
 
+    <profiles>
+        <!-- Environment profiles -->
+        <profile>
+            <id>dev</id>
+            <properties>
+                <environment>dev</environment>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>local</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <environment>local</environment>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>db-manage</id>
+            <properties>
+                <!-- Overridable via -Ddb.action=migrate|info|start|stop -->
+                <db.action>info</db.action>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>db-action</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>python</executable>
+                                    <arguments>
+                                        <argument>${project.basedir}/setup.py</argument>
+                                        <argument>db</argument>
+                                        <argument>${db.action}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <dependencies>
-        <!-- MySQL Connector -->
+
+        <!-- Database -->
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.31</version>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>1.18.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>1.18.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mariadb</artifactId>
+            <version>1.18.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>${mariadb.version}</version>
         </dependency>
 
-        <!-- Servlet API is provided by Jetty -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${hikaricp.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+
+        <!-- Servlet/JSP: provided if the container (Jetty, Tomcat) already supplies them -->
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
             <version>${jakarta.servlet.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>jakarta.servlet.jsp</groupId>
+            <artifactId>jakarta.servlet.jsp-api</artifactId>
+            <version>3.1.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet.jsp.jstl</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+            <version>3.0.1</version>
+        </dependency>
 
+        <!-- Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.12.1</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- <dependency>
-            <groupId>org.glassfish.web</groupId>
-            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-            <version>2.0.0</version>
-        </dependency> -->
-
-
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
+            <version>5.15.2</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.13</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.5.13</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-ext</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+
+        <!-- Security fixes -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.26.2</version>
+        </dependency>
+
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Maven Compiler Plugin -->
+            <!-- Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -66,10 +224,22 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
+                    <excludes>org/eclipse/tags/shaded/**</excludes>
                 </configuration>
             </plugin>
 
-            <!-- Maven WAR Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>properties</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                </configuration>
+            </plugin>
+
+            <!-- WAR packaging -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
@@ -79,39 +249,105 @@
                 </configuration>
             </plugin>
 
-            <!-- Jetty Maven Plugin with JSP Support -->
+            <!-- Read .env -->
             <plugin>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files>
+                                <file>.env</file>
+                            </files>
+                            <quiet>true</quiet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Standalone Flyway plugin -->
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>${flyway.version}</version>
+                <configuration>
+                    <url>${db.url}</url>
+                    <user>${db.username}</user>
+                    <password>${db.password}</password>
+                    <locations>
+                        <location>classpath:db/migration</location>
+                    </locations>
+                    <mixed>true</mixed>
+                    <baselineOnMigrate>true</baselineOnMigrate>
+                    <cleanDisabled>false</cleanDisabled>
+                </configuration>
+            </plugin>
+
+            <!-- Jetty EE10 dev server -->
+            <plugin>
+                <groupId>org.eclipse.jetty.ee10</groupId>
+                <artifactId>jetty-ee10-maven-plugin</artifactId>
                 <version>${jetty.version}</version>
                 <configuration>
                     <webApp>
                         <contextPath>/</contextPath>
                     </webApp>
                     <httpConnector>
-                        <port>8081</port>
+                        <port>${app.port}</port>
                     </httpConnector>
+                    <!-- Tells Jetty to watch for changes; re-deploy on code changes -->
+                    <scan>3</scan>
                     <modules>
+                        <!-- ensures JSP is loaded -->
                         <module>jsp</module>
                     </modules>
-                    <scan>3</scan>
+                    <jvmArgs>-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=ERROR</jvmArgs>
+                    <systemProperties>
+                        <systemProperty>
+                            <name>java.util.logging.config.file</name>
+                            <value>${project.basedir}/src/main/resources/logging.properties</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>xml.catalog.files</name>
+                            <value>${project.basedir}/src/main/resources/catalog.xml</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>org.slf4j.simpleLogger.log.org.eclipse.tags.shaded</name>
+                            <value>ERROR</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>org.slf4j.simpleLogger.log.org.eclipse.jetty.annotations.AnnotationParser</name>
+                            <value>ERROR</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>org.eclipse.jetty.util.log.LEVEL</name>
+                            <value>INFO</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>java.util.logging.config.file</name>
+                            <value>${project.basedir}/src/main/resources/jetty-logging.properties</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <tmpDir>${project.build.directory}/tmp</tmpDir>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>jakarta.servlet.context.tempdir</name>
+                            <value>${project.build.directory}/tmp</value>
+                        </systemProperty>
+                    </systemProperties>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.eclipse.jetty</groupId>
-                        <artifactId>apache-jsp</artifactId>
-                        <version>${jetty.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
 
+            <!-- Tests & coverage -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
-                <configuration>
-                    <argLine>-javaagent:"${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar"</argLine>
-                </configuration>
             </plugin>
 
             <plugin>
@@ -120,6 +356,7 @@
                 <version>0.8.12</version>
                 <executions>
                     <execution>
+                        <id>prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
@@ -135,4 +372,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>
