@@ -7,6 +7,8 @@ import java.util.Map;
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.OutcomeController;
+import com.ABETAppTeam.model.FCAR;
+import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.service.FCARService;
 
 import jakarta.servlet.ServletException;

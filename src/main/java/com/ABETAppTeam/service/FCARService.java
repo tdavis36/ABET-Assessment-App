@@ -1,8 +1,8 @@
 package com.ABETAppTeam.service;
 
-import com.ABETAppTeam.FCAR;
-import com.ABETAppTeam.Professor;
-import com.ABETAppTeam.User;
+import com.ABETAppTeam.model.FCAR;
+import com.ABETAppTeam.model.Professor;
+import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.repository.FCARRepository;
 import com.ABETAppTeam.repository.IFCARRepository;
 import com.ABETAppTeam.repository.UserRepository;

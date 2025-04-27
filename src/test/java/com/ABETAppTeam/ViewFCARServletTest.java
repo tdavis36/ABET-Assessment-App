@@ -2,14 +2,13 @@ package com.ABETAppTeam;
 
 import static org.mockito.Mockito.*;
 
-import java.io.PrintWriter;
 import java.util.HashMap;
-import java.util.Map;
 
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.OutcomeController;
 
+import com.ABETAppTeam.model.FCAR;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

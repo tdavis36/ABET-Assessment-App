@@ -1,7 +1,6 @@
 package com.ABETAppTeam.repository;
 
-import com.ABETAppTeam.FCAR;
-import com.ABETAppTeam.repository.FCARRepository;
+import com.ABETAppTeam.model.FCAR;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

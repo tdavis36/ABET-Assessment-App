@@ -3,6 +3,9 @@ package com.ABETAppTeam;
 import java.io.IOException;
 import java.io.Serial;
 
+import com.ABETAppTeam.model.Admin;
+import com.ABETAppTeam.model.Professor;
+import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.repository.UserRepository;
 import com.ABETAppTeam.service.LoggingService;
 

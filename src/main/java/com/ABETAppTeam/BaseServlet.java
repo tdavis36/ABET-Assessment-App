@@ -8,6 +8,10 @@ import java.util.Map;
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.OutcomeController;
+import com.ABETAppTeam.model.Admin;
+import com.ABETAppTeam.model.FCAR;
+import com.ABETAppTeam.model.Professor;
+import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.service.FCARService;
 import com.ABETAppTeam.service.LoggingService;
 
@@ -204,7 +208,7 @@ public abstract class BaseServlet extends HttpServlet {
     /**
      * Redirects the user based on their role
      */
-    protected void redirectBasedOnUserRole(HttpServletRequest request, HttpServletResponse response, User user) 
+    protected void redirectBasedOnUserRole(HttpServletRequest request, HttpServletResponse response, User user)
             throws IOException {
         if (user instanceof Admin) {
             response.sendRedirect(request.getContextPath() + "/AdminServlet");

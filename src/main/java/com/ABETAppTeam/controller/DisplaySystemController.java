@@ -1,6 +1,6 @@
 package com.ABETAppTeam.controller;
 
-import com.ABETAppTeam.*;
+import com.ABETAppTeam.model.*;
 import com.ABETAppTeam.repository.CourseRepository;
 import com.ABETAppTeam.repository.FCARRepository;
 import com.ABETAppTeam.repository.IFCARRepository;
@@ -8,7 +8,6 @@ import com.ABETAppTeam.repository.UserRepository;
 import com.ABETAppTeam.service.FCARService;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Updated DisplaySystemController class for the ABET Assessment Application

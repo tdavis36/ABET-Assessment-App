@@ -8,9 +8,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ABETAppTeam.Admin;
-import com.ABETAppTeam.Professor;
-import com.ABETAppTeam.User;
+import com.ABETAppTeam.model.*;
 import com.ABETAppTeam.service.LoggingService;
 import com.ABETAppTeam.util.DataSourceFactory;
 import com.zaxxer.hikari.HikariDataSource;
@@ -129,7 +127,7 @@ public class UserRepository {
             while (rs.next()) {
                 User user = mapResultSetToUser(rs);
                 if (user instanceof Professor professor) {
-                    loadProfessorCourses(professor);
+                    getProfessorCourses(professor.getUserId());
                     professors.add(professor);
                 }
             }
@@ -366,13 +364,28 @@ public class UserRepository {
     }
 
     /**
-     * Load courses for a professor
-     * 
-     * @param professor The professor to load courses for
+     * Get courses assigned to a professor
+     * @param professorId The ID of the professor
+     * @return List of course codes assigned to the professor
      */
-    private void loadProfessorCourses(Professor professor) {
-        // Add code to load professor courses
-        // This would likely involve a join between a ProfessorCourse table
-        // and the Course table, if there is such a relationship
+    public List<String> getProfessorCourses(int professorId) {
+        List<String> courses = new ArrayList<>();
+        String sql = "SELECT DISTINCT course_code FROM FCAR WHERE instructor_id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, professorId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    courses.add(rs.getString("course_code"));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Error retrieving professor courses: {}", e.getMessage(), e);
+        }
+
+        return courses;
     }
 }

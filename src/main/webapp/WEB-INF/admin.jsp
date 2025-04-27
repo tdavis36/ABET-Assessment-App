@@ -1,10 +1,12 @@
+
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="com.ABETAppTeam.FCAR" %>
-<%@ page import="com.ABETAppTeam.Course" %>
-<%@ page import="com.ABETAppTeam.User" %>
-<%@ page import="com.ABETAppTeam.Professor" %>
+<%@ page import="com.ABETAppTeam.model.FCAR" %>
+<%@ page import="com.ABETAppTeam.model.Course" %>
+<%@ page import="com.ABETAppTeam.model.User" %>
+<%@ page import="com.ABETAppTeam.model.Professor" %>
+<%@ page import="com.ABETAppTeam.model.Department" %>
 <%@ page import="java.util.HashMap" %>
 
 <!DOCTYPE html>
@@ -115,12 +117,12 @@
                         <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
                             <input type="hidden" name="action" value="approveFCAR"/>
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
-                            <button type="submit" class="btn" style="background-color: #28a745;">Approve</button>
+                            <button type="submit" class="btn" style="background-color: var(--success);">Approve</button>
                         </form>
                         <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
                             <input type="hidden" name="action" value="rejectFCAR"/>
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
-                            <button type="submit" class="btn" style="background-color: #dc3545;">Reject</button>
+                            <button type="submit" class="btn" style="background-color: var(--danger);">Reject</button>
                         </form>
                         <% } %>
                     </div>
@@ -153,14 +155,8 @@
                         <option value="<%= course.getCourseCode() %>"><%= course.getCourseCode() %>: <%= course.getCourseName() %></option>
                         <%
                                 }
-                            } else {
+                            }
                         %>
-                        <option value="CS101">CS101 - Fundamentals of Computer Science I</option>
-                        <option value="CS201">CS201 - Fundamentals of Computer Science II</option>
-                        <option value="CS320">CS320 - Software Engineering Design</option>
-                        <option value="CS330">CS330 - Network/App Protocols</option>
-                        <option value="CS335">CS335 - Cybersecurity Analysis & Application</option>
-                        <% } %>
                     </select>
                 </div>
 
@@ -171,18 +167,15 @@
                         <%
                             List<User> professors = (List<User>) request.getAttribute("professors");
                             if (professors != null && !professors.isEmpty()) {
-                                for (User user : professors) {
-                                    if (user instanceof Professor) {
+                                for (User professor : professors) {
+                                    if (professor instanceof Professor) {
                         %>
-                        <option value="<%= user.getUserId() %>"><%= user.getFirstName() %> <%= user.getLastName() %></option>
+                        <option value="<%= professor.getUserId() %>"><%= professor.getFirstName() %> <%= professor.getLastName() %></option>
                         <%
                                     }
                                 }
-                            } else {
+                            }
                         %>
-                        <option value="1">Dr. Smith</option>
-                        <option value="2">Dr. Johnson</option>
-                        <% } %>
                     </select>
                 </div>
 
@@ -224,7 +217,7 @@
             </form>
         </div>
     </div>
-    
+
     <!-- 'Manage Users' section moved to the bottom -->
     <div class="section">
         <h2>Manage Users</h2>
@@ -232,37 +225,44 @@
             <h3>Create New Professor Account</h3>
             <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="createUserForm">
                 <input type="hidden" name="action" value="createUser" />
-                
+
                 <div class="form-group">
                     <label for="firstName">First Name:</label>
                     <input type="text" id="firstName" name="firstName" required />
                 </div>
-                
+
                 <div class="form-group">
                     <label for="lastName">Last Name:</label>
                     <input type="text" id="lastName" name="lastName" required />
                 </div>
-                
+
                 <div class="form-group">
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" required />
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Password:</label>
                     <input type="password" id="password" name="password" required />
                 </div>
-                
+
                 <div class="form-group">
                     <label for="department">Department:</label>
                     <select id="department" name="deptId" required>
                         <option value="">Select a Department</option>
-                        <option value="1">Computer Science</option>
-                        <option value="2">Mathematics</option>
-                        <option value="3">Engineering</option>
+                        <%
+                            List<Department> departments = (List<Department>) request.getAttribute("departments");
+                            if (departments != null && !departments.isEmpty()) {
+                                for (Department dept : departments) {
+                        %>
+                        <option value="<%= dept.getId() %>"><%= dept.getName() %></option>
+                        <%
+                                }
+                            }
+                        %>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Assign Courses:</label>
                     <div class="course-checkboxes">
@@ -276,28 +276,15 @@
                         </div>
                         <%
                                 }
-                            } else {
+                            }
                         %>
-                        <div>
-                            <input type="checkbox" id="course_CS101" name="assignedCourses" value="CS101" />
-                            <label for="course_CS101">CS101: Fundamentals of Computer Science I</label>
-                        </div>
-                        <div>
-                            <input type="checkbox" id="course_CS201" name="assignedCourses" value="CS201" />
-                            <label for="course_CS201">CS201: Fundamentals of Computer Science II</label>
-                        </div>
-                        <div>
-                            <input type="checkbox" id="course_CS320" name="assignedCourses" value="CS320" />
-                            <label for="course_CS320">CS320: Software Engineering Design</label>
-                        </div>
-                        <% } %>
                     </div>
                 </div>
-                
+
                 <button type="submit" class="btn-submit">Create Professor Account</button>
             </form>
         </div>
-        
+
         <!-- Existing Professors List -->
         <div class="form-section">
             <h3>Existing Professors</h3>
@@ -307,42 +294,42 @@
                 %>
                 <table class="data-table">
                     <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Department</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
                     </thead>
                     <tbody>
-                        <%
-                            for (User user : professors) {
-                                if (user instanceof Professor) {
-                                    Professor professor = (Professor) user;
-                        %>
-                        <tr>
-                            <td><%= professor.getUserId() %></td>
-                            <td><%= professor.getFirstName() %> <%= professor.getLastName() %></td>
-                            <td><%= professor.getEmail() %></td>
-                            <td><%= professor.getDeptName() %></td>
-                            <td><%= professor.isActive() ? "Active" : "Inactive" %></td>
-                            <td>
-                                <button type="button" class="btn" onclick="openEditUserModal(<%= professor.getUserId() %>, '<%= professor.getFirstName() %>', '<%= professor.getLastName() %>', '<%= professor.getEmail() %>', <%= professor.getDeptId() %>)">Edit</button>
-                                <form method="post" action="${pageContext.request.contextPath}/AdminServlet" class="inline">
-                                    <input type="hidden" name="action" value="toggleUserStatus" />
-                                    <input type="hidden" name="userId" value="<%= professor.getUserId() %>" />
-                                    <button type="submit" class="btn <%= professor.isActive() ? "btn-danger" : "btn-success" %>">
-                                        <%= professor.isActive() ? "Deactivate" : "Activate" %>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        <%
-                                }
+                    <%
+                        for (User user : professors) {
+                            if (user instanceof Professor) {
+                                Professor professor = (Professor) user;
+                    %>
+                    <tr>
+                        <td><%= professor.getUserId() %></td>
+                        <td><%= professor.getFirstName() %> <%= professor.getLastName() %></td>
+                        <td><%= professor.getEmail() %></td>
+                        <td><%= professor.getDeptName() %></td>
+                        <td><%= professor.isActive() ? "Active" : "Inactive" %></td>
+                        <td>
+                            <button type="button" class="btn" onclick="openEditUserModal(<%= professor.getUserId() %>, '<%= professor.getFirstName() %>', '<%= professor.getLastName() %>', '<%= professor.getEmail() %>', <%= professor.getDeptId() %>)">Edit</button>
+                            <form method="post" action="${pageContext.request.contextPath}/AdminServlet" class="inline">
+                                <input type="hidden" name="action" value="toggleUserStatus" />
+                                <input type="hidden" name="userId" value="<%= professor.getUserId() %>" />
+                                <button type="submit" class="btn <%= professor.isActive() ? "btn-danger" : "btn-success" %>">
+                                    <%= professor.isActive() ? "Deactivate" : "Activate" %>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <%
                             }
-                        %>
+                        }
+                    %>
                     </tbody>
                 </table>
                 <% } else { %>
@@ -386,9 +373,15 @@
                 <label for="editDepartment">Department:</label>
                 <select id="editDepartment" name="deptId" required>
                     <option value="">Select a Department</option>
-                    <option value="1">Computer Science</option>
-                    <option value="2">Mathematics</option>
-                    <option value="3">Engineering</option>
+                    <%
+                        if (departments != null && !departments.isEmpty()) {
+                            for (Department dept : departments) {
+                    %>
+                    <option value="<%= dept.getId() %>"><%= dept.getName() %></option>
+                    <%
+                            }
+                        }
+                    %>
                 </select>
             </div>
 
@@ -408,13 +401,13 @@
 </div>
 
 <script>
+    // Get outcomeData from the controller
     <% 
-    // Check if outcomeData is available from the controller
     String outcomeData = (String) request.getAttribute("outcomeData");
     if (outcomeData != null && !outcomeData.isEmpty()) {
-        // Output the data from the controller
         out.println(outcomeData);
-    }%>
+    } 
+    %>
 
     // Function to show the outcomes for the selected course
     function updateOutcomes() {
@@ -541,6 +534,8 @@
             // Add indicators container to outcome container
             outcomeContainer.appendChild(indicatorsDiv);
 
+    // Add outcome container to dynamic outcomes div
+
             // Add outcome container to dynamic outcomes div
             dynamicOutcomesDiv.appendChild(outcomeContainer);
         });
@@ -572,71 +567,91 @@
         document.getElementById('editLastName').value = lastName;
         document.getElementById('editEmail').value = email;
         document.getElementById('editDepartment').value = deptId;
-        
+
         // Populate course checkboxes
         populateEditCourseCheckboxes(userId);
-        
+
         // Show the modal
         document.getElementById('editUserModal').style.display = 'block';
     }
-    
+
     // Function to close the edit user modal
     function closeEditUserModal() {
         document.getElementById('editUserModal').style.display = 'none';
     }
-    
+
     // Function to populate course checkboxes in the edit modal
     function populateEditCourseCheckboxes(userId) {
         const container = document.getElementById('editCourseCheckboxes');
         container.innerHTML = '';
-        
-        // Add course checkboxes
-        <% if (courses != null && !courses.isEmpty()) { %>
-            <% for (Course course : courses) { %>
-                const courseDiv = document.createElement('div');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = 'edit_course_<%= course.getCourseCode() %>';
-                checkbox.name = 'assignedCourses';
-                checkbox.value = '<%= course.getCourseCode() %>';
-                
-                const label = document.createElement('label');
-                label.htmlFor = 'edit_course_<%= course.getCourseCode() %>';
-                label.textContent = '<%= course.getCourseCode() %>: <%= course.getCourseName() %>';
-                
-                courseDiv.appendChild(checkbox);
-                courseDiv.appendChild(document.createTextNode(' '));
-                courseDiv.appendChild(label);
-                
-                container.appendChild(courseDiv);
-            <% } %>
-        <% } else { %>
-            // Fallback to hardcoded courses
-            const courses = [
-                { code: 'CS101', name: 'Fundamentals of Computer Science I' },
-                { code: 'CS201', name: 'Fundamentals of Computer Science II' },
-                { code: 'CS320', name: 'Software Engineering Design' }
-            ];
-            
-            courses.forEach(course => {
-                const courseDiv = document.createElement('div');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `edit_course_${course.code}`;
-                checkbox.name = 'assignedCourses';
-                checkbox.value = course.code;
-                
-                const label = document.createElement('label');
-                label.htmlFor = `edit_course_${course.code}`;
-                label.textContent = `${course.code}: ${course.name}`;
-                
-                courseDiv.appendChild(checkbox);
-                courseDiv.appendChild(document.createTextNode(' '));
-                courseDiv.appendChild(label);
-                
-                container.appendChild(courseDiv);
+
+        // Make an AJAX call to get assigned courses for this professor
+        fetch(`${pageContext.request.contextPath}/AdminServlet?action=getProfessorCourses&userId=${userId}`)
+            .then(response => response.json())
+            .then(assignedCourses => {
+                // Get all available courses from the courses array
+                const courseSelect = document.getElementById('courseId');
+                const options = Array.from(courseSelect.options);
+
+                // Skip the first option which is "Select a Course"
+                for (let i = 1; i < options.length; i++) {
+                    const courseCode = options[i].value;
+                    const courseName = options[i].text;
+
+                    const courseDiv = document.createElement('div');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `edit_course_${courseCode}`;
+                    checkbox.name = 'assignedCourses';
+                    checkbox.value = courseCode;
+                    checkbox.checked = assignedCourses.includes(courseCode);
+
+                    const label = document.createElement('label');
+                    label.htmlFor = `edit_course_${courseCode}`;
+                    label.textContent = courseName;
+
+                    courseDiv.appendChild(checkbox);
+                    courseDiv.appendChild(document.createTextNode(' '));
+                    courseDiv.appendChild(label);
+
+                    container.appendChild(courseDiv);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching assigned courses:', error);
+                // Fallback: just show all courses unchecked
+                addCoursesToModal(container, []);
             });
-        <% } %>
+    }
+
+    // Helper function to add courses to the modal
+    function addCoursesToModal(container, assignedCourses) {
+        const courseSelect = document.getElementById('courseId');
+        const options = Array.from(courseSelect.options);
+
+        // Skip the first option which is "Select a Course"
+        for (let i = 1; i < options.length; i++) {
+            const courseCode = options[i].value;
+            const courseName = options[i].text;
+
+            const courseDiv = document.createElement('div');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `edit_course_${courseCode}`;
+            checkbox.name = 'assignedCourses';
+            checkbox.value = courseCode;
+            checkbox.checked = assignedCourses.includes(courseCode);
+
+            const label = document.createElement('label');
+            label.htmlFor = `edit_course_${courseCode}`;
+            label.textContent = courseName;
+
+            courseDiv.appendChild(checkbox);
+            courseDiv.appendChild(document.createTextNode(' '));
+            courseDiv.appendChild(label);
+
+            container.appendChild(courseDiv);
+        }
     }
 
     // Add event listeners
@@ -655,7 +670,7 @@
                 updateSelectedOutcomesInput();
             });
         }
-        
+
         // Close modal when clicking outside of it
         window.onclick = function(event) {
             const modal = document.getElementById('editUserModal');

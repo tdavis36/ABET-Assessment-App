@@ -1,5 +1,6 @@
 package com.ABETAppTeam;
 
+import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.repository.IFCARRepository;
 import com.ABETAppTeam.repository.FCARRepository;
 

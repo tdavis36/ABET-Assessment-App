@@ -1,5 +1,7 @@
 package com.ABETAppTeam;
 
+import com.ABETAppTeam.model.Admin;
+import com.ABETAppTeam.model.Report;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;

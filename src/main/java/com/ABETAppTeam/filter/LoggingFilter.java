@@ -1,6 +1,6 @@
 package com.ABETAppTeam.filter;
 
-import com.ABETAppTeam.User;
+import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.service.LoggingService;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;

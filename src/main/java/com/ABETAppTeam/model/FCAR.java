@@ -1,4 +1,4 @@
-package com.ABETAppTeam;
+package com.ABETAppTeam.model;
 
 import com.ABETAppTeam.accesscontrol.FCARAccessControlImpl;
 import com.ABETAppTeam.accesscontrol.FCARFieldAccessControl;

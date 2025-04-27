@@ -1,6 +1,6 @@
 package com.ABETAppTeam.accesscontrol;
 
-import com.ABETAppTeam.User;
+import com.ABETAppTeam.model.User;
 import java.util.Set;
 
 /**

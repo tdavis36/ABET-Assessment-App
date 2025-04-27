@@ -1,12 +1,12 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="com.ABETAppTeam.FCAR" %>
+<%@ page import="com.ABETAppTeam.model.FCAR" %>
 <%@ page import="com.ABETAppTeam.repository.FCARRepository" %>
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 <%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
-<%@ page import="com.ABETAppTeam.User" %>
-<%@ page import="com.ABETAppTeam.Admin" %>
-<%@ page import="com.ABETAppTeam.Professor" %>
+<%@ page import="com.ABETAppTeam.model.User" %>
+<%@ page import="com.ABETAppTeam.model.Admin" %>
+<%@ page import="com.ABETAppTeam.model.Professor" %>
 
 <!DOCTYPE html>
 <html>

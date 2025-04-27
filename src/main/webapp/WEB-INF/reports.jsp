@@ -1,5 +1,5 @@
 <%@ page import="java.util.Collection" %>
-<%@ page import="com.ABETAppTeam.Report" %>
+<%@ page import="com.ABETAppTeam.model.Report" %>
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 <%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 

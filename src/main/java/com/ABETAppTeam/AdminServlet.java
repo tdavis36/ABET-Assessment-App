@@ -6,9 +6,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.ABETAppTeam.controller.CourseController;
+import com.ABETAppTeam.controller.DepartmentController;
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.OutcomeController;
+import com.ABETAppTeam.controller.UserController;
+import com.ABETAppTeam.model.*;
 import com.ABETAppTeam.service.LoggingService;
 
 import jakarta.servlet.ServletException;
@@ -21,9 +25,15 @@ import jakarta.servlet.http.HttpSession;
 public class AdminServlet extends BaseServlet {
 
     private final LoggingService logger;
+    private final UserController userController;
+    private final CourseController courseController;
+    private final DepartmentController departmentController;
 
     public AdminServlet() {
         this.logger = LoggingService.getInstance();
+        this.userController = UserController.getInstance();
+        this.courseController = CourseController.getInstance();
+        this.departmentController = DepartmentController.getInstance();
         logger.info("AdminServlet initialized");
     }
 
@@ -57,37 +67,8 @@ public class AdminServlet extends BaseServlet {
 
             logger.info("Admin user ID {} accessing AdminServlet with action: {}", user.getUserId(), action);
 
-            // Use DisplaySystemController to get dashboard data
-            logger.debug("Fetching dashboard data for admin view");
-            DisplaySystemController displayController = getDisplayController();
-            Map<String, Object> dashboardData = displayController.generateAdminDashboard();
-
-            // Convert courses to a List if it's not already
-            Object coursesObj = dashboardData.get("courses");
-            if (!(coursesObj instanceof List)) {
-                logger.debug("Converting courses to a List for admin dashboard");
-                List<Course> courseList = new ArrayList<>();
-
-                if (coursesObj instanceof Collection<?>) {
-                    // Convert any Collection to a List<Course>
-                    for (Object obj : (Collection<?>) coursesObj) {
-                        if (obj instanceof Course) {
-                            courseList.add((Course) obj);
-                        }
-                    }
-                }
-
-                // Replace it with our new List
-                dashboardData.put("courses", courseList);
-            }
-
-            // Add all attributes from the dashboard data to the request
-            addAttributesToRequest(request, dashboardData);
-
-            // Add outcome data from OutcomeController for JavaScript
-            logger.debug("Adding outcome data for JavaScript to request");
-            OutcomeController outcomeController = getOutcomeController();
-            request.setAttribute("outcomeData", outcomeController.getOutcomeDataAsJson());
+            // Load and prepare data for the admin dashboard
+            prepareAdminDashboardData(request);
 
             if ("viewFCARs".equals(action)) {
                 logger.debug("Forwarding to admin.jsp to view FCARs");
@@ -106,6 +87,7 @@ public class AdminServlet extends BaseServlet {
                     request.setAttribute("fcar", fcar);
 
                     // Get related course information if needed
+                    DisplaySystemController displayController = getDisplayController();
                     Course course = displayController.getCourse(fcar.getCourseCode());
                     if (course != null) {
                         request.setAttribute("course", course);
@@ -149,6 +131,7 @@ public class AdminServlet extends BaseServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
         String timerId = logger.startTimer("adminServlet.doPost");
 
         try {
@@ -197,6 +180,55 @@ public class AdminServlet extends BaseServlet {
         } finally {
             logger.stopTimer(timerId, "action=" + request.getParameter("action"));
         }
+    }
+
+    /**
+     * Prepares data for the admin dashboard by fetching needed data from the database
+     */
+    private void prepareAdminDashboardData(HttpServletRequest request) {
+        // Use DisplaySystemController to get dashboard data
+        logger.debug("Fetching dashboard data for admin view");
+        DisplaySystemController displayController = getDisplayController();
+        Map<String, Object> dashboardData = displayController.generateAdminDashboard();
+
+        // Convert courses to a List if it's not already
+        Object coursesObj = dashboardData.get("courses");
+        if (!(coursesObj instanceof List)) {
+            logger.debug("Converting courses to a List for admin dashboard");
+            List<Course> courseList = new ArrayList<>();
+
+            if (coursesObj instanceof Collection<?>) {
+                // Convert any Collection to a List<Course>
+                for (Object obj : (Collection<?>) coursesObj) {
+                    if (obj instanceof Course) {
+                        courseList.add((Course) obj);
+                    }
+                }
+            }
+
+            // Replace it with our new List
+            dashboardData.put("courses", courseList);
+        }
+
+        // Get professors from database
+        List<User> professors = userController.getAllProfessors();
+        dashboardData.put("professors", professors);
+
+        // Get departments from database
+        List<Department> departments = departmentController.getAllDepartments();
+        dashboardData.put("departments", departments);
+
+        // Add outcome data from OutcomeController for JavaScript
+        logger.debug("Adding outcome data for JavaScript to request");
+        OutcomeController outcomeController = getOutcomeController();
+        request.setAttribute("outcomeData", outcomeController.getOutcomeDataAsJson());
+
+        // Add all attributes from the dashboard data to the request
+        addAttributesToRequest(request, dashboardData);
+
+        // Get additional outcome and indicator data for the form
+        Map<String, Object> outcomeData = outcomeController.getAllOutcomesAndIndicatorsForForm();
+        addAttributesToRequest(request, outcomeData);
     }
 
     /**
@@ -481,5 +513,43 @@ public class AdminServlet extends BaseServlet {
             ip = request.getRemoteAddr();
         }
         return ip;
+    }
+
+    /**
+     * Handles AJAX requests for a professor's assigned courses
+     * @param request HTTP request
+     * @param response HTTP response
+     * @throws IOException If an I/O error occurs
+     */
+    private void getProfessorCourses(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String userId = request.getParameter("userId");
+        if (userId == null || userId.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing userId parameter");
+            return;
+        }
+
+        try {
+            int professorId = Integer.parseInt(userId);
+            List<String> assignedCourses = userController.getProfessorCourses(professorId);
+
+            // Convert to JSON and send response
+            StringBuilder json = new StringBuilder("[");
+            for (int i = 0; i < assignedCourses.size(); i++) {
+                if (i > 0) {
+                    json.append(",");
+                }
+                json.append("\"").append(assignedCourses.get(i)).append("\"");
+            }
+            json.append("]");
+
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(json.toString());
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid userId parameter");
+        } catch (Exception e) {
+            logger.error("Error getting professor courses: {}", e.getMessage(), e);
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error getting professor courses");
+        }
     }
 }

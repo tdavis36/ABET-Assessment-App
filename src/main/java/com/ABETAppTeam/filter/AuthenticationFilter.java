@@ -1,8 +1,7 @@
 package com.ABETAppTeam.filter;
 
-import com.ABETAppTeam.Admin;
-import com.ABETAppTeam.Professor;
-import com.ABETAppTeam.User;
+import com.ABETAppTeam.model.Admin;
+import com.ABETAppTeam.model.User;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;

@@ -1,5 +1,8 @@
 package com.ABETAppTeam;
 
+import com.ABETAppTeam.model.FCAR;
+import com.ABETAppTeam.model.Report;
+
 import java.util.*;
 import java.util.UUID;
 

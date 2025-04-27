@@ -1,5 +1,6 @@
 package com.ABETAppTeam;
 
+import com.ABETAppTeam.model.Professor;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

@@ -1,6 +1,6 @@
 package com.ABETAppTeam.controller;
 
-import com.ABETAppTeam.FCAR;
+import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.service.FCARService;
 
 import java.util.List;

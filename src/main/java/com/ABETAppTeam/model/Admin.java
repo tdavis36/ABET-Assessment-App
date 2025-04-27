@@ -1,4 +1,4 @@
-package com.ABETAppTeam;
+package com.ABETAppTeam.model;
 
 import java.util.ArrayList;
 import java.util.List;

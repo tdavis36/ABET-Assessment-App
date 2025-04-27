@@ -1,7 +1,7 @@
 package com.ABETAppTeam.service;
 
-import com.ABETAppTeam.FCAR;
-import com.ABETAppTeam.Professor;
+import com.ABETAppTeam.model.FCAR;
+import com.ABETAppTeam.model.Professor;
 import com.ABETAppTeam.repository.IFCARRepository;
 import com.ABETAppTeam.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
