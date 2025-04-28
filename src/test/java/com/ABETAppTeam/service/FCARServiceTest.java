@@ -4,6 +4,7 @@ import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.model.Professor;
 import com.ABETAppTeam.repository.IFCARRepository;
 import com.ABETAppTeam.repository.UserRepository;
+import com.ABETAppTeam.service.FCARService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

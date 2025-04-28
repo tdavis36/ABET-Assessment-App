@@ -30,7 +30,7 @@ public class ViewFCARServlet extends BaseServlet {
      * Handles GET requests to view FCAR reports
      */
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+    public void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
         // Set cache control headers

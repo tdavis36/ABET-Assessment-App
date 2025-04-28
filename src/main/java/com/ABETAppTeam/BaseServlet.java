@@ -28,19 +28,19 @@ import jakarta.servlet.http.HttpSession;
 public abstract class BaseServlet extends HttpServlet {
 
     // Shared controller instances
-    protected FCARController getFCARController() {
+    public FCARController getFCARController() {
         return FCARController.getInstance();
     }
 
-    protected DisplaySystemController getDisplayController() {
+    public DisplaySystemController getDisplayController() {
         return DisplaySystemController.getInstance();
     }
 
-    protected OutcomeController getOutcomeController() {
+    public OutcomeController getOutcomeController() {
         return OutcomeController.getInstance();
     }
 
-    protected FCARService getFCARService() {
+    public FCARService getFCARService() {
         return new FCARService();
     }
 
