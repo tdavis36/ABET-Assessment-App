@@ -17,8 +17,8 @@
     <h1>Faculty Course Assessment Report (FCAR)</h1>
     <p>Complete the assessment form below for the course.</p>
 
-    <form action="${pageContext.request.contextPath}/ProfessorServlet" method="post" id="fcarForm">
-        <input type="hidden" name="action" value="submitFCAR"/>
+    <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="fcarForm">
+        <input type="hidden" name="action" value="saveFCAR"/>
         <input type="hidden" name="saveAction" id="saveActionInput" value="submit"/>
 
         <!-- Basic Information Section -->
@@ -433,7 +433,7 @@
                 <c:when test="${sessionScope.userRole == 'admin'}">
                     <!-- Admin buttons -->
                     <button type="submit" class="btn-submit" onclick="setAction('submit')">Submit FCAR</button>
-                    <button type="button" class="btn-submit" onclick="setAction('save'); document.getElementById('fcarForm').submit();">Save Changes</button>
+                    <button type="button" class="btn-submit" onclick="saveChanges()">Save Changes</button>
                 </c:when>
                 <c:otherwise>
                     <!-- Professor buttons -->
@@ -500,6 +500,26 @@
     // Function to save as draft and exit
     function saveAndExit() {
         document.getElementById('saveActionInput').value = 'draft';
+        // Add a hidden field to indicate we want to redirect to ViewFCARServlet
+        var redirectField = document.createElement('input');
+        redirectField.type = 'hidden';
+        redirectField.name = 'redirectToView';
+        redirectField.value = 'true';
+        document.getElementById('fcarForm').appendChild(redirectField);
+        // Submit the form with saveFCAR action
+        document.getElementById('fcarForm').submit();
+    }
+    
+    // Function to save changes (for admin)
+    function saveChanges() {
+        document.getElementById('saveActionInput').value = 'save';
+        // Add a hidden field to indicate we want to redirect to ViewFCARServlet
+        var redirectField = document.createElement('input');
+        redirectField.type = 'hidden';
+        redirectField.name = 'redirectToView';
+        redirectField.value = 'true';
+        document.getElementById('fcarForm').appendChild(redirectField);
+        // Submit the form with saveFCAR action
         document.getElementById('fcarForm').submit();
     }
 

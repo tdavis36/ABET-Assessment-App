@@ -16,7 +16,11 @@ import com.ABETAppTeam.service.FCARService;
 import com.ABETAppTeam.service.LoggingService;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * Base servlet that provides common functionality for FCAR-related servlets.
@@ -45,7 +49,7 @@ public abstract class BaseServlet extends HttpServlet {
     protected LoggingService getLogger() {
         return logger;
     }
-    
+
     /**
      * Sets standard cache control headers
      */
@@ -132,7 +136,7 @@ public abstract class BaseServlet extends HttpServlet {
      * Verifies the user has appropriate access privileges.
      * Sends HTTP 403 error if the user doesn't have access.
      *
-     * @param user The user to verify
+     * @param user     The user to verify
      * @param response The HTTP response to send an error if needed
      * @return true if the user doesn't have access, false otherwise
      * @throws IOException if an I/O error occurs
@@ -149,80 +153,82 @@ public abstract class BaseServlet extends HttpServlet {
      * Verifies the user has appropriate access privileges.
      * Sends HTTP 403 error if the user doesn't have access.
      *
-     * @param user The user to verify
+     * @param user     The user to verify
      * @param response The HTTP response to send an error if needed
      * @return true if the user doesn't have access, false otherwise
      * @throws IOException if an I/O error occurs
      */
     protected boolean canAccessFCAR(FCAR fcar, User user) {
-        if (user instanceof Admin) return true;
+        if (user instanceof Admin)
+            return true;
         if (user instanceof Professor) {
             return fcar.getInstructorId() == user.getUserId();
         }
         return false;
     }
-    
+
     /**
      * Updates FCAR fields from request parameters, respecting access control
      * 
-     * @param fcar The FCAR to update
-     * @param request The HTTP request with form parameters
+     * @param fcar        The FCAR to update
+     * @param request     The HTTP request with form parameters
      * @param currentUser The current user for access control
      * @throws SecurityException If the user doesn't have permission to edit a field
      */
-    protected void updateFCARFromRequest(FCAR fcar, HttpServletRequest request, User currentUser) throws SecurityException {
+    protected void updateFCARFromRequest(FCAR fcar, HttpServletRequest request, User currentUser)
+            throws SecurityException {
         // Process each field from the form, applying access control
         if (request.getParameter("courseCode") != null) {
             fcar.setFieldValue("courseCode", request.getParameter("courseCode"), currentUser);
         }
-        
+
         if (request.getParameter("semester") != null) {
             fcar.setFieldValue("semester", request.getParameter("semester"), currentUser);
         }
-        
+
         if (request.getParameter("year") != null && !request.getParameter("year").isEmpty()) {
             fcar.setFieldValue("year", Integer.parseInt(request.getParameter("year")), currentUser);
         }
-        
+
         if (request.getParameter("outcomeId") != null && !request.getParameter("outcomeId").isEmpty()) {
             fcar.setFieldValue("outcomeId", Integer.parseInt(request.getParameter("outcomeId")), currentUser);
         }
-        
+
         if (request.getParameter("indicatorId") != null && !request.getParameter("indicatorId").isEmpty()) {
             fcar.setFieldValue("indicatorId", Integer.parseInt(request.getParameter("indicatorId")), currentUser);
         }
-        
+
         if (request.getParameter("methodDesc") != null) {
             fcar.setFieldValue("methodDesc", request.getParameter("methodDesc"), currentUser);
         }
-        
+
         if (request.getParameter("summaryDesc") != null) {
             fcar.setFieldValue("summaryDesc", request.getParameter("summaryDesc"), currentUser);
         }
-        
+
         // Set instructor if isn't already set
         if (fcar.getInstructorId() == 0 && currentUser != null) {
             fcar.setInstructorId(currentUser.getUserId());
         }
-        
+
         // Update the timestamp
         fcar.setUpdatedAt(new Date());
     }
-    
+
     /**
      * Handles saving or submitting an FCAR
      */
     protected void handleSaveOrSubmitFCAR(HttpServletRequest request, HttpServletResponse response,
-                                  HttpSession session, User currentUser, String action)
-                                  throws ServletException, IOException {
+            HttpSession session, User currentUser, String action)
+            throws ServletException, IOException {
         try {
             int fcarId = Integer.parseInt(request.getParameter("fcarId"));
             FCARController fcarController = getFCARController();
             FCAR fcar = (fcarId > 0) ? fcarController.getFCAR(fcarId) : new FCAR();
-        
+
             // Update FCAR fields from request parameters
             updateFCARFromRequest(fcar, request, currentUser);
-        
+
             // Set status based on action
             if ("submitFCAR".equals(action)) {
                 fcar.setFieldValue("status", "Submitted", currentUser);
@@ -231,22 +237,29 @@ public abstract class BaseServlet extends HttpServlet {
                 // Save action
                 fcar.setFieldValue("status", "Draft", currentUser);
             }
-        
+
             // Save the FCAR
             FCAR savedFcar = FCARFactory.save(fcar);
-        
+
             // Set the appropriate message for the user
-            String successMessage = "submitFCAR".equals(action) 
-                ? "FCAR successfully submitted!" 
-                : "FCAR saved as draft.";
+            String successMessage = "submitFCAR".equals(action)
+                    ? "FCAR successfully submitted!"
+                    : "FCAR saved as draft.";
             session.setAttribute("message", successMessage);
 
-            // Redirect based on a user role
-            redirectBasedOnUserRole(request, response, currentUser);
+            // Check if we should redirect to the viewFCAR page
+            String redirectToView = request.getParameter("redirectToView");
+            if ("true".equals(redirectToView)) {
+                // Redirect to the viewFCAR page
+                response.sendRedirect(request.getContextPath() + "/ViewFCARServlet?action=viewAll");
+            } else {
+                // Redirect based on a user role
+                redirectBasedOnUserRole(request, response, currentUser);
+            }
         } catch (SecurityException e) {
             // Log the access control violation
             getLogger().logError("Access control violation during FCAR save/submit", e);
-        
+
             // Access control violation
             request.setAttribute("error", "Access denied: " + e.getMessage());
             // Forward back to the edit page
@@ -254,13 +267,13 @@ public abstract class BaseServlet extends HttpServlet {
         } catch (Exception e) {
             // Log the error
             getLogger().logError("Error saving FCAR", e);
-        
+
             System.err.println("Error saving FCAR: " + e.getMessage());
             request.setAttribute("error", "Error saving FCAR: " + e.getMessage());
             request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
         }
     }
-    
+
     /**
      * Handles filtering FCARs by semester
      */
@@ -287,13 +300,13 @@ public abstract class BaseServlet extends HttpServlet {
         } catch (Exception e) {
             // Log the error
             getLogger().logError("Error filtering FCARs by semester", e);
-        
+
             System.err.println("Error filtering FCARs: " + e.getMessage());
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Error filtering FCARs: " + e.getMessage());
         }
     }
-    
+
     /**
      * Redirects the user based on their role
      */
@@ -308,7 +321,7 @@ public abstract class BaseServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/ViewFCARServlet?action=viewAll");
         }
     }
-    
+
     /**
      * Adds all entries from a map as individual request attributes
      */
@@ -317,18 +330,18 @@ public abstract class BaseServlet extends HttpServlet {
             request.setAttribute(entry.getKey(), entry.getValue());
         }
     }
-    
+
     /**
      * Handles errors consistently using the LoggingService
      */
     protected void handleError(HttpServletResponse response, Exception e)
-                        throws IOException {
+            throws IOException {
         System.err.println("Error processing request" + ": " + e.getMessage());
-        
+
         // Use the LoggingService to log the error with full context
         getLogger().logError("An error occurred during processing", e);
-        
-        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
-                          "Error processing request" + ": " + e.getMessage());
+
+        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                "Error processing request" + ": " + e.getMessage());
     }
 }
