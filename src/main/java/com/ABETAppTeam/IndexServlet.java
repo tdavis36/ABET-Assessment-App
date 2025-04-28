@@ -159,6 +159,7 @@ public class IndexServlet extends BaseServlet {
         session = request.getSession(true);
         session.setAttribute("user", user);
         session.setAttribute("userId", user.getUserId());
+        session.setAttribute("userRole", user.getRoleName());
 
         // Log the successful login
         String ipAddress = getClientIpAddress(request);

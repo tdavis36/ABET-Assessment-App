@@ -1,5 +1,6 @@
 package com.ABETAppTeam;
 
+import com.ABETAppTeam.model.Admin;
 import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.service.AuthenticationService;
 import jakarta.servlet.ServletException;
@@ -21,13 +22,10 @@ public class ReportServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
-        User user = session != null
-                ? (User) session.getAttribute("user")
-                : null;
 
         // Check if user is logged in and is an admin
-        String userRole = session != null ? (String) session.getAttribute("userRole") : null;
-        if (user == null || !"admin".equals(userRole)) {
+        User user = (User) session.getAttribute("user");
+        if (!(user instanceof Admin)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
                     "You do not have permission to view reports.");
             return;

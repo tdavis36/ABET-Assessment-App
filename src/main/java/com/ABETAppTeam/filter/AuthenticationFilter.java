@@ -19,7 +19,7 @@ import java.io.IOException;
 /**
  * Filter to protect routes that require authentication
  */
-@WebFilter(urlPatterns = {"/AdminServlet/*", "/ProfessorServlet/*", "/ViewFCARServlet/*", "/ReportsServlet/*"})
+@WebFilter(urlPatterns = {"/AdminServlet/*", "/ProfessorServlet/*", "/ViewFCARServlet/*", "/ReportServlet/*"})
 public class AuthenticationFilter implements Filter {
 
     @Override
