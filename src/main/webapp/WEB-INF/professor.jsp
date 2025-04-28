@@ -21,7 +21,11 @@
 <div class="dashboard">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1>Welcome, Dr. <c:out value="${sessionScope.professorName}"/></h1>
-        <a href="${pageContext.request.contextPath}/" class="btn" style="margin-left: 20px;">Logout</a>
+        <!-- HTML -->
+        <form action="${pageContext.request.contextPath}/ProfessorServlet" method="get" style="display:inline;">
+            <input type="hidden" name="action" value="logout"/>
+            <button type="submit" class="btn" style="margin-left: 20px;">Logout</button>
+        </form>
     </div>
 
     <!-- Status Key -->

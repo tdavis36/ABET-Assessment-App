@@ -21,8 +21,7 @@
 <div class="dashboard" id="adminDashboard">
     <div class="header-container">
         <h1>Admin Dashboard</h1>
-        <a href="${pageContext.request.contextPath}/" class="btn">Logout</a>
-    </div>
+        <a href="${pageContext.request.contextPath}/AdminServlet?action=logout" class="btn">Logout</a>    </div>
 
     <!-- Status Key -->
     <div class="status-key">

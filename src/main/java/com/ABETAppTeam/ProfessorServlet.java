@@ -2,12 +2,14 @@ package com.ABETAppTeam;
 
 import java.io.IOException;
 import java.io.Serial;
+import java.util.List;
 import java.util.Map;
 
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.OutcomeController;
 import com.ABETAppTeam.model.FCAR;
+import com.ABETAppTeam.model.Professor;
 import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.service.FCARService;
 
@@ -17,7 +19,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-@WebServlet("/ProfessorServlet")
 public class ProfessorServlet extends BaseServlet {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -29,18 +30,36 @@ public class ProfessorServlet extends BaseServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        // Set cache control headers
-        setCacheControlHeaders(response);
-
-        HttpSession session = request.getSession();
         String action = request.getParameter("action");
 
-        // Add a security check to verify the user is a professor
-        User user = (User) session.getAttribute("user");
-        if (verifyAccess(user, response)) {
+        // Handle logout before any other processing
+        if ("logout".equals(action)) {
+            handleLogout(request, response);
             return;
         }
+
+        // Set cache control headers
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/index");
+            return;
+        }
+
+        User currentUser = (User) session.getAttribute("user");
+        if (!(currentUser instanceof Professor)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+
+        Professor professor = (Professor) currentUser;
+
+
+        // Get FCARs assigned to this professor only
+        FCARController fcarController = getFCARController();
+        List<FCAR> assignedFCARs = fcarController.getFCARsByProfessor(currentUser.getUserId());
+        request.setAttribute("assignedFCARs", assignedFCARs);
+
+        request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
 
         if ("viewFCARs".equals(action)) {
             // Get professor ID

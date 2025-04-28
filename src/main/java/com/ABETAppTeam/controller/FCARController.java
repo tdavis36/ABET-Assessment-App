@@ -2,8 +2,16 @@ package com.ABETAppTeam.controller;
 
 import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.service.FCARService;
+import com.ABETAppTeam.util.DatabaseConnection;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for FCAR operations
@@ -16,6 +24,7 @@ public class FCARController {
     // Service for business logic
     private final FCARService fcarService;
 
+    private static final Logger logger = LoggerFactory.getLogger(FCARController.class);
     /**
      * Private constructor for a singleton pattern
      */
@@ -70,10 +79,6 @@ public class FCARController {
      * @param professorId The professor ID
      * @return List of FCARs for the professor
      */
-    public List<FCAR> getFCARsByProfessor(int professorId) {
-        return fcarService.getFCARsByProfessor(professorId);
-    }
-
     /**
      * Get FCARs for a specific semester and year
      *
@@ -223,4 +228,38 @@ public class FCARController {
     public boolean addImprovementAction(int fcarId, String actionId, String description) {
         return fcarService.addImprovementAction(fcarId, actionId, description);
     }
+    /**
+     * Gets all FCARs assigned to a specific professor
+     *
+     * @param professorId The ID of the professor
+     * @return List of FCARs assigned to the professor
+     */
+    public List<FCAR> getFCARsByProfessor(int professorId) {
+        String sql = "SELECT * FROM fcars WHERE instructor_id = ? ORDER BY year DESC, semester DESC";
+        List<FCAR> fcars = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, professorId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                FCAR fcar = new FCAR();
+                fcar.setFcarId(rs.getInt("id"));
+                fcar.setCourseId(rs.getString("course_id"));
+                fcar.setSemester(rs.getString("semester"));
+                fcar.setYear(rs.getInt("year"));
+                fcar.setStatus(rs.getString("status"));
+                fcar.setInstructorId(rs.getInt("instructor_id"));
+                fcars.add(fcar);
+            }
+        } catch (SQLException e) {
+            logger.error("Error getting FCARs for professor: " + professorId, e);
+        }
+
+        return fcars;
+    }
+
+
 }

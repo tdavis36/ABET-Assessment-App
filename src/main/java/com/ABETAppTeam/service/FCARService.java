@@ -6,10 +6,14 @@ import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.repository.FCARRepository;
 import com.ABETAppTeam.repository.IFCARRepository;
 import com.ABETAppTeam.repository.UserRepository;
+import com.ABETAppTeam.util.DatabaseConnection;
 
+import java.sql.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Service class for handling FCAR business logic
@@ -20,6 +24,8 @@ public class FCARService {
 
     private final IFCARRepository fcarRepository;
     private final UserRepository userRepository;
+    private static final Logger logger = LoggerFactory.getLogger(FCARService.class);
+
 
     /**
      * Constructor
@@ -337,5 +343,38 @@ public class FCARService {
         fcar.setImprovementActions(actions);
 
         return fcarRepository.update(fcar);
+    }
+    public FCAR createFCAR(String courseId, String semester, int year, int professorId) {
+        String sql = "INSERT INTO fcars (course_id, semester, year, instructor_id, status) VALUES (?, ?, ?, ?, 'Draft')";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            stmt.setString(1, courseId);
+            stmt.setString(2, semester);
+            stmt.setInt(3, year);
+            stmt.setInt(4, professorId);
+
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) {
+                return null;
+            }
+
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    FCAR fcar = new FCAR();
+                    fcar.setFcarId(generatedKeys.getInt(1));
+                    fcar.setCourseId(courseId);
+                    fcar.setSemester(semester);
+                    fcar.setYear(year);
+                    fcar.setInstructorId(professorId);
+                    fcar.setStatus("Draft");
+                    return fcar;
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Error creating FCAR", e);
+        }
+        return null;
     }
 }

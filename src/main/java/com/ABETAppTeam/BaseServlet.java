@@ -55,6 +55,16 @@ public abstract class BaseServlet extends HttpServlet {
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
     }
+
+    protected void handleLogout(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+            LoggingService.getInstance().info("User logged out");
+        }
+        response.sendRedirect(request.getContextPath() + "/index");
+    }
     
     /**
      * Verifies the user has appropriate access privileges.
@@ -69,6 +79,22 @@ public abstract class BaseServlet extends HttpServlet {
         if (!(user instanceof Professor || user instanceof Admin)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
             return true;
+        }
+        return false;
+    }
+    /**
+     * Verifies the user has appropriate access privileges.
+     * Sends HTTP 403 error if the user doesn't have access.
+     *
+     * @param user The user to verify
+     * @param response The HTTP response to send an error if needed
+     * @return true if the user doesn't have access, false otherwise
+     * @throws IOException if an I/O error occurs
+     */
+    protected boolean canAccessFCAR(FCAR fcar, User user) {
+        if (user instanceof Admin) return true;
+        if (user instanceof Professor) {
+            return fcar.getInstructorId() == user.getUserId();
         }
         return false;
     }
