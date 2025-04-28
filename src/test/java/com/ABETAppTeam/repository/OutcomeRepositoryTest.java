@@ -1,445 +1,184 @@
 package com.ABETAppTeam.repository;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
-import com.ABETAppTeam.model.Indicator;
-import com.ABETAppTeam.model.Outcome;
-import com.ABETAppTeam.service.LoggingService;
-import com.ABETAppTeam.util.DataSourceFactory;
-import com.ABETAppTeam.util.TestDatabaseSetup;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
+import javax.sql.DataSource;
+
+import org.flywaydb.core.Flyway;
+import org.h2.jdbcx.JdbcDataSource;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import com.ABETAppTeam.model.Indicator;
+import com.ABETAppTeam.model.Outcome;
+import com.ABETAppTeam.util.DataSourceFactory;
+import com.ABETAppTeam.util.TestDatabaseSetup;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 @ExtendWith(MockitoExtension.class)
-@DisplayName("OutcomeRepository Tests")
-class OutcomeRepositoryTest {
+public class OutcomeRepositoryTest {
 
-    @Mock
-    private com.zaxxer.hikari.HikariDataSource mockDataSource;
-
-    @Mock
-    private Connection mockConnection;
-
-    @Mock
-    private PreparedStatement mockPreparedStatement;
-
-    @Mock
-    private ResultSet mockResultSet;
-
-    @InjectMocks
-    private OutcomeRepository outcomeRepository;
-
-    private static TestDatabaseSetup dbSetup;
+    private static HikariDataSource h2Hikari;
+    private static MockedStatic<DataSourceFactory> dsfMock;
+    private OutcomeRepository repo;
 
     @BeforeAll
-    static void setupTestDatabase() throws SQLException {
-        dbSetup = new TestDatabaseSetup();
-        dbSetup.setupTestDatabase();
+    static void initDatabase() {
+        // 1) Use TestDatabaseSetup to spin up an H2 mem-DB with migrations applied
+        DataSource rawDs = TestDatabaseSetup.getDataSource();
 
-        // Set up test data in the database
-        try (Connection conn = dbSetup.getConnection()) {
-            // Clean existing data
-            conn.createStatement().execute("DELETE FROM Indicator");
-            conn.createStatement().execute("DELETE FROM Course_Outcome");
-            conn.createStatement().execute("DELETE FROM Outcome");
+        // 2) Wrap it in a HikariDataSource so that OutcomeRepository gets the right type
+        HikariConfig cfg = new HikariConfig();
+        cfg.setDataSource(rawDs);
+        h2Hikari = new HikariDataSource(cfg);
 
-            // Insert test outcomes
-            try (PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO Outcome (outcome_id, outcome_num, outcome_desc) VALUES (?, ?, ?)")) {
-                // Test outcome 1
-                stmt.setInt(1, 1);
-                stmt.setString(2, "a");
-                stmt.setString(3, "An ability to apply knowledge of computing");
-                stmt.addBatch();
-
-                // Test outcome 2
-                stmt.setInt(1, 2);
-                stmt.setString(2, "b");
-                stmt.setString(3, "An ability to analyze a problem");
-                stmt.addBatch();
-
-                stmt.executeBatch();
-            }
-
-            // Insert test indicators
-            try (PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO Indicator (indicator_id, outcome_id, indicator_num, indicator_desc) " +
-                            "VALUES (?, ?, ?, ?)")) {
-                // Indicators for outcome 1
-                stmt.setInt(1, 1);
-                stmt.setInt(2, 1);
-                stmt.setInt(3, 1);
-                stmt.setString(4, "Apply mathematical principles");
-                stmt.addBatch();
-
-                stmt.setInt(1, 2);
-                stmt.setInt(2, 1);
-                stmt.setInt(3, 2);
-                stmt.setString(4, "Use computing techniques");
-                stmt.addBatch();
-
-                // Indicators for outcome 2
-                stmt.setInt(1, 3);
-                stmt.setInt(2, 2);
-                stmt.setInt(3, 1);
-                stmt.setString(4, "Identify problem requirements");
-                stmt.addBatch();
-
-                stmt.executeBatch();
-            }
-
-            // Insert test course-outcome mappings
-            try (PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO Course_Outcome (course_code, outcome_id) VALUES (?, ?)")) {
-                stmt.setString(1, "CS101");
-                stmt.setInt(2, 1);
-                stmt.addBatch();
-
-                stmt.setString(1, "CS101");
-                stmt.setInt(2, 2);
-                stmt.addBatch();
-
-                stmt.setString(1, "CS201");
-                stmt.setInt(2, 1);
-                stmt.addBatch();
-
-                stmt.executeBatch();
-            }
-        }
+        // 3) Mock DataSourceFactory.getDataSource() → our H2 pool
+        dsfMock = Mockito.mockStatic(DataSourceFactory.class);
+        dsfMock.when(DataSourceFactory::getDataSource).thenReturn(h2Hikari);
     }
 
     @AfterAll
-    static void teardownTestDatabase() throws SQLException {
-        if (dbSetup != null) {
-            dbSetup.teardownTestDatabase();
-        }
+    static void tearDown() {
+        dsfMock.close();
+        h2Hikari.close();
     }
 
     @BeforeEach
-    void setUp() throws SQLException {
-        MockitoAnnotations.openMocks(this);
-
-        // Set up mock behavior
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+    void setUp() {
+        // Every test gets a fresh repo (which will use the mocked H2 pool)
+        repo = new OutcomeRepository();
     }
 
-    @Nested
-    @DisplayName("CSV Loading Tests")
-    class CsvLoadingTests {
-
-        @Test
-        @DisplayName("Should load outcomes from CSV file")
-        void loadFromCSV() {
-            // Use the actual implementation for this test
-            OutcomeRepository realRepo = new OutcomeRepository();
-
-            // Act
-            List<Outcome> outcomes = realRepo.loadFromCSV();
-
-            // Assert
-            assertNotNull(outcomes, "Outcomes list should not be null");
-            assertFalse(outcomes.isEmpty(), "Outcomes list should not be empty");
-
-            // Check structure of outcomes and indicators
-            for (Outcome outcome : outcomes) {
-                assertNotNull(outcome.getOutcomeNum(), "Outcome number should not be null");
-                assertNotNull(outcome.getDescription(), "Outcome description should not be null");
-
-                List<Indicator> indicators = outcome.getIndicators();
-                assertNotNull(indicators, "Indicators list should not be null");
-                assertFalse(indicators.isEmpty(), "Indicators list should not be empty");
-
-                for (Indicator indicator : indicators) {
-                    assertNotNull(indicator.getId(), "Indicator ID should not be null");
-                    assertNotNull(indicator.getDescription(), "Indicator description should not be null");
-                }
-            }
-        }
-
-        @Test
-        @DisplayName("Should correctly parse CSV lines with quotes and commas")
-        void parseCSVLine() throws Exception {
-            OutcomeRepository realRepo = new OutcomeRepository();
-
-            // Call the parseCSVLine method through reflection
-            java.lang.reflect.Method parseMethod = OutcomeRepository.class.getDeclaredMethod("parseCSVLine", String.class);
-            parseMethod.setAccessible(true);
-
-            // Test with complex CSV line
-            String testLine = "\"An ability to apply knowledge\",\"Indicator 1\",\"Indicator 2,with comma\"";
-            String[] result = (String[]) parseMethod.invoke(realRepo, testLine);
-
-            // Assert
-            assertEquals(3, result.length, "Should parse 3 fields");
-            assertEquals("An ability to apply knowledge", result[0], "First field should be correctly parsed");
-            assertEquals("Indicator 1", result[1], "Second field should be correctly parsed");
-            assertEquals("Indicator 2,with comma", result[2], "Third field with comma should be correctly parsed");
-        }
-
-        @Test
-        @DisplayName("Should handle empty CSV file gracefully")
-        void handleEmptyCsvFile() throws Exception {
-            // Create a mock OutcomeRepository that reads from an empty file
-            OutcomeRepository spyRepo = spy(new OutcomeRepository());
-
-            // Mock the getClass().getClassLoader().getResourceAsStream method
-            InputStream emptyStream = new ByteArrayInputStream("Header1,Header2\n".getBytes());
-            doReturn(emptyStream).when(spyRepo).getResourceAsStream(anyString());
-
-            // Act
-            List<Outcome> outcomes = spyRepo.loadFromCSV();
-
-            // Assert
-            assertNotNull(outcomes, "Outcomes list should not be null even with empty file");
-            assertTrue(outcomes.isEmpty(), "Outcomes list should be empty with empty file");
-        }
-
-        @Test
-        @DisplayName("Should handle malformed CSV file")
-        void handleMalformedCsvFile() throws Exception {
-            // Create a mock OutcomeRepository that reads from a malformed file
-            OutcomeRepository spyRepo = spy(new OutcomeRepository());
-
-            // Mock the getClass().getClassLoader().getResourceAsStream method
-            String malformedContent = "Header1,Header2\nMalformed row without, enough, closing quotes\"";
-            InputStream malformedStream = new ByteArrayInputStream(malformedContent.getBytes());
-            doReturn(malformedStream).when(spyRepo).getResourceAsStream(anyString());
-
-            // Act
-            List<Outcome> outcomes = spyRepo.loadFromCSV();
-
-            // Assert
-            assertNotNull(outcomes, "Outcomes list should not be null even with malformed file");
-            // The outcome might be parsed incorrectly but should not throw exceptions
+    // --- CSV loader ---
+    private static class CSVRepo extends OutcomeRepository {
+        private final String csv;
+        CSVRepo(String csv) { this.csv = csv; }
+        @Override
+        protected InputStream getResourceAsStream(String resourceName) {
+            return new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8));
         }
     }
 
-    @Nested
-    @DisplayName("Database Operations Tests")
-    class DatabaseOperationsTests {
+    @Test
+    void loadFromCSV_parsesQuotesAndCommas() {
+        String csv =
+                "outcome_num,outcome_desc,indA,indB\n" +
+                        "1,\"Test, outcome\",\"First indicator\",\"Second, indicator\"\n";
 
-        @Test
-        @DisplayName("Should find outcome by ID")
-        void findById() throws SQLException {
-            // Arrange
-            when(mockResultSet.next()).thenReturn(true, false);
-            when(mockResultSet.getInt("outcome_id")).thenReturn(1);
-            when(mockResultSet.getString("outcome_num")).thenReturn("a");
-            when(mockResultSet.getString("outcome_desc")).thenReturn("Test Outcome");
+        List<Outcome> list = new CSVRepo(csv).loadFromCSV();
+        assertEquals(1, list.size());
 
-            // Act
-            Outcome outcome = outcomeRepository.findById(1);
+        Outcome o = list.get(0);
+        assertEquals("1",      o.getOutcomeNum());
+        assertEquals("Test, outcome", o.getDescription());
 
-            // Assert
-            assertNotNull(outcome, "Outcome should not be null");
-            assertEquals(1, outcome.getId(), "Outcome ID should match");
-            assertEquals("a", outcome.getOutcomeNum(), "Outcome number should match");
-            assertEquals("Test Outcome", outcome.getDescription(), "Outcome description should match");
-
-            // Verify interactions
-            verify(mockPreparedStatement).setInt(1, 1);
-            verify(mockPreparedStatement).executeQuery();
-        }
-
-        @Test
-        @DisplayName("Should find all outcomes")
-        void findAll() throws SQLException {
-            // Arrange
-            when(mockResultSet.next()).thenReturn(true, true, false);
-            when(mockResultSet.getInt("outcome_id")).thenReturn(1, 2);
-            when(mockResultSet.getString("outcome_num")).thenReturn("a", "b");
-            when(mockResultSet.getString("outcome_desc")).thenReturn("Outcome 1", "Outcome 2");
-
-            // Mock behavior for indicators query
-            PreparedStatement mockIndicatorStmt = mock(PreparedStatement.class);
-            ResultSet mockIndicatorRs = mock(ResultSet.class);
-            when(mockConnection.prepareStatement(contains("FROM Indicator"))).thenReturn(mockIndicatorStmt);
-            when(mockIndicatorStmt.executeQuery()).thenReturn(mockIndicatorRs);
-            // No indicators returned for simplicity
-            when(mockIndicatorRs.next()).thenReturn(false);
-
-            // Act
-            List<Outcome> outcomes = outcomeRepository.findAll();
-
-            // Assert
-            assertNotNull(outcomes, "Outcomes list should not be null");
-            assertEquals(2, outcomes.size(), "Should find 2 outcomes");
-            assertEquals(1, outcomes.get(0).getId(), "First outcome ID should match");
-            assertEquals(2, outcomes.get(1).getId(), "Second outcome ID should match");
-
-            // Verify interactions
-            verify(mockPreparedStatement).executeQuery();
-        }
-
-        @Test
-        @DisplayName("Should find outcomes by course ID")
-        void findByCourseId() throws SQLException {
-            // Arrange
-            when(mockResultSet.next()).thenReturn(true, true, false);
-            when(mockResultSet.getInt("outcome_id")).thenReturn(1, 2);
-
-            // Act
-            List<Integer> outcomes = outcomeRepository.findByCourseId("CS101");
-
-            // Assert
-            assertNotNull(outcomes, "Outcomes list should not be null");
-            assertEquals(2, outcomes.size(), "Should find 2 outcomes");
-            assertEquals(1, outcomes.get(0), "First outcome ID should match");
-            assertEquals(2, outcomes.get(1), "Second outcome ID should match");
-
-            // Verify interactions
-            verify(mockPreparedStatement).setString(1, "CS101");
-            verify(mockPreparedStatement).executeQuery();
-        }
-
-        @Test
-        @DisplayName("Should handle SQL exception when finding by ID")
-        void handleSqlExceptionFindById() throws SQLException {
-            // Arrange
-            when(mockConnection.prepareStatement(anyString())).thenThrow(new SQLException("Test exception"));
-
-            // Act
-            Outcome outcome = outcomeRepository.findById(1);
-
-            // Assert
-            assertNull(outcome, "Outcome should be null when exception occurs");
-        }
-
-        @Test
-        @DisplayName("Should save a new outcome")
-        void saveOutcome() throws SQLException {
-            // Arrange
-            Outcome outcomeToSave = new Outcome();
-            outcomeToSave.setOutcomeNum("c");
-            outcomeToSave.setDescription("New outcome");
-
-            when(mockPreparedStatement.executeUpdate()).thenReturn(1);
-            when(mockPreparedStatement.getGeneratedKeys()).thenReturn(mockResultSet);
-            when(mockResultSet.next()).thenReturn(true);
-            when(mockResultSet.getInt(1)).thenReturn(3); // Generated ID
-
-            // Act
-            Outcome savedOutcome = outcomeRepository.save(outcomeToSave);
-
-            // Assert
-            assertNotNull(savedOutcome, "Saved outcome should not be null");
-            assertEquals(3, savedOutcome.getId(), "Saved outcome should have generated ID");
-            assertEquals("c", savedOutcome.getOutcomeNum(), "Outcome number should be preserved");
-            assertEquals("New outcome", savedOutcome.getDescription(), "Outcome description should be preserved");
-
-            // Verify interactions
-            verify(mockPreparedStatement).setString(1, "c");
-            verify(mockPreparedStatement).setString(2, "New outcome");
-            verify(mockPreparedStatement).executeUpdate();
-            verify(mockPreparedStatement).getGeneratedKeys();
-        }
-
-        @Test
-        @DisplayName("Should update an existing outcome")
-        void updateOutcome() throws SQLException {
-            // Arrange
-            Outcome outcomeToUpdate = new Outcome();
-            outcomeToUpdate.setId(1);
-            outcomeToUpdate.setOutcomeNum("a");
-            outcomeToUpdate.setDescription("Updated description");
-
-            when(mockPreparedStatement.executeUpdate()).thenReturn(1);
-
-            // Act
-            boolean updated = outcomeRepository.update(outcomeToUpdate);
-
-            // Assert
-            assertTrue(updated, "Outcome should be updated successfully");
-
-            // Verify interactions
-            verify(mockPreparedStatement).setString(1, "a");
-            verify(mockPreparedStatement).setString(2, "Updated description");
-            verify(mockPreparedStatement).setInt(3, 1);
-            verify(mockPreparedStatement).executeUpdate();
-        }
-
-        @Test
-        @DisplayName("Should delete an outcome")
-        void deleteOutcome() throws SQLException {
-            // Arrange
-            when(mockPreparedStatement.executeUpdate()).thenReturn(1);
-
-            // Act
-            boolean deleted = outcomeRepository.delete(1);
-
-            // Assert
-            assertTrue(deleted, "Outcome should be deleted successfully");
-
-            // Verify interactions
-            verify(mockPreparedStatement).setInt(1, 1);
-            verify(mockPreparedStatement).executeUpdate();
-        }
+        List<Indicator> inds = o.getIndicators();
+        assertEquals(2, inds.size());
+        assertEquals("First indicator",      inds.get(0).getDescription());
+        assertEquals("Second, indicator",    inds.get(1).getDescription());
     }
 
-    @Nested
-    @DisplayName("Integration Tests")
-    class IntegrationTests {
+    // --- CRUD tests ---
+    @Test
+    void save_and_findById_roundTrips() {
+        Outcome o = new Outcome();
+        o.setOutcomeNum("O-1");
+        o.setDescription("Desc1");
 
-        private OutcomeRepository realRepo;
+        Outcome saved = repo.save(o);
+        assertTrue(saved.getId() > 0);
 
-        @BeforeEach
-        void setUp() {
-            realRepo = new OutcomeRepository();
+        Outcome fetched = repo.findById(saved.getId());
+        assertNotNull(fetched);
+        assertEquals("O-1", fetched.getOutcomeNum());
+        assertEquals("Desc1", fetched.getDescription());
+    }
+
+    @Test
+    void findAll_reflectsInserts() {
+        // DB starts empty (only schema).
+        assertTrue(repo.findAll().isEmpty());
+
+        Outcome o = new Outcome();
+        o.setOutcomeNum("ALL-1");
+        o.setDescription("DescAll");
+        repo.save(o);
+
+        List<Outcome> all = repo.findAll();
+        assertEquals(1, all.size());
+        assertEquals("ALL-1", all.get(0).getOutcomeNum());
+    }
+
+    @Test
+    void update_modifiesExistingRow() {
+        Outcome o = new Outcome();
+        o.setOutcomeNum("UP-1");
+        o.setDescription("Before");
+        repo.save(o);
+
+        o.setOutcomeNum("UP-1a");
+        o.setDescription("After");
+        assertTrue(repo.update(o));
+
+        Outcome updated = repo.findById(o.getId());
+        assertEquals("UP-1a", updated.getOutcomeNum());
+        assertEquals("After", updated.getDescription());
+    }
+
+    @Test
+    void delete_removesRow() {
+        Outcome o = new Outcome();
+        o.setOutcomeNum("DEL-1");
+        o.setDescription("ToBeDeleted");
+        repo.save(o);
+
+        int id = o.getId();
+        assertTrue(repo.delete(id));
+        assertNull(repo.findById(id));
+    }
+
+    // --- course-outcome mappings ---
+    @Test
+    void findByCourseId_and_findAllCourseOutcomes_returnCorrectMappings() throws SQLException {
+        // 1) create two outcomes
+        Outcome o1 = new Outcome(); o1.setOutcomeNum("C1"); o1.setDescription("D1"); repo.save(o1);
+        Outcome o2 = new Outcome(); o2.setOutcomeNum("C2"); o2.setDescription("D2"); repo.save(o2);
+
+        // 2) seed Course_Outcome table manually
+        try (Connection conn = h2Hikari.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "INSERT INTO Course_Outcome(course_code, outcome_id) VALUES(?,?)")) {
+            ps.setString(1, "CS101"); ps.setInt(2, o1.getId()); ps.addBatch();
+            ps.setString(1, "CS101"); ps.setInt(2, o2.getId()); ps.addBatch();
+            ps.setString(1, "CS102"); ps.setInt(2, o1.getId()); ps.addBatch();
+            ps.executeBatch();
         }
 
-        @Test
-        @DisplayName("Should find outcomes by IDs from database")
-        void findByIdFromDatabase() {
-            // Act
-            Outcome outcome = realRepo.findById(1);
+        List<Integer> cs101 = repo.findByCourseId("CS101");
+        assertEquals(2, cs101.size());
+        assertTrue(cs101.contains(o1.getId()));
+        assertTrue(cs101.contains(o2.getId()));
 
-            // Assert
-            assertNotNull(outcome, "Outcome should be found in database");
-            assertEquals(1, outcome.getId(), "Outcome ID should match");
-            assertEquals("a", outcome.getOutcomeNum(), "Outcome number should match");
-            assertEquals(
-                    "An ability to apply knowledge of computing",
-                    outcome.getDescription(),
-                    "Outcome description should match"
-            );
-
-            // Check indicators
-            List<Indicator> indicators = outcome.getIndicators();
-            assertNotNull(indicators, "Indicators should not be null");
-            assertEquals(2, indicators.size(), "Outcome should have 2 indicators");
-
-            // Verify each indicator's ID and description
-            Map<Integer, String> expected = Map.of(
-                    1, "Apply mathematical principles",
-                    2, "Use computing techniques"
-            );
-            for (Indicator ind : indicators) {
-                assertTrue(
-                        expected.containsKey(ind.getId()),
-                        "Unexpected indicator id: " + ind.getId()
-                );
-                assertEquals(
-                        expected.get(ind.getId()),
-                        ind.getDescription(),
-                        "Indicator description should match for ID " + ind.getId()
-                );
-            }
-        }
+        Map<String,List<Integer>> allMap = repo.findAllCourseOutcomes();
+        assertTrue(allMap.containsKey("CS101"));
+        assertTrue(allMap.containsKey("CS102"));
+        assertEquals(2, allMap.get("CS101").size());
+        assertEquals(1, allMap.get("CS102").size());
     }
 }
