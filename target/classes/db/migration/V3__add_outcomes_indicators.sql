@@ -1,3 +1,9 @@
+-- At beginning of V3
+INSERT INTO Migration_Comment (comment_text) VALUES ('Starting V3 migration');
+
+-- Your V3 migrations here
+
+-- At end of V3
 -- Migration to add outcomes and indicators from CRITERION 4-ex.pdf
 
 -- First, clear existing data to avoid conflicts
@@ -63,6 +69,12 @@ INSERT INTO Indicator (outcome_id, indicator_num, indicator_desc) VALUES
 (6, 5, 'Student can use appropriate implementation techniques and practices to meet security requirements and/or mitigate discovered vulnerabilities');
 
 INSERT INTO Course (course_code, course_name) VALUES
+('CS202', 'Object-Oriented Programming'),
+('CS210', 'Discrete Mathematics'),
+('CS220', 'Software Engineering'),
+('CS230', 'Web Development'),
+('CS250', 'Computer Organization and Architecture'),
+('CS320', 'Software Testing and Quality Assurance'),
 ('CS201', 'Data Structures and Algorithms'),
 ('CS330', 'Computer Security'),
 ('CS335', 'Computer Networks'),
@@ -77,13 +89,11 @@ INSERT INTO Course (course_code, course_name) VALUES
 -- Add course-outcome associations from Table 4-2
 -- CS101 has outcomes 1 and 6
 INSERT INTO Course_Outcome (course_code, outcome_id) VALUES
-('CS101', 1),
 ('CS101', 6);
 
 -- CS201 has outcomes 1, 2, 3, and 6
 INSERT INTO Course_Outcome (course_code, outcome_id) VALUES
 ('CS201', 1),
-('CS201', 2),
 ('CS201', 6);
 
 -- CS320 has outcomes 1, 2, 3, 4, 5, and 6
@@ -142,3 +152,5 @@ INSERT INTO Course_Outcome (course_code, outcome_id) VALUES
 -- Record this migration
 INSERT INTO Migration_Comment (comment_text)
 VALUES ('Added outcomes and indicators from CRITERION 4-ex.pdf');
+INSERT INTO Migration_Comment (comment_text) VALUES ('V3 migration completed successfully');
+

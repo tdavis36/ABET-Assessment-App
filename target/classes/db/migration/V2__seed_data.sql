@@ -1,228 +1,86 @@
--- ===================================
--- Department
--- ===================================
-INSERT INTO Department (dept_name) VALUES
-                                       ('Computer Science'),
-                                       ('Mathematics'),
-                                       ('Engineering');
+-- db/migration/V3__add_outcomes_indicators.sql
 
--- ===================================
--- Permission
--- ===================================
-INSERT INTO Permission (permission_desc) VALUES
-                                             ('Manage Everything'),
-                                             ('Manage Courses'),
-                                             ('Manage Users'),
-                                             ('View Only');
-
--- ===================================
--- Role
--- ===================================
--- Corrected permission_id references to match Permission table
-INSERT INTO Role (role_name, permission_id) VALUES
-                                                ('Admin', 1),       -- "Manage Everything"
-                                                ('Professor', 2),   -- "Manage Courses"
-                                                ('Viewer', 4);      -- "View Only"
-
--- ===================================
--- User
--- ===================================
--- is_active = 1 means active, 0 means inactive
-INSERT INTO User (first_name, last_name, email, password_hash, role_id, dept_id, is_active)
-VALUES
-    ('Alice', 'Admin', 'alice.admin@example.edu', 'hashed_pw_admin', 1, 1, 1),
-    ('Bob', 'Prof', 'bob.prof@example.edu', 'hashed_pw_prof', 2, 1, 1),
-    ('Charlie', 'Viewer', 'charlie@example.edu', 'hashed_pw_viewer', 3, 2, 1);
-
--- ===================================
--- Course
--- ===================================
-INSERT INTO Course (course_code, course_name, course_desc, dept_id, credits, semester_offered)
-VALUES
-    ('CS101', 'Intro to Computer Science', 'Basics of CS', 1, 3, 'Fall'),
-    ('CS102', 'Data Structures', 'Intermediate CS topics', 1, 4, 'Spring'),
-    ('MATH201', 'Calculus I', 'Fundamentals of Calculus', 2, 4, 'Fall');
-
--- ===================================
--- Outcome
--- ===================================
-INSERT INTO Outcome (outcome_num, outcome_desc)
-VALUES
-    ('1', 'Demonstrate problem-solving ability'),
-    ('2', 'Apply mathematical principles effectively');
-
--- ===================================
--- Course_Outcome
--- ===================================
-INSERT INTO Course_Outcome (course_code, outcome_id)
-VALUES
-    ('CS101', 1),
-    ('CS102', 1);
-
--- ===================================
--- Indicator
--- ===================================
-INSERT INTO Indicator (outcome_id, indicator_num, indicator_desc)
-VALUES
-    (1, '1.1', 'Identify appropriate data structures'),
-    (1, '1.2', 'Implement algorithms efficiently'),
-    (2, '2.1', 'Apply differentiation rules'),
-    (2, '2.2', 'Use integrals in problem solving');
-
--- ===================================
--- ExpectationType
--- ===================================
-INSERT INTO ExpectationType (type_name)
-VALUES
-    ('High'),
-    ('Moderate'),
-    ('Low');
-
--- ===================================
--- Expectation
--- ===================================
-INSERT INTO Expectation (indicator_id, expectation_type_id, expectation_desc)
-VALUES
-    (1, 1, 'Students will choose the correct data structure for a given problem'),
-    (2, 2, 'Students implement the algorithm with moderate efficiency'),
-    (3, 1, 'Students apply differentiation accurately'),
-    (4, 1, 'Students apply integrals at a high level');
-
--- ===================================
--- StudentExpectation
--- ===================================
-INSERT INTO StudentExpectation (course_code, start_year, end_year, expectation_type_id, student_num)
-VALUES
-    ('CS101', 2023, 2024, 1, 30),
-    ('CS102', 2023, 2024, 2, 25),
-    ('MATH201', 2023, 2024, 1, 40);
-
--- ===================================
--- TargetGoal
--- ===================================
-INSERT INTO TargetGoal (goal_desc, outcome_id, goal_value)
-VALUES
-    ('CS101 Mastery Goal', 1, 80.00),
-    ('MATH201 Mastery Goal', 2, 75.00);
-
--- ===================================
--- MethodType
--- ===================================
-INSERT INTO MethodType (method_type)
-VALUES
-    ('Exam'),
-    ('Assignment'),
-    ('Report'),
-    ('Final');
-
--- ===================================
--- AssessmentMethod
--- ===================================
--- Create Assessment Methods with correct type_id references
-INSERT INTO AssessmentMethod (type_id)
-VALUES
-    (1),   -- Exam
-    (2),   -- Assignment
-    (3),   -- Report
-    (4);   -- Final (adding this since FinalDetail references it)
-
--- ===================================
--- ExamDetail
--- ===================================
-INSERT INTO ExamDetail (method_id, exam_num, question_num, sub_question, exam_format)
-VALUES
-    (1, 1, 10, 'a', 'MultipleChoice'),
-    (1, 1, 10, 'b', 'ShortAnswer');
-
--- ===================================
--- AssignmentDetail
--- ===================================
-INSERT INTO AssignmentDetail (method_id, assignment_num, milestone, topic)
-VALUES
-    (2, 1, 'DataStructureReview', 'Implement a linked list'),
-    (2, 2, 'ProjectPlanning', 'Plan out final data structures');
-
--- ===================================
--- ReportDetail
--- ===================================
-INSERT INTO ReportDetail (method_id, report_type)
-VALUES
-    (3, 'Lab Report'),
-    (3, 'Term Paper');
-
--- ===================================
--- FinalDetail
--- ===================================
-INSERT INTO FinalDetail (method_id, final_type)
-VALUES
-    (4, 'Final Exam'),
-    (4, 'Final Report');
-
--- ===================================
--- ImprovementAction
--- ===================================
-INSERT INTO ImprovementAction (action_desc, outcome_id, start_year)
-VALUES
-    ('Revise data-structure assignment to improve understanding', 1, 2023),
-    ('Provide extra calculus workshops', 2, 2023);
-
--- ===================================
--- FCAR
--- ===================================
-INSERT INTO FCAR (
-    course_code,
-    semester,
-    year,
-    instructor_id,
-    date_filled,
-    outcome_id,
-    indicator_id,
-    goal_id,
-    method_id,
-    method_desc,
-    stud_expect_id,
-    summary_desc,
-    action_id
-)
-VALUES
-    ('CS101', 'Fall', 2023, 2, NOW(), 1, 1, 1, 1, 'Exam-based assessment', 1, 'Overall good performance', 1);
-
--- Set the status for this FCAR
-INSERT INTO FCAR_Status (fcar_id, status)
-VALUES
-    (1, 'Draft');
-
--- Add some assessment methods data
-INSERT INTO FCAR_Assessment_Methods (fcar_id, method_key, method_value)
-VALUES
-    (1, 'targetGoal', '70'),
-    (1, 'workUsed', 'Midterm exam questions 3-5'),
-    (1, 'assessmentDescription', 'Students were asked to select appropriate data structures for different scenarios');
-
--- Add some student outcomes data
-INSERT INTO FCAR_Student_Outcomes (fcar_id, outcome_key, achievement_level)
-VALUES
-    (1, 'outcome1', 4);
-
--- Add some improvement actions
-INSERT INTO FCAR_Improvement_Actions (fcar_id, action_key, action_value)
-VALUES
-    (1, 'summary', 'Students generally performed well but struggled with balanced trees'),
-    (1, 'actions', 'Add more examples of balanced tree applications in lectures');
-
--- ===================================
--- ReportSnapshot
--- ===================================
-INSERT INTO ReportSnapshot (
-    report_name,
-    snapshot_date,
-    gen_by_user_id,
-    snapshot_data,
-    notes
-)
-VALUES
-    ('Fall 2023 Assessment Summary', NOW(), 1, 'All FCAR data in JSON or XML', 'Snapshot created by admin');
-
--- Record this migration
+-- At beginning of V3
 INSERT INTO Migration_Comment (comment_text)
-VALUES ('Seed data migration completed successfully');
+VALUES ('Starting V3 migration');
+
+-- 1) Add Outcomes 3–6 (1 & 2 already in from V2)
+INSERT IGNORE INTO Outcome (outcome_id, outcome_num, outcome_desc) VALUES
+  (3, '3', 'Communicate effectively in a variety of professional contexts.'),
+  (4, '4', 'Recognize professional responsibilities and make informed judgments in computing practice based on legal and ethical principles.'),
+  (5, '5', 'Function effectively as a member or leader of a team engaged in activities appropriate to the program''s discipline.'),
+  (6, '6', 'Apply computer science theory and software development fundamentals to produce computing-based solutions. [CS]');
+
+-- 2) Add the remaining Indicators for outcome 1
+--    (V2 covered only 1.1–1.2; here we add 1.3–1.6)
+INSERT IGNORE INTO Indicator (outcome_id, indicator_num, indicator_desc) VALUES
+  (1, 3, 'Student can define a solution to a computational problem'),
+  (1, 4, 'Student can effectively collect and document system requirements'),
+  (1, 5, 'Student can effectively analyze and model a problem domain'),
+  (1, 6, 'Student can identify the relative efficiency of different algorithms using asymptotic notation');
+
+-- 3) Add the remaining Indicators for outcome 2
+--    (V2 covered only 2.1–2.2; here we add 2.3–2.7)
+INSERT IGNORE INTO Indicator (outcome_id, indicator_num, indicator_desc) VALUES
+  (2, 3, 'Student can effectively incorporate requirements outside the problem domain (e.g., a user interface) into the design model'),
+  (2, 4, 'Student can plan and implement a testing strategy to ensure that system meets its quality goals'),
+  (2, 5, 'Student can collect and analyze runtime benchmark data to characterize the efficiency of an algorithm or data structure'),
+  (2, 6, 'Student can specify appropriate security concerns and requirements for a component or system'),
+  (2, 7, 'Student can evaluate a component or system to identify security characteristics and identify vulnerabilities');
+
+-- 4) Indicators for outcomes 3–6 (all new)
+INSERT IGNORE INTO Indicator (outcome_id, indicator_num, indicator_desc) VALUES
+  -- outcome 3
+  (3, 1, 'Student can create and present a clear and well-organized technical presentation'),
+  (3, 2, 'Student can effectively incorporate technical content into a presentation using appropriate visual, textual, and spoken content'),
+  (3, 3, 'Student can write a clear and well-organized technical report'),
+  -- outcome 4
+  (4, 1, 'Student can analyze and explain the ethical issues surrounding a particular computing topic (for example, peer-to-peer file sharing)'),
+  (4, 2, 'Student demonstrates recognition of his or her professional responsibilities as a member of the computing profession'),
+  -- outcome 5
+  (5, 1, 'Student demonstrates an ability to participate in and implement processes for team communication and coordination'),
+  (5, 2, 'Student demonstrates an ability to work closely with other students to solve technical problems'),
+  -- outcome 6
+  (6, 1, 'Student is proficient in a current programming language'),
+  (6, 2, 'Student can create user interfaces using current platforms'),
+  (6, 3, 'Student can write programs that use concurrency'),
+  (6, 4, 'Student can implement automated tests to satisfy the goals of a testing strategy'),
+  (6, 5, 'Student can use appropriate implementation techniques and practices to meet security requirements and/or mitigate discovered vulnerabilities');
+
+-- 5) Add new Courses (omit CS101, CS102, MATH201 — they’re already present)
+INSERT IGNORE INTO Course (course_code, course_name) VALUES
+  ('CS202', 'Object-Oriented Programming'),
+  ('CS210', 'Discrete Mathematics'),
+  ('CS220', 'Software Engineering'),
+  ('CS230', 'Web Development'),
+  ('CS250', 'Computer Organization and Architecture'),
+  ('CS320', 'Software Testing and Quality Assurance'),
+  ('CS330', 'Computer Security'),
+  ('CS335', 'Computer Networks'),
+  ('CS340', 'Operating Systems'),
+  ('CS350', 'Theory of Computation'),
+  ('CS360', 'Database Systems'),
+  ('CS420', 'Computer Architecture'),
+  ('CS456', 'Ethics in Computing'),
+  ('CS481', 'Senior Design Project I'),
+  ('CS400', 'Senior Design Project II');
+
+-- 6) Add the rest of the Course→Outcome links
+--    (V2 had CS101→1 and CS102→1; here we add everything else)
+INSERT IGNORE INTO Course_Outcome (course_code, outcome_id) VALUES
+  ('CS101', 6),                -- add the pairing CS101→6
+  ('CS201', 1), ('CS201', 6),  -- assuming CS201 was seeded in V2
+  ('CS320', 1), ('CS320', 2), ('CS320', 3), ('CS320', 5), ('CS320', 6),
+  ('CS330', 2), ('CS330', 4),
+  ('CS335', 2), ('CS335', 4), ('CS335', 6),
+  ('CS340', 6),
+  ('CS350', 1),
+  ('CS360', 1), ('CS360', 2),
+  ('CS420', 6),
+  ('CS456', 4),
+  ('CS481', 1), ('CS481', 2), ('CS481', 3), ('CS481', 5), ('CS481', 6),
+  ('CS400', 1), ('CS400', 2), ('CS400', 3), ('CS400', 5), ('CS400', 6);
+
+-- At end of V3
+INSERT INTO Migration_Comment (comment_text)
+VALUES ('V3 migration completed successfully');

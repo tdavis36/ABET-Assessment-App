@@ -1,5 +1,7 @@
 package com.ABETAppTeam.model;
 
+import java.util.List;
+
 /**
  * Model class for Student Learning Outcomes
  */
@@ -84,5 +86,8 @@ public class Outcome {
     @Override
     public String toString() {
         return "Outcome [id=" + outcomeId + ", outcomeNum=" + outcomeNum + ", description=" + description + "]";
+    }
+
+    public void setIndicators(List<Indicator> indicators) {
     }
 }

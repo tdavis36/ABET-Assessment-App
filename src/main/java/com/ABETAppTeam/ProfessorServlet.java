@@ -190,28 +190,43 @@ public class ProfessorServlet extends BaseServlet {
         HttpSession session = request.getSession();
         String action = request.getParameter("action");
 
-        // Add a security check to verify the user is a professor
+        // --- Logout handling ---
+        if ("logout".equals(action)) {
+            // Invalidate session and redirect to login
+            session.invalidate();
+            response.sendRedirect(request.getContextPath() + "/login.jsp");
+            return;
+        }
+
+        // From here on user must be logged in as professor
         User user = (User) session.getAttribute("user");
         if (verifyAccess(user, response)) {
+            // verifyAccess should send error/redirect if not professor
             return;
         }
 
         try {
-            if ("saveFCAR".equals(action) || "submitFCAR".equals(action)) {
-                handleSaveOrSubmitFCAR(request, response, session, user, action);
-            } else if ("updateFCAR".equals(action)) {
-                handleUpdateFCAR(request, response, session, user);
-            } else if ("filterBySemester".equals(action)) {
-                handleFilterBySemester(request, response);
-            } else {
-                // Default: redirect to professor dashboard
-                response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
+            switch (action) {
+                case "saveFCAR":
+                case "submitFCAR":
+                    handleSaveOrSubmitFCAR(request, response, session, user, action);
+                    break;
+                case "updateFCAR":
+                    handleUpdateFCAR(request, response, session, user);
+                    break;
+                case "filterBySemester":
+                    handleFilterBySemester(request, response);
+                    break;
+                default:
+                    // Default: redirect to professor dashboard
+                    response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
             }
         } catch (Exception e) {
             // Handle errors
             handleError(response, e);
         }
     }
+
 
     /**
      * Handles creating a new FCAR
@@ -300,7 +315,7 @@ public class ProfessorServlet extends BaseServlet {
         try {
             // Extract FCAR ID if it exists (for editing an existing FCAR)
             String fcarIdStr = request.getParameter("fcarId");
-            FCAR fcar;
+            FCAR fcar = null;
 
             if (fcarIdStr != null && !fcarIdStr.isEmpty()) {
                 // Editing an existing FCAR
@@ -309,8 +324,8 @@ public class ProfessorServlet extends BaseServlet {
                 fcar = fcarController.getFCAR(fcarId);
 
                 // Verify this professor owns this FCAR
-                if (fcar != null && fcar.getInstructorId() != currentUser.getUserId()
-                        && !(currentUser instanceof Admin)) {
+                int currentProfessorId = currentUser.getUserId();
+                if (fcar != null && fcar.getInstructorId() != currentProfessorId) {
                     request.setAttribute("error", "You can only update your own FCARs");
                     request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
                     return;
