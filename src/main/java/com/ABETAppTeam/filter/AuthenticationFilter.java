@@ -51,6 +51,22 @@ public class AuthenticationFilter implements Filter {
                 return;
             }
 
+            if (requestURI.contains("/ReportServlet")) {
+                // For report generation, we should allow both admins and professors,
+                // but possibly with different levels of access
+                String action = httpRequest.getParameter("action");
+
+                // Actions that only admins can perform
+                boolean adminOnlyAction = action != null &&
+                        (action.equals("deleteReport") ||
+                                action.equals("modifyReportSettings"));
+
+                if (adminOnlyAction && !(user instanceof Admin)) {
+                    httpResponse.sendRedirect(httpRequest.getContextPath() + "/index");
+                    return;
+                }
+            }
+
             // Allow the request to proceed
             chain.doFilter(request, response);
         } else {

@@ -18,10 +18,11 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
 </head>
 <body>
+<jsp:include page="/WEB-INF/navbar.jsp" />
 <div class="dashboard" id="adminDashboard">
     <div class="header-container">
         <h1>Admin Dashboard</h1>
-        <a href="${pageContext.request.contextPath}/AdminServlet?action=logout" class="btn">Logout</a>    </div>
+    </div>
 
     <!-- Status Key -->
     <div class="status-key">
@@ -446,11 +447,11 @@
             const outcomeContainer = document.createElement('div');
             outcomeContainer.className = 'outcome-container';
 
-            // Create outcome checkbox container
+            // Create an outcome checkbox container
             const outcomeCheckboxContainer = document.createElement('div');
             outcomeCheckboxContainer.className = 'outcome-checkbox-container';
 
-            // Create outcome checkbox
+            // Create an outcome checkbox
             const outcomeCheckbox = document.createElement('input');
             outcomeCheckbox.type = 'checkbox';
             outcomeCheckbox.id = `${selectedCourse}_outcome_${outcomeId}`;

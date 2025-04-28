@@ -1,10 +1,7 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.ABETAppTeam.controller.CourseController;
 import com.ABETAppTeam.controller.DepartmentController;
@@ -169,6 +166,8 @@ public class AdminServlet extends BaseServlet {
                 handleRejectFCAR(request, response, user, fcarController);
             } else if ("deleteFCAR".equals(action)) {
                 handleDeleteFCAR(request, response, user, fcarController);
+            } else if ("createUser".equals(action)) {
+                handleCreateUser(request, response);
             } else {
                 // If we get here, forward back to the admin page
                 logger.debug("No specific action matched, forwarding to doGet");
@@ -237,75 +236,140 @@ public class AdminServlet extends BaseServlet {
     private void handleCreateFCAR(HttpServletRequest request, HttpServletResponse response, User user)
             throws ServletException, IOException {
         // Extract FCAR data from request
-        String courseCode = request.getParameter("courseCode");
+        String courseId = request.getParameter("courseId");
         String professorIdStr = request.getParameter("professorId");
         String semester = request.getParameter("semester");
         String yearStr = request.getParameter("year");
+        String selectedOutcomes = request.getParameter("selectedOutcomes");
 
         // Validate inputs
-        if (courseCode == null || courseCode.isEmpty() ||
+        if (courseId == null || courseId.isEmpty() ||
                 professorIdStr == null || professorIdStr.isEmpty() ||
                 semester == null || semester.isEmpty() ||
                 yearStr == null || yearStr.isEmpty()) {
 
             logger.warn("Missing required parameters for FCAR creation");
             request.setAttribute("error", "All fields are required to create an FCAR");
-            request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
+
+            // Re-prepare the form data to allow the user to try again
+            prepareAdminDashboardData(request);
+            request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
             return;
         }
 
         try {
-            // Keep the professor ID as an integer throughout
+            // Parse numeric values
             int professorId = Integer.parseInt(professorIdStr);
             int year = Integer.parseInt(yearStr);
 
             logger.info("Admin creating new FCAR: course={}, professor={}, semester={}, year={}",
-                    courseCode, professorId, semester, year);
+                    courseId, professorId, semester, year);
 
-            // Create a new FCAR using the controller with the correctly typed parameters
-            // Use the overloaded method that takes an integer directly
+            // Create a new FCAR using the controller
             FCARController fcarController = getFCARController();
-            FCAR fcar = fcarController.createFCAR(courseCode, professorId, semester, year);
+            FCAR fcar = fcarController.createFCAR(courseId, professorId, semester, year);
 
             if (fcar != null) {
                 logger.info("FCAR created successfully: ID {}", fcar.getFcarId());
-                request.setAttribute("message", "FCAR created successfully with ID: " + fcar.getFcarId());
 
-                // If outcome and indicator were specified, add them
-                String outcomeIdStr = request.getParameter("outcomeId");
-                String indicatorIdStr = request.getParameter("indicatorId");
-                if (outcomeIdStr != null && !outcomeIdStr.isEmpty() &&
-                        indicatorIdStr != null && !indicatorIdStr.isEmpty()) {
-                    try {
-                        int outcomeId = Integer.parseInt(outcomeIdStr);
-                        int indicatorId = Integer.parseInt(indicatorIdStr);
+                // Store selected outcomes and method details if provided
+                if (selectedOutcomes != null && !selectedOutcomes.isEmpty()) {
+                    // Add selected outcomes to assessment methods
+                    Map<String, String> methods = new HashMap<>();
+                    methods.put("selectedOutcomes", selectedOutcomes);
 
-                        logger.debug("Setting outcome ID {} and indicator ID {} for FCAR ID {}",
-                                outcomeId, indicatorId, fcar.getFcarId());
-
-                        fcar.setOutcomeId(outcomeId);
-                        fcar.setIndicatorId(indicatorId);
-                        fcarController.updateFCAR(fcar);
-                    } catch (NumberFormatException e) {
-                        // Log error but continue - outcome/indicator is optional
-                        logger.warn("Invalid outcome or indicator format: {}", e.getMessage());
+                    // Add target goal if provided
+                    String targetGoal = request.getParameter("targetGoal");
+                    if (targetGoal != null && !targetGoal.isEmpty()) {
+                        methods.put("targetGoal", targetGoal);
                     }
+
+                    fcar.setAssessmentMethods(methods);
+                    fcarController.updateFCAR(fcar);
                 }
+
+                // Set a success message
+                request.setAttribute("message", "FCAR created successfully with ID: " + fcar.getFcarId());
             } else {
                 logger.error("Failed to create FCAR for course {} and professor {}",
-                        courseCode, professorIdStr);
+                        courseId, professorIdStr);
                 request.setAttribute("error", "Failed to create FCAR");
             }
 
-            // Redirect to admin page with a message
-            logger.debug("Redirecting to AdminServlet with message=FCARCreated");
+            // Redirect to the admin page with a message
             response.sendRedirect(request.getContextPath() + "/AdminServlet?message=FCARCreated");
         } catch (NumberFormatException e) {
             logger.warn("Invalid number format in FCAR creation: {}", e.getMessage());
             request.setAttribute("error", "Invalid professor ID or year format");
-            request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
+
+            // Re-prepare the form data to allow the user to try again
+            prepareAdminDashboardData(request);
+            request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
         }
     }
+
+    /**
+     * Handles creating a new user
+     */
+    private void handleCreateUser(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String firstName = request.getParameter("firstName");
+        String lastName = request.getParameter("lastName");
+        String email = request.getParameter("email");
+        String password = request.getParameter("password");
+        String roleIdStr = request.getParameter("roleId");
+        String deptIdStr = request.getParameter("deptId");
+
+        // Validate inputs
+        if (firstName == null || firstName.isEmpty() ||
+                lastName == null || lastName.isEmpty() ||
+                email == null || email.isEmpty() ||
+                password == null || password.isEmpty() ||
+                roleIdStr == null || roleIdStr.isEmpty() ||
+                deptIdStr == null || deptIdStr.isEmpty()) {
+
+            logger.warn("Missing required parameters for user creation");
+            request.setAttribute("error", "All fields are required to create a user");
+            doGet(request, response);
+            return;
+        }
+
+        try {
+            int roleId = Integer.parseInt(roleIdStr);
+            int deptId = Integer.parseInt(deptIdStr);
+
+            logger.info("Creating new user: {} {}, email={}, roleId={}, deptId={}",
+                    firstName, lastName, email, roleId, deptId);
+
+            // Create the user through the controller
+            User newUser = userController.createUser(firstName, lastName, email, password, roleId, deptId);
+
+            if (newUser != null) {
+                logger.info("User created successfully: ID {}", newUser.getUserId());
+                request.setAttribute("message", "User created successfully with ID: " + newUser.getUserId());
+
+                // If this is a professor and courses were specified, assign them
+                String[] selectedCourses = request.getParameterValues("selectedCourses");
+                if (roleId == 2 && selectedCourses != null && selectedCourses.length > 0) {
+                    List<String> courseCodes = Arrays.asList(selectedCourses);
+                    userController.assignCoursesToProfessor(newUser.getUserId(), courseCodes);
+                }
+
+                // Redirect to the admin page with a message
+                response.sendRedirect(request.getContextPath() + "/AdminServlet?message=UserCreated");
+            } else {
+                logger.error("Failed to create user: {} {}", firstName, lastName);
+                request.setAttribute("error", "Failed to create user");
+                doGet(request, response);
+            }
+        } catch (NumberFormatException e) {
+            logger.warn("Invalid number format in user creation: {}", e.getMessage());
+            request.setAttribute("error", "Invalid role ID or department ID format");
+            doGet(request, response);
+        }
+    }
+
 
     /**
      * Handles updating an existing FCAR
@@ -490,29 +554,6 @@ public class AdminServlet extends BaseServlet {
         // Redirect to view FCARs
         logger.debug("Redirecting to AdminServlet?action=viewFCARs with message=FCARDeleted");
         response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARDeleted");
-    }
-
-    /**
-     * Extract the client IP address from the request
-     */
-    private String getClientIpAddress(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        return ip;
     }
 
     /**

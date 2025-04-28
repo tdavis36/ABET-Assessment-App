@@ -25,12 +25,17 @@
         <servlet-class>com.ABETAppTeam.ProfessorServlet</servlet-class>
     </servlet>
 
+    <servlet>
+        <servlet-name>ReportServlet</servlet-name>
+        <servlet-class>com.ABETAppTeam.ReportServlet</servlet-class>
+    </servlet>
+
     <!-- Servlet Mappings -->
     <servlet-mapping>
         <servlet-name>IndexServlet</servlet-name>
         <url-pattern>/index</url-pattern>
     </servlet-mapping>
-    
+
     <servlet-mapping>
         <servlet-name>AdminServlet</servlet-name>
         <url-pattern>/admin</url-pattern>
@@ -41,7 +46,25 @@
         <url-pattern>/professor</url-pattern>
     </servlet-mapping>
 
+    <servlet-mapping>
+        <servlet-name>ReportServlet</servlet-name>
+        <url-pattern>/report</url-pattern>
+    </servlet-mapping>
+
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
+
+    <error-page>
+        <error-code>403</error-code>
+        <location>/WEB-INF/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>404</error-code>
+        <location>/WEB-INF/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/WEB-INF/error.jsp</location>
+    </error-page>
 </web-app>

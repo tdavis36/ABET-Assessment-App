@@ -16,16 +16,13 @@ import com.ABETAppTeam.service.FCARService;
 import com.ABETAppTeam.service.LoggingService;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.*;
 
 /**
  * Base servlet that provides common functionality for FCAR-related servlets.
  */
 public abstract class BaseServlet extends HttpServlet {
-    
+
     // Shared controller instances
     protected FCARController getFCARController() {
         return FCARController.getInstance();
@@ -42,9 +39,11 @@ public abstract class BaseServlet extends HttpServlet {
     protected FCARService getFCARService() {
         return new FCARService();
     }
-    
+
+    protected LoggingService logger = LoggingService.getInstance();
+
     protected LoggingService getLogger() {
-        return LoggingService.getInstance();
+        return logger;
     }
     
     /**
@@ -56,16 +55,79 @@ public abstract class BaseServlet extends HttpServlet {
         response.setDateHeader("Expires", 0);
     }
 
-    protected void handleLogout(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    /**
+     * Handle logout requests
+     * This method can be called from a link with ?action=logout
+     */
+    public void handleLogout(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+
+        String timerId = logger.startTimer("indexServlet.handleLogout");
         HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-            LoggingService.getInstance().info("User logged out");
+
+        try {
+            if (session != null) {
+                // Get user info before invalidating session
+                User user = (User) session.getAttribute("user");
+                String userId = user != null ? String.valueOf(user.getUserId()) : "unknown";
+                String ipAddress = getClientIpAddress(request);
+
+                logger.info("User logout: userId={}, sessionId={}, IP={}",
+                        userId, session.getId(), ipAddress);
+
+                // Log security event
+                logger.logSecurityEvent("LOGOUT", userId, ipAddress,
+                        "User logged out successfully", true);
+
+                session.invalidate();
+                logger.debug("Session invalidated during logout");
+            } else {
+                logger.debug("No active session found during logout attempt");
+            }
+
+            // Set cache control headers using method from BaseServlet
+            setCacheControlHeaders(response);
+
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    cookie.setValue("");
+                    cookie.setPath("/");
+                    cookie.setMaxAge(0);
+                    response.addCookie(cookie);
+                }
+            }
+
+            response.sendRedirect(request.getContextPath() + "/index.jsp?loggedOut=true");
+        } finally {
+            logger.stopTimer(timerId, null);
         }
-        response.sendRedirect(request.getContextPath() + "/index");
     }
-    
+
+    /**
+     * Extract the client IP address from the request
+     * Using method inherited from BaseServlet if available
+     */
+    public String getClientIpAddress(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
+    }
+
     /**
      * Verifies the user has appropriate access privileges.
      * Sends HTTP 403 error if the user doesn't have access.
@@ -82,6 +144,7 @@ public abstract class BaseServlet extends HttpServlet {
         }
         return false;
     }
+
     /**
      * Verifies the user has appropriate access privileges.
      * Sends HTTP 403 error if the user doesn't have access.

@@ -105,14 +105,14 @@ public class UserController {
         logger.info("Creating new user: {} {}, email: {}, roleId: {}, deptId: {}",
                 firstName, lastName, email, roleId, deptId);
 
-        // Create appropriate user type based on role
+        // Create the appropriate user type based on a role
         User user;
         if (roleId == 1) { // Admin
             user = new Admin();
         } else if (roleId == 2) { // Professor
             user = new Professor();
         } else {
-            // Default to basic User type
+            // Default to a basic User type
             user = new User() {};
         }
 
@@ -201,16 +201,15 @@ public class UserController {
      *
      * @param professorId The ID of the professor
      * @param courseCodes List of course codes to assign
-     * @return true if assignment was successful, false otherwise
      */
-    public boolean assignCoursesToProfessor(int professorId, List<String> courseCodes) {
+    public void assignCoursesToProfessor(int professorId, List<String> courseCodes) {
         logger.info("Assigning courses to professor with ID: {}", professorId);
 
         // Get the professor
         User user = userRepository.findById(professorId);
         if (!(user instanceof Professor professor)) {
             logger.warn("User with ID {} is not a professor", professorId);
-            return false;
+            return;
         }
 
         // Clear existing courses
@@ -222,6 +221,6 @@ public class UserController {
         }
 
         // Update the professor
-        return userRepository.update(professor);
+        userRepository.update(professor);
     }
 }

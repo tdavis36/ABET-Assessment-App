@@ -12,6 +12,7 @@
     <script src="${pageContext.request.contextPath}/js/outcome-selector.js"></script>
 </head>
 <body>
+<jsp:include page="/WEB-INF/navbar.jsp" />
 <div class="form-container">
     <h1>Faculty Course Assessment Report (FCAR)</h1>
     <p>Complete the assessment form below for the course.</p>
@@ -407,8 +408,18 @@
         </div>
 
         <div class="button-container">
-            <button type="submit" class="btn-submit" onclick="setAction('submit')">Submit FCAR</button>
-            <button type="button" class="btn-submit btn-save" onclick="saveAndExit()">Save as Draft</button>
+            <c:choose>
+                <c:when test="${sessionScope.userRole == 'admin'}">
+                    <!-- Admin buttons -->
+                    <button type="submit" class="btn-submit" onclick="setAction('submit')">Submit FCAR</button>
+                    <button type="button" class="btn-submit" onclick="setAction('save'); document.getElementById('fcarForm').submit();">Save Changes</button>
+                </c:when>
+                <c:otherwise>
+                    <!-- Professor buttons -->
+                    <button type="submit" class="btn-submit" onclick="setAction('submit')">Submit FCAR</button>
+                    <button type="button" class="btn-submit btn-save" onclick="saveAndExit()">Save as Draft</button>
+                </c:otherwise>
+            </c:choose>
         </div>
     </form>
 </div>
