@@ -58,7 +58,7 @@
                         <div class="fcar-item">
                             <div>
                                 <span class="status ${fn:toLowerCase(fcar.status)}"></span>
-                                <strong>Course:</strong> <c:out value="${fcar.courseId}"/> - 
+                                <strong>Course:</strong> <c:out value="${fcar.courseId}"/> -
                                 <strong>Semester:</strong> <c:out value="${fcar.semester}"/> <c:out value="${fcar.year}"/> -
                                 <strong>Status:</strong> <c:out value="${fcar.status}"/>
                             </div>

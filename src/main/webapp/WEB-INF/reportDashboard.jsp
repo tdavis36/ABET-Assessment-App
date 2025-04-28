@@ -1,250 +1,213 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page import="java.util.Collection" %>
+<%@ page import="com.ABETAppTeam.model.Report" %>
+<%@ page import="com.ABETAppTeam.model.Course" %>
+<%@ page import="com.ABETAppTeam.repository.CourseRepository" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ABET Assessment Reports</title>
+    <title>Assessment Reports</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
-    <!-- Include any needed JavaScript libraries like Chart.js for data visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-<jsp:include page="header.jsp" />
+<jsp:include page="/WEB-INF/navbar.jsp" />
 
-<div class="container">
-    <h1>ABET Assessment Reports</h1>
+<div class="dashboard" id="reportsDashboard">
+    <div class="header-container">
+        <h1>Assessment Reports</h1>
+    </div>
 
-    <!-- Display any error messages -->
-    <c:if test="${not empty error}">
-        <div class="alert alert-danger">${error}</div>
-    </c:if>
+    <!-- Generate Outcome Reports -->
+    <div class="section">
+        <h2>Generate Outcome-Based Reports</h2>
+        <div class="action-buttons">
+            <!-- Academic Year Report -->
+            <form action="${pageContext.request.contextPath}/ReportServlet" method="get" class="form-inline">
+                <input type="hidden" name="action" value="generateOutcomeAcademicYearReport" />
 
-    <!-- Display any success messages -->
-    <c:if test="${not empty message}">
-        <div class="alert alert-success">${message}</div>
-    </c:if>
-
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-header">Generate Reports</div>
-                <div class="card-body">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link" href="#fullReport" data-toggle="tab">Full Report</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#semesterReport" data-toggle="tab">Semester Report</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#courseReport" data-toggle="tab">Course Reports</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#outcomeReport" data-toggle="tab">Outcome Report</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#trendReport" data-toggle="tab">Trend Report</a>
-                        </li>
-                    </ul>
+                <div class="form-group">
+                    <label for="outcomeIdYear">Outcome:</label>
+                    <select id="outcomeIdYear" name="outcomeId" class="form-control" required>
+                        <option value="">Select Outcome</option>
+                        <c:forEach items="${csvOutcomes}" var="outcome">
+                            <option value="${outcome.id}">${outcome.id} - ${outcome.description}</option>
+                        </c:forEach>
+                    </select>
                 </div>
-            </div>
+
+                <div class="form-group">
+                    <label for="indicatorId">Indicator:</label>
+                    <select id="indicatorId" name="indicatorId" class="form-control">
+                        <option value="">All Indicators</option>
+                        <!-- Will be populated by JavaScript -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="courseId">Course:</label>
+                    <select id="courseId" name="courseId" class="form-control">
+                        <option value="">All Courses</option>
+                        <c:forEach items="${dbCourses}" var="course">
+                            <option value="${course.courseId}">${course.courseCode} - ${course.courseName}</option>
+                        </c:forEach>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="yearSelect">Year:</label>
+                    <select id="yearSelect" name="year" class="form-control" required>
+                        <option value="">Select Year</option>
+                        <option value="2020">2020</option>
+                        <option value="2021">2021</option>
+                        <option value="2022">2022</option>
+                        <option value="2023">2023</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn">Generate Academic Year Report</button>
+            </form>
+
+            <!-- Full Cycle Report -->
+            <form action="${pageContext.request.contextPath}/ReportServlet" method="get" class="form-inline">
+                <input type="hidden" name="action" value="generateOutcomeFullCycleReport" />
+
+                <div class="form-group">
+                    <label for="outcomeIdCycle">Outcome:</label>
+                    <select id="outcomeIdCycle" name="outcomeId" class="form-control" required>
+                        <option value="">Select Outcome</option>
+                        <c:forEach items="${csvOutcomes}" var="outcome">
+                            <option value="${outcome.id}">${outcome.id} - ${outcome.description}</option>
+                        </c:forEach>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="indicatorIdCycle">Indicator:</label>
+                    <select id="indicatorIdCycle" name="indicatorId" class="form-control">
+                        <option value="">All Indicators</option>
+                        <!-- Will be populated by JavaScript -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="courseIdCycle">Course:</label>
+                    <select id="courseIdCycle" name="courseId" class="form-control">
+                        <option value="">All Courses</option>
+                        <c:forEach items="${dbCourses}" var="course">
+                            <option value="${course.courseId}">${course.courseCode} - ${course.courseName}</option>
+                        </c:forEach>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Year Range:</label>
+                    <select name="startYear" class="form-control" required>
+                        <option value="2020">2020</option>
+                        <option value="2021">2021</option>
+                        <option value="2022">2022</option>
+                        <option value="2023">2023</option>
+                        <option value="2024">2024</option>
+                    </select>
+                    <span>to</span>
+                    <select name="endYear" class="form-control" required>
+                        <option value="2021">2021</option>
+                        <option value="2022">2022</option>
+                        <option value="2023">2023</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn">Generate Full Cycle Report</button>
+            </form>
         </div>
+    </div>
 
-        <div class="col-md-9">
-            <div class="tab-content">
-                <!-- Full Report Form -->
-                <div class="tab-pane fade" id="fullReport">
-                    <div class="card">
-                        <div class="card-header">Generate Full Report</div>
-                        <div class="card-body">
-                            <form action="${pageContext.request.contextPath}/ReportServlet" method="get">
-                                <input type="hidden" name="action" value="generateFullReport">
-
-                                <div class="form-group">
-                                    <label for="reportTitle">Report Title</label>
-                                    <input type="text" class="form-control" id="reportTitle" name="reportTitle"
-                                           value="Full ABET Assessment Report">
-                                </div>
-
-                                <button type="submit" class="btn btn-primary">Generate Report</button>
-                            </form>
+    <!-- Display Generated Report Listings -->
+    <div class="section">
+        <h2>Available Reports</h2>
+        <div class="report-list">
+            <c:choose>
+                <c:when test="${not empty allReports}">
+                    <c:forEach var="report" items="${allReports}">
+                        <div class="report-item">
+                            <span class="report-title">${report.reportTitle}</span>
+                            <div class="report-actions">
+                                <form action="${pageContext.request.contextPath}/ReportServlet" method="get" style="display:inline;">
+                                    <input type="hidden" name="action" value="downloadReport" />
+                                    <input type="hidden" name="id" value="${report.reportId}" />
+                                    <button type="submit" class="btn">Download (.xlsx)</button>
+                                </form>
+                                <form action="${pageContext.request.contextPath}/ReportServlet" method="get" style="display:inline;">
+                                    <input type="hidden" name="action" value="viewReport" />
+                                    <input type="hidden" name="id" value="${report.reportId}" />
+                                    <button type="submit" class="btn">View</button>
+                                </form>
+                            </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Semester Report Form -->
-                <div class="tab-pane fade" id="semesterReport">
-                    <div class="card">
-                        <div class="card-header">Generate Semester Report</div>
-                        <div class="card-body">
-                            <form action="${pageContext.request.contextPath}/ReportServlet" method="get">
-                                <input type="hidden" name="action" value="generateSemesterReport">
-
-                                <div class="form-group">
-                                    <label for="reportTitleSemester">Report Title</label>
-                                    <input type="text" class="form-control" id="reportTitleSemester" name="reportTitle"
-                                           value="Semester ABET Assessment Report">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="semester">Semester</label>
-                                    <select class="form-control" id="semester" name="semester" required>
-                                        <option value="">Select a semester</option>
-                                        <c:forEach items="${semesters}" var="sem">
-                                            <option value="${sem}">${sem}</option>
-                                        </c:forEach>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="year">Year</label>
-                                    <select class="form-control" id="year" name="year" required>
-                                        <option value="">Select a year</option>
-                                        <c:forEach items="${years}" var="yr">
-                                            <option value="${yr}">${yr}</option>
-                                        </c:forEach>
-                                    </select>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary">Generate Report</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Course Reports Form -->
-                <div class="tab-pane fade" id="courseReport">
-                    <div class="card">
-                        <div class="card-header">Generate Course-Based Reports</div>
-                        <div class="card-body">
-                            <form action="${pageContext.request.contextPath}/ReportServlet" method="get">
-                                <input type="hidden" name="action" value="generateCourseReports">
-
-                                <div class="form-group">
-                                    <label for="reportTitleCourse">Report Title</label>
-                                    <input type="text" class="form-control" id="reportTitleCourse" name="reportTitle"
-                                           value="Course-Based ABET Assessment Reports">
-                                </div>
-
-                                <button type="submit" class="btn btn-primary">Generate Reports</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Outcome Report Form -->
-                <div class="tab-pane fade" id="outcomeReport">
-                    <div class="card">
-                        <div class="card-header">Generate Outcome-Focused Report</div>
-                        <div class="card-body">
-                            <form action="${pageContext.request.contextPath}/ReportServlet" method="get">
-                                <input type="hidden" name="action" value="generateOutcomeReport">
-
-                                <div class="form-group">
-                                    <label for="reportTitleOutcome">Report Title</label>
-                                    <input type="text" class="form-control" id="reportTitleOutcome" name="reportTitle"
-                                           value="Outcome-Focused ABET Assessment Report">
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Select Outcomes to Include</label>
-                                    <div class="outcome-checkboxes">
-                                        <c:forEach items="${outcomes}" var="outcome">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="outcomeIds"
-                                                       value="${outcome.id}" id="outcome${outcome.id}">
-                                                <label class="form-check-label" for="outcome${outcome.id}">
-                                                        ${outcome.name} - ${outcome.description}
-                                                </label>
-                                            </div>
-                                        </c:forEach>
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary">Generate Report</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Trend Report Form -->
-                <div class="tab-pane fade" id="trendReport">
-                    <div class="card">
-                        <div class="card-header">Generate Trend Report</div>
-                        <div class="card-body">
-                            <form action="${pageContext.request.contextPath}/ReportServlet" method="get">
-                                <input type="hidden" name="action" value="generateTrendReport">
-
-                                <div class="form-group">
-                                    <label for="reportTitleTrend">Report Title</label>
-                                    <input type="text" class="form-control" id="reportTitleTrend" name="reportTitle"
-                                           value="Trend ABET Assessment Report">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="startYear">Start Year</label>
-                                    <select class="form-control" id="startYear" name="startYear" required>
-                                        <option value="">Select start year</option>
-                                        <c:forEach items="${years}" var="yr">
-                                            <option value="${yr}">${yr}</option>
-                                        </c:forEach>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="endYear">End Year</label>
-                                    <select class="form-control" id="endYear" name="endYear" required>
-                                        <option value="">Select end year</option>
-                                        <c:forEach items="${years}" var="yr">
-                                            <option value="${yr}">${yr}</option>
-                                        </c:forEach>
-                                    </select>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary">Generate Report</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    </c:forEach>
+                </c:when>
+                <c:otherwise>
+                    <p>No reports available. Generate one above.</p>
+                </c:otherwise>
+            </c:choose>
         </div>
     </div>
 </div>
 
-<jsp:include page="footer.jsp" />
-
 <script>
-    // Activate the first tab by default
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelector('.nav-link').click();
+    // Store indicator data by outcome
+    const indicatorsByOutcome = {};
+
+    // Initialize with data from the server
+    <c:forEach items="${csvOutcomes}" var="outcome">
+    indicatorsByOutcome["${outcome.id}"] = [
+        <c:forEach items="${outcome.indicators}" var="indicator" varStatus="status">
+        {id: "${indicator.id}", description: "${indicator.description}"}<c:if test="${!status.last}">,</c:if>
+        </c:forEach>
+    ];
+    </c:forEach>
+
+    // Function to update indicator dropdowns when outcome is selected
+    function updateIndicators(outcomeSelectId, indicatorSelectId) {
+        const outcomeSelect = document.getElementById(outcomeSelectId);
+        const indicatorSelect = document.getElementById(indicatorSelectId);
+
+        // Clear current options
+        indicatorSelect.innerHTML = '<option value="">All Indicators</option>';
+
+        const selectedOutcome = outcomeSelect.value;
+        if (selectedOutcome && indicatorsByOutcome[selectedOutcome]) {
+            indicatorsByOutcome[selectedOutcome].forEach(indicator => {
+                const option = document.createElement('option');
+                option.value = indicator.id;
+                option.textContent = `${indicator.id} - ${indicator.description}`;
+                indicatorSelect.appendChild(option);
+            });
+        }
+    }
+
+    // Add event listeners
+    document.getElementById('outcomeIdYear').addEventListener('change', function() {
+        updateIndicators('outcomeIdYear', 'indicatorId');
     });
 
-    // Tab switching functionality
-    document.querySelectorAll('.nav-link').forEach(function(navLink) {
-        navLink.addEventListener('click', function(e) {
-            e.preventDefault();
+    document.getElementById('outcomeIdCycle').addEventListener('change', function() {
+        updateIndicators('outcomeIdCycle', 'indicatorIdCycle');
+    });
 
-            // Hide all tab panes
-            document.querySelectorAll('.tab-pane').forEach(function(pane) {
-                pane.classList.remove('show', 'active');
-            });
-
-            // Deactivate all nav links
-            document.querySelectorAll('.nav-link').forEach(function(link) {
-                link.classList.remove('active');
-            });
-
-            // Show the selected tab pane
-            const targetId = this.getAttribute('href').substring(1);
-            const targetPane = document.getElementById(targetId);
-            targetPane.classList.add('show', 'active');
-
-            // Activate the clicked nav link
-            this.classList.add('active');
-        });
+    // Initialize indicators on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateIndicators('outcomeIdYear', 'indicatorId');
+        updateIndicators('outcomeIdCycle', 'indicatorIdCycle');
     });
 </script>
+
+<jsp:include page="/WEB-INF/footer.jsp" />
 </body>
 </html>
