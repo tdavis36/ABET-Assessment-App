@@ -375,8 +375,15 @@ public class ProfessorServlet extends BaseServlet {
                         : "FCAR saved as draft.";
                 session.setAttribute("message", successMessage);
 
-                // Redirect to the viewFCAR page
-                response.sendRedirect(request.getContextPath() + "/ViewFCARServlet");
+                // Check if we should redirect to the viewFCAR page
+                String redirectToView = request.getParameter("redirectToView");
+                if ("true".equals(redirectToView)) {
+                    // Redirect to the viewFCAR page
+                    response.sendRedirect(request.getContextPath() + "/ViewFCARServlet");
+                } else {
+                    // Redirect based on user role
+                    redirectBasedOnUserRole(request, response, currentUser);
+                }
             } else {
                 request.setAttribute("error",
                         "Failed to " + ("submit".equals(saveAction) ? "submit" : "save") + " FCAR");

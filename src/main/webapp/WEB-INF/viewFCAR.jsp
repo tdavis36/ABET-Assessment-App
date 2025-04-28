@@ -161,17 +161,126 @@
             request.setAttribute("outcomeMap", outcomeMap);
             request.setAttribute("indicatorMap", indicatorMap);
 
-            // Check if allFCARs is already set by the servlet
-            if (request.getAttribute("allFCARs") == null) {
+            // Check if we're viewing a specific FCAR
+            FCAR selectedFCAR = (FCAR) request.getAttribute("selectedFCAR");
+            
+            // If we're not viewing a specific FCAR and allFCARs is not set, fetch all FCARs
+            if (selectedFCAR == null && request.getAttribute("allFCARs") == null) {
                 FCARRepository repo = new FCARRepository();
                 List<FCAR> allFCARs = (user instanceof Admin)
                         ? repo.findAll()
                         : repo.findByInstructorId(user.getUserId());
                 request.setAttribute("allFCARs", allFCARs);
             }
+            
+            // If we're viewing a specific FCAR, set the fcarId parameter for the Edit button
+            if (selectedFCAR != null) {
+                request.setAttribute("fcarId", selectedFCAR.getFcarId());
+            }
         %>
         <c:choose>
+            <c:when test="${not empty selectedFCAR}">
+                <!-- Display a single FCAR when selectedFCAR is set -->
+                <ul class="fcar-list">
+                    <li class="fcar-item">
+                        <div class="fcar-header">
+                            <div>
+                                <h3>FCAR: ${selectedFCAR.courseCode}</h3>
+                                <p>
+                                    <strong>Professor ID:</strong> ${selectedFCAR.instructorId} |
+                                    <strong>Semester:</strong> ${selectedFCAR.semester} ${selectedFCAR.year} |
+                                    <strong>Status:</strong>
+                                    <span class="status-badge status-${fn:toLowerCase(selectedFCAR.status)}">${selectedFCAR.status}</span>
+                                </p>
+                            </div>
+                            <div>
+                                <button class="btn toggle-details" onclick="toggleDetails('fcar-${selectedFCAR.fcarId}')">Show Details</button>
+                                <c:if test="${user.userId == selectedFCAR.instructorId || user.roleId == 1}">
+                                    <a href="${pageContext.request.contextPath}/ViewFCARServlet?action=edit&fcarId=${selectedFCAR.fcarId}" class="btn">Edit FCAR</a>
+                                </c:if>
+                            </div>
+                        </div>
+                        <div id="fcar-${selectedFCAR.fcarId}" class="fcar-details" style="display:none;">
+                            <div class="fcar-section">
+                                <h4>Actions</h4>
+                                <c:if test="${user.userId == selectedFCAR.instructorId || user.roleId == 1}">
+                                    <p><strong>Edit Status:</strong> 
+                                        <c:choose>
+                                            <c:when test="${selectedFCAR.status == 'Draft'}">Available</c:when>
+                                            <c:otherwise>Not available for ${selectedFCAR.status} FCARs</c:otherwise>
+                                        </c:choose>
+                                    </p>
+                                </c:if>
+                                <c:if test="${user.roleId == 1 && selectedFCAR.status == 'Submitted'}">
+                                    <p><strong>Admin Actions:</strong> Approval pending</p>
+                                </c:if>
+                            </div>
+                            <div class="fcar-section">
+                                <h4>FCAR Information</h4>
+                                <p><strong>Course Code:</strong> ${selectedFCAR.courseCode}</p>
+                                <p><strong>Instructor ID:</strong> ${selectedFCAR.instructorId}</p>
+                                <p><strong>Semester/Year:</strong> ${selectedFCAR.semester} ${selectedFCAR.year}</p>
+                                <p><strong>Status:</strong> ${selectedFCAR.status}</p>
+                                <p><strong>Created:</strong> ${selectedFCAR.createdAt}</p>
+                                <c:if test="${not empty selectedFCAR.updatedAt}"><p><strong>Updated:</strong> ${selectedFCAR.updatedAt}</p></c:if>
+                            </div>
+                            <c:if test="${not empty selectedFCAR.outcomeId}">
+                                <div class="fcar-section">
+                                    <h4>Student Learning Outcomes</h4>
+                                    <c:set var="outcome" value="${outcomeMap[selectedFCAR.outcomeId]}" />
+                                    <p><strong>Outcome:</strong> 
+                                        <c:choose>
+                                            <c:when test="${not empty outcome}">
+                                                ${outcome.outcomeNum}: ${outcome.description}
+                                            </c:when>
+                                            <c:otherwise>
+                                                Outcome ID: ${selectedFCAR.outcomeId}
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </p>
+                                    
+                                    <c:set var="indicators" value="${indicatorMap[selectedFCAR.outcomeId]}" />
+                                    <c:forEach var="indicator" items="${indicators}">
+                                        <c:if test="${indicator.indicatorId == selectedFCAR.indicatorId}">
+                                            <p><strong>Indicator:</strong> ${selectedFCAR.outcomeId}.${indicator.number}: ${indicator.description}</p>
+                                        </c:if>
+                                    </c:forEach>
+                                    
+                                    <c:if test="${empty indicators || not fn:contains(indicators, selectedFCAR.indicatorId)}">
+                                        <p><strong>Indicator ID:</strong> ${selectedFCAR.indicatorId}</p>
+                                    </c:if>
+                                </div>
+                            </c:if>
+                            <c:if test="${not empty selectedFCAR.assessmentMethods}">
+                                <div class="fcar-section">
+                                    <h4>Assessment Methods</h4>
+                                    <c:forEach var="method" items="${selectedFCAR.assessmentMethods}">
+                                        <p><strong>${method.key}:</strong> ${method.value}</p>
+                                    </c:forEach>
+                                </div>
+                            </c:if>
+                            <c:if test="${not empty selectedFCAR.studentOutcomes}">
+                                <div class="fcar-section">
+                                    <h4>Student Achievement</h4>
+                                    <c:forEach var="outcome" items="${selectedFCAR.studentOutcomes}">
+                                        <p><strong>${outcome.key}:</strong> ${outcome.value}</p>
+                                    </c:forEach>
+                                </div>
+                            </c:if>
+                            <c:if test="${not empty selectedFCAR.improvementActions}">
+                                <div class="fcar-section">
+                                    <h4>Improvement Actions</h4>
+                                    <c:forEach var="act" items="${selectedFCAR.improvementActions}">
+                                        <p><strong>${act.key}:</strong> ${act.value}</p>
+                                    </c:forEach>
+                                </div>
+                            </c:if>
+                        </div>
+                    </li>
+                </ul>
+            </c:when>
             <c:when test="${not empty allFCARs}">
+                <!-- Display all FCARs when allFCARs is set -->
                 <ul class="fcar-list">
                     <c:forEach var="fcar" items="${allFCARs}" varStatus="status">
                         <li class="fcar-item">
@@ -185,7 +294,12 @@
                                         <span class="status-badge status-${fn:toLowerCase(fcar.status)}">${fcar.status}</span>
                                     </p>
                                 </div>
-                                <button class="btn toggle-details" onclick="toggleDetails('fcar-${fcar.fcarId}')">Show Details</button>
+                                <div>
+                                    <button class="btn toggle-details" onclick="toggleDetails('fcar-${fcar.fcarId}')">Show Details</button>
+                                    <c:if test="${user.userId == fcar.instructorId || user.roleId == 1}">
+                                        <a href="${pageContext.request.contextPath}/ViewFCARServlet?action=edit&fcarId=${fcar.fcarId}" class="btn">Edit FCAR</a>
+                                    </c:if>
+                                </div>
                             </div>
                             <div id="fcar-${fcar.fcarId}" class="fcar-details" style="display:none;">
                                 <div class="fcar-section">
@@ -236,9 +350,6 @@
                                         <c:if test="${empty indicators || not fn:contains(indicators, fcar.indicatorId)}">
                                             <p><strong>Indicator ID:</strong> ${fcar.indicatorId}</p>
                                         </c:if>
-                                        <h4>Learning Outcomes</h4>
-                                        <p><strong>Outcome ID:</strong> ${fcar.outcomeId}</p>
-                                        <p><strong>Indicator ID:</strong> ${fcar.indicatorId}</p>
                                     </div>
                                 </c:if>
                                 <c:if test="${not empty fcar.assessmentMethods}">
@@ -277,9 +388,10 @@
     </div>
 
     <div class="action-buttons">
-        <form action="${dashboardUrl}" method="get">
-            <button type="submit" class="btn">Back to Dashboard</button>
-        </form>
+        <a href="${dashboardUrl}" class="btn" style="margin-right: 10px;">Back to Dashboard</a>
+        <c:if test="${not empty param.fcarId || not empty fcarId}">
+            <a href="${pageContext.request.contextPath}/ViewFCARServlet?action=edit&fcarId=${not empty param.fcarId ? param.fcarId : fcarId}" class="btn">Edit FCAR</a>
+        </c:if>
     </div>
 
 
