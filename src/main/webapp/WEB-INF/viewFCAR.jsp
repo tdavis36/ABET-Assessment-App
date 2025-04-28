@@ -1,12 +1,13 @@
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.ArrayList" %>
 <%@ page import="com.ABETAppTeam.model.FCAR" %>
 <%@ page import="com.ABETAppTeam.repository.FCARRepository" %>
 <%@ page import="com.ABETAppTeam.repository.OutcomeRepository" %>
 <%@ page import="com.ABETAppTeam.repository.IndicatorRepository" %>
 <%@ page import="com.ABETAppTeam.model.Outcome" %>
 <%@ page import="com.ABETAppTeam.model.Indicator" %>
-<%@ taglib uri="jakarta.tags.core" prefix="c" %>
-<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 <%@ page import="com.ABETAppTeam.model.User" %>
 <%@ page import="com.ABETAppTeam.model.Admin" %>
 <%@ page import="com.ABETAppTeam.model.Professor" %>
@@ -114,64 +115,6 @@
 </head>
 <body>
 <jsp:include page="/WEB-INF/navbar.jsp" />
-
-<div class="dashboard">
-    <div class="header-container">
-        <h1>FCAR Details</h1>
-    </div>
-
-    <%
-        // Retrieve the authenticated user from the session
-        User user = (User) session.getAttribute("user");
-        String dashboardUrl = "";
-
-        // Determine dashboard URL based on a user role
-        if (user instanceof Admin) {
-            dashboardUrl = request.getContextPath() + "/AdminServlet";
-        } else if (user instanceof Professor) {
-            dashboardUrl = request.getContextPath() + "/ProfessorServlet";
-        } else {
-            // Fallback to index if no specific role found
-            dashboardUrl = request.getContextPath() + "/index";
-        }
-
-        // Load FCARs from the database based on a user role
-        List<FCAR> allFCARs = null;
-        FCARRepository fcarRepository = new FCARRepository();
-
-        if (user instanceof Admin) {
-            // Admin can see all FCARs
-            allFCARs = fcarRepository.findAll();
-        } else if (user instanceof Professor) {
-            // Professor can only see their own FCARs
-            allFCARs = fcarRepository.findByInstructorId(user.getUserId());
-        }
-
-        // Initialize repositories for outcomes and indicators
-        OutcomeRepository outcomeRepository = new OutcomeRepository();
-        IndicatorRepository indicatorRepository = new IndicatorRepository();
-
-        // Create a map to store outcome information
-        Map<Integer, Outcome> outcomeMap = new HashMap<>();
-        for (Outcome outcome : outcomeRepository.findAll()) {
-            outcomeMap.put(outcome.getId(), outcome);
-        }
-
-        // Create a map to store indicator information
-        Map<Integer, List<Indicator>> indicatorMap = new HashMap<>();
-        for (Indicator indicator : indicatorRepository.findAll()) {
-            int outcomeId = indicator.getOutcomeId();
-            if (!indicatorMap.containsKey(outcomeId)) {
-                indicatorMap.put(outcomeId, new ArrayList<>());
-            }
-            indicatorMap.get(outcomeId).add(indicator);
-        }
-
-        // Set attributes for JSTL access
-        request.setAttribute("allFCARs", allFCARs);
-        request.setAttribute("outcomeMap", outcomeMap);
-        request.setAttribute("indicatorMap", indicatorMap);
-    %>
 <div class="dashboard" id="fcarViewDashboard">
     <div class="header-container">
         <h1>FCAR Details</h1>
@@ -194,11 +137,38 @@
             else if (user instanceof Professor) dashboardUrl = request.getContextPath() + "/ProfessorServlet";
             else dashboardUrl = request.getContextPath() + "/index";
 
-            FCARRepository repo = new FCARRepository();
-            List<FCAR> allFCARs = (user instanceof Admin)
-                    ? repo.findAll()
-                    : repo.findByInstructorId(user.getUserId());
-            request.setAttribute("allFCARs", allFCARs);
+            // Initialize repositories for outcomes and indicators
+            OutcomeRepository outcomeRepository = new OutcomeRepository();
+            IndicatorRepository indicatorRepository = new IndicatorRepository();
+
+            // Create a map to store outcome information
+            Map<Integer, Outcome> outcomeMap = new HashMap<>();
+            for (Outcome outcome : outcomeRepository.findAll()) {
+                outcomeMap.put(outcome.getId(), outcome);
+            }
+
+            // Create a map to store indicator information
+            Map<Integer, List<Indicator>> indicatorMap = new HashMap<>();
+            for (Indicator indicator : indicatorRepository.findAll()) {
+                int outcomeId = indicator.getOutcomeId();
+                if (!indicatorMap.containsKey(outcomeId)) {
+                    indicatorMap.put(outcomeId, new ArrayList<>());
+                }
+                indicatorMap.get(outcomeId).add(indicator);
+            }
+
+            // Set attributes for JSTL access
+            request.setAttribute("outcomeMap", outcomeMap);
+            request.setAttribute("indicatorMap", indicatorMap);
+
+            // Check if allFCARs is already set by the servlet
+            if (request.getAttribute("allFCARs") == null) {
+                FCARRepository repo = new FCARRepository();
+                List<FCAR> allFCARs = (user instanceof Admin)
+                        ? repo.findAll()
+                        : repo.findByInstructorId(user.getUserId());
+                request.setAttribute("allFCARs", allFCARs);
+            }
         %>
         <c:choose>
             <c:when test="${not empty allFCARs}">
@@ -218,25 +188,18 @@
                                 <button class="btn toggle-details" onclick="toggleDetails('fcar-${fcar.fcarId}')">Show Details</button>
                             </div>
                             <div id="fcar-${fcar.fcarId}" class="fcar-details" style="display:none;">
-                                <div class="fcar-section fcar-actions">
+                                <div class="fcar-section">
+                                    <h4>Actions</h4>
                                     <c:if test="${user.userId == fcar.instructorId || user.roleId == 1}">
-                                        <form method="get" action="${pageContext.request.contextPath}/ProfessorServlet">
-                                            <input type="hidden" name="action" value="editFCAR" />
-                                            <input type="hidden" name="fcarId" value="${fcar.fcarId}" />
-                                            <button type="submit" class="btn">Edit FCAR</button>
-                                        </form>
+                                        <p><strong>Edit Status:</strong> 
+                                            <c:choose>
+                                                <c:when test="${fcar.status == 'Draft'}">Available</c:when>
+                                                <c:otherwise>Not available for ${fcar.status} FCARs</c:otherwise>
+                                            </c:choose>
+                                        </p>
                                     </c:if>
                                     <c:if test="${user.roleId == 1 && fcar.status == 'Submitted'}">
-                                        <form method="post" action="${pageContext.request.contextPath}/AdminServlet">
-                                            <input type="hidden" name="action" value="approveFCAR" />
-                                            <input type="hidden" name="fcarId" value="${fcar.fcarId}" />
-                                            <button type="submit" class="btn">Approve</button>
-                                        </form>
-                                        <form method="post" action="${pageContext.request.contextPath}/AdminServlet">
-                                            <input type="hidden" name="action" value="rejectFCAR" />
-                                            <input type="hidden" name="fcarId" value="${fcar.fcarId}" />
-                                            <button type="submit" class="btn btn-danger">Reject</button>
-                                        </form>
+                                        <p><strong>Admin Actions:</strong> Approval pending</p>
                                     </c:if>
                                 </div>
                                 <div class="fcar-section">
@@ -319,10 +282,6 @@
         </form>
     </div>
 
-    <form action="${pageContext.request.contextPath}/ViewFCARServlet" method="post" id="fcarForm">
-        <input type="hidden" name="action" value="saveFCAR" id="actionInput"/>
-        <!-- Rest of your form content... -->
-    </form>
 
     <!-- JavaScript for expanding/collapsing FCAR details -->
     <script>
