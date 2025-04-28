@@ -7,6 +7,7 @@ com\ABETAppTeam\model\Indicator.class
 com\ABETAppTeam\model\Course.class
 com\ABETAppTeam\repository\CourseRepository.class
 com\ABETAppTeam\model\User.class
+com\ABETAppTeam\util\DatabaseConnection.class
 com\ABETAppTeam\controller\FCARController.class
 com\ABETAppTeam\model\FCAR.class
 com\ABETAppTeam\service\LoggingService.class

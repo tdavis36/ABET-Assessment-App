@@ -341,4 +341,11 @@ public class FCAR {
         this.updatedAt = new Date();
     }
 
+    public int getId() {
+        return fcarId;
+    }
+
+    public void setId(int anInt) {
+        this.fcarId = anInt;
+    }
 }
