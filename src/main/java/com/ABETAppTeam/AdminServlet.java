@@ -177,6 +177,9 @@ public class AdminServlet extends BaseServlet {
                 handleDeleteFCAR(request, response, user, fcarController);
             } else if ("createUser".equals(action)) {
                 handleCreateUser(request, response);
+            } else if ("saveFCAR".equals(action)) {
+                // Handle saving FCAR using the BaseServlet's handleSaveOrSubmitFCAR method
+                handleSaveOrSubmitFCAR(request, response, session, user, action);
             } else {
                 // If we get here, forward back to the admin page
                 logger.debug("No specific action matched, forwarding to doGet");
