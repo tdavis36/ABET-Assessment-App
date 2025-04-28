@@ -7,84 +7,89 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>View Reports</title>
+    <title>Assessment Reports</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
-    <style>
-        /* Example styling */
-        .report-list {
-            list-style-type: none;
-            padding: 0;
-        }
-        .report-item {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f9f9f9;
-        }
-        .report-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-        .report-title {
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-    </style>
 </head>
 <body>
-    <h1>Faculty Course Assessment Reports (Reports)</h1>
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <a href="${pageContext.request.contextPath}/ProfessorServlet" class="btn">Back to Professor Dashboard</a>
-        <a href="${pageContext.request.contextPath}/AdminServlet" class="btn">Back to Admin Dashboard</a>
+<c:set var="activePage" value="reports" scope="request"/>
+<jsp:include page="/WEB-INF/navbar.jsp" />
+
+<div class="dashboard" id="reportsDashboard">
+    <div class="header-container">
+        <h1>Assessment Reports</h1>
     </div>
 
+    <!-- Generate Reports Section -->
+    <div class="section">
+        <h2>Generate Reports</h2>
+        <div class="action-buttons">
+            <form action="${pageContext.request.contextPath}/ReportServlet" method="get">
+                <div class="form-group">
+                    <label for="reportType">Report Type:</label>
+                    <select id="reportType" name="action" class="form-control" required>
+                        <option value="generateFullReport">Full Report</option>
+                        <option value="generateSemesterReport">Semester Report</option>
+                        <c:if test="${sessionScope.userRole == 'admin'}">
+                            <option value="generateCustomReport">Custom Report</option>
+                        </c:if>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Generate Report</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Existing Reports Section -->
     <div class="section">
         <h2>Existing Reports</h2>
-        <c:choose>
-            <c:when test="${not empty allReports}">
-                <ul class="report-list">
-                    <c:forEach var="report" items="${allReports}" varStatus="status">
-                        <li class="report-item">
+        <div class="report-list">
+            <c:choose>
+                <c:when test="${not empty allReports}">
+                    <c:forEach var="report" items="${allReports}">
+                        <div class="report-item">
                             <div class="report-header">
-                                <div>
-                                    <span class="report-title">
-                                        Report #${status.index + 1}: ${report.reportTitle}
-                                    </span>
-                                </div>
-                                <!-- Example: Button to view more details or export the report -->
-                                <button onclick="alert('Export PDF for Report ID: ${report.reportId}');">
-                                    Export PDF
-                                </button>
+                                <span class="report-title">${report.reportTitle}</span>
+                                <span class="report-date">${report.semester} ${report.year}</span>
                             </div>
-                            
-                            <!-- Example details for the report -->
-                            <p><strong>Semester:</strong> ${report.semester}</p>
-                            <p><strong>Year:</strong> ${report.year}</p>
-                            
-                            <!-- If you have FCARs in this report, show them -->
-                            <c:if test="${not empty report.fcarList}">
-                                <h3>FCARs in this Report:</h3>
-                                <ul>
-                                    <c:forEach var="fcar" items="${report.fcarList}">
-                                        <li>FCAR ID: ${fcar.fcarId}, Course: ${fcar.courseId}, Semester: ${fcar.semester}, Year: ${fcar.year}</li>
-                                    </c:forEach>
-                                </ul>
-                            </c:if>
-                            
-                            <!-- You can add more sections for Indicators, Outcomes, etc. -->
-                            
-                        </li>
+                            <div class="report-actions">
+                                <!-- View Report -->
+                                <form action="${pageContext.request.contextPath}/ReportServlet" method="get" style="display:inline;">
+                                    <input type="hidden" name="action" value="viewReport" />
+                                    <input type="hidden" name="id" value="${report.reportId}" />
+                                    <button type="submit" class="btn">View</button>
+                                </form>
+                                <!-- Download PDF -->
+                                <form action="${pageContext.request.contextPath}/ReportServlet" method="get" style="display:inline;">
+                                    <input type="hidden" name="action" value="downloadReport" />
+                                    <input type="hidden" name="id" value="${report.reportId}" />
+                                    <button type="submit" class="btn">Download PDF</button>
+                                </form>
+                                <!-- Delete Report (admin only) -->
+                                <c:if test="${sessionScope.userRole == 'admin'}">
+                                    <form action="${pageContext.request.contextPath}/ReportServlet" method="post" style="display:inline;">
+                                        <input type="hidden" name="action" value="deleteReport" />
+                                        <input type="hidden" name="id" value="${report.reportId}" />
+                                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this report?');">Delete</button>
+                                    </form>
+                                </c:if>
+                            </div>
+                            <div class="report-details">
+                                <strong>FCARs:</strong> ${fn:length(report.fcarList)}
+                                <c:if test="${not empty report.description}">
+                                    <p>${report.description}</p>
+                                </c:if>
+                            </div>
+                        </div>
                     </c:forEach>
-                </ul>
-            </c:when>
-            <c:otherwise>
-                <p>No Reports available.</p>
-            </c:otherwise>
-        </c:choose>
+                </c:when>
+                <c:otherwise>
+                    <p>No reports available. Use the controls above to generate reports.</p>
+                </c:otherwise>
+            </c:choose>
+        </div>
     </div>
+</div>
+
+<script src="${pageContext.request.contextPath}/js/reports.js"></script>
 </body>
 </html>

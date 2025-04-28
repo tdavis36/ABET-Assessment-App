@@ -534,7 +534,7 @@
             // Add indicators container to outcome container
             outcomeContainer.appendChild(indicatorsDiv);
 
-    // Add outcome container to dynamic outcomes div
+            // Add outcome container to dynamic outcomes div
 
             // Add outcome container to dynamic outcomes div
             dynamicOutcomesDiv.appendChild(outcomeContainer);
