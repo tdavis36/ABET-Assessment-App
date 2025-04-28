@@ -69,48 +69,69 @@
 
                 <c:choose>
                     <c:when test="${not empty outcomes}">
+                        <%-- Get the course code from the FCAR or from the form input --%>
+                        <c:set var="currentCourseCode" value="${not empty fcar.courseCode ? fcar.courseCode : param.courseId}" />
+                        
+                        <%-- Get the course outcomes from the OutcomeController --%>
+                        <c:set var="courseOutcomeIds" value="${outcomeController.findByCourseId(currentCourseCode)}" />
+                        
+                        <%-- Only show outcomes associated with this course --%>
                         <c:forEach var="outcome" items="${outcomes}" varStatus="status">
                             <c:set var="outcomeId" value="${outcome.id}" />
                             <c:set var="outcomeSelected" value="${fn:contains(fcar.assessmentMethods['selectedOutcomes'], outcomeId)}" />
+                            
+                            <%-- Check if this outcome is associated with the course --%>
+                        <c:set var="isAssociatedWithCourse" value="true" />
+                        <c:if test="${not empty courseOutcomeIds}">
+                            <c:set var="isAssociatedWithCourse" value="false" />
+                            <c:forEach var="courseOutcomeId" items="${courseOutcomeIds}">
+                                <c:if test="${courseOutcomeId == outcomeId}">
+                                    <c:set var="isAssociatedWithCourse" value="true" />
+                                </c:if>
+                            </c:forEach>
+                        </c:if>
+                        
+                        <%-- Display outcomes associated with this course or if no course is selected yet --%>
+                        <c:if test="${isAssociatedWithCourse || isAdmin}">
+                                <div class="outcome-container">
+                                    <div class="outcome-label">
+                                        <c:if test="${isAdmin}">
+                                            <input type="checkbox" id="outcome_${outcomeId}" name="outcome_${outcomeId}"
+                                                   value="${outcomeId}" ${outcomeSelected ? 'checked' : ''}
+                                                   onchange="toggleIndicators(${outcomeId}); updateSelectedOutcomes();" />
+                                        </c:if>
+                                        <label for="outcome_${outcomeId}">Outcome ${outcomeId}: ${outcome.description}</label>
+                                    </div>
 
-                            <div class="outcome-container">
-                                <div class="outcome-label">
-                                    <c:if test="${isAdmin}">
-                                        <input type="checkbox" id="outcome_${outcomeId}" name="outcome_${outcomeId}"
-                                               value="${outcomeId}" ${outcomeSelected ? 'checked' : ''}
-                                               onchange="toggleIndicators(${outcomeId}); updateSelectedOutcomes();" />
-                                    </c:if>
-                                    <label for="outcome_${outcomeId}">Outcome ${outcomeId}: ${outcome.description}</label>
+                                    <div id="indicators_${outcomeId}" class="indicators-container" style="${outcomeSelected ? 'display: block;' : 'display: none;'}">
+                                        <c:set var="hasIndicators" value="false" />
+
+                                        <c:if test="${not empty indicatorsByOutcome[outcomeId]}">
+                                            <c:forEach var="indicator" items="${indicatorsByOutcome[outcomeId]}">
+                                                <c:set var="hasIndicators" value="true" />
+                                                <c:set var="indicatorKey" value="indicator_${outcomeId}.${indicator.number}" />
+                                                <c:set var="isSelected" value="${not empty fcar.assessmentMethods[indicatorKey]}" />
+
+                                                <div class="indicator-container">
+                                                    <c:if test="${isAdmin}">
+                                                        <input type="checkbox" id="indicator_${outcomeId}_${indicator.number}"
+                                                               name="indicator_${outcomeId}_${indicator.number}"
+                                                               value="${outcomeId}.${indicator.number}" ${isSelected ? 'checked' : ''} />
+                                                    </c:if>
+                                                    <c:if test="${isSelected || (empty fcar.assessmentMethods['selectedOutcomes'])}">
+                                                        <input type="hidden" name="indicator_${outcomeId}.${indicator.number}" value="selected" />
+                                                    </c:if>
+                                                    <label for="indicator_${outcomeId}_${indicator.number}">${outcomeId}.${indicator.number} ${indicator.description}</label>
+                                                </div>
+                                            </c:forEach>
+                                        </c:if>
+
+                                        <c:if test="${!hasIndicators}">
+                                            <p>No indicators available for this outcome.</p>
+                                        </c:if>
+                                    </div>
                                 </div>
-
-                                <div id="indicators_${outcomeId}" class="indicators-container" style="${outcomeSelected ? '' : 'display: none;'}">
-                                    <c:set var="hasIndicators" value="false" />
-
-                                    <c:if test="${not empty indicatorsByOutcome[outcomeId]}">
-                                        <c:forEach var="indicator" items="${indicatorsByOutcome[outcomeId]}">
-                                            <c:set var="hasIndicators" value="true" />
-                                            <c:set var="indicatorKey" value="indicator_${outcomeId}.${indicator.number}" />
-                                            <c:set var="isSelected" value="${not empty fcar.assessmentMethods[indicatorKey]}" />
-
-                                            <div class="indicator-container">
-                                                <c:if test="${isAdmin}">
-                                                    <input type="checkbox" id="indicator_${outcomeId}_${indicator.number}"
-                                                           name="indicator_${outcomeId}_${indicator.number}"
-                                                           value="${outcomeId}.${indicator.number}" ${isSelected ? 'checked' : ''} />
-                                                </c:if>
-                                                <c:if test="${isSelected || (empty fcar.assessmentMethods['selectedOutcomes'])}">
-                                                    <input type="hidden" name="indicator_${outcomeId}.${indicator.number}" value="selected" />
-                                                </c:if>
-                                                <label for="indicator_${outcomeId}_${indicator.number}">${outcomeId}.${indicator.number} ${indicator.description}</label>
-                                            </div>
-                                        </c:forEach>
-                                    </c:if>
-
-                                    <c:if test="${!hasIndicators}">
-                                        <p>No indicators available for this outcome.</p>
-                                    </c:if>
-                                </div>
-                            </div>
+                            </c:if>
                         </c:forEach>
                     </c:when>
                     <c:otherwise>

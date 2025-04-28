@@ -2,6 +2,10 @@
 <%@ page import="java.util.Map" %>
 <%@ page import="com.ABETAppTeam.model.FCAR" %>
 <%@ page import="com.ABETAppTeam.repository.FCARRepository" %>
+<%@ page import="com.ABETAppTeam.repository.OutcomeRepository" %>
+<%@ page import="com.ABETAppTeam.repository.IndicatorRepository" %>
+<%@ page import="com.ABETAppTeam.model.Outcome" %>
+<%@ page import="com.ABETAppTeam.model.Indicator" %>
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 <%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 <%@ page import="com.ABETAppTeam.model.User" %>
@@ -20,6 +24,7 @@
         .btn {
             width: auto !important;
             max-width: none !important;
+            margin-right: 5px;
         }
 
         /* Specific styling for the toggle-details button */
@@ -36,6 +41,43 @@
             flex-wrap: wrap;
             gap: 8px;
             justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        /* FCAR item styling */
+        .fcar-item {
+            background-color: var(--card-bg);
+            border-radius: 5px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px var(--shadow);
+            overflow: hidden;
+        }
+
+        /* FCAR header styling */
+        .fcar-header {
+            padding: 15px;
+            background-color: var(--form-bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* FCAR details styling */
+        .fcar-details {
+            padding: 15px;
+            background-color: var(--card-bg);
+        }
+
+        .fcar-section {
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: var(--form-bg);
+            border-radius: 5px;
+            border: 1px solid var(--border);
+        }
+
+        .fcar-section h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--primary);
         }
 
         /* Ensure buttons remain a reasonable size on mobile */
@@ -43,6 +85,7 @@
             .btn {
                 padding: 8px 12px;
                 font-size: 14px;
+                margin-bottom: 5px;
             }
 
             /* Improve responsive layout for action buttons */
@@ -66,8 +109,11 @@
 </head>
 <body>
 
-<div class="container">
-    <h1>FCAR Details</h1>
+<jsp:include page="/WEB-INF/navbar.jsp" />
+<div class="dashboard">
+    <div class="header-container">
+        <h1>FCAR Details</h1>
+    </div>
 
     <%
         // Retrieve the authenticated user from the session
@@ -96,9 +142,39 @@
             allFCARs = fcarRepository.findByInstructorId(user.getUserId());
         }
 
-        // Set the allFCARs attribute for JSTL access
+        // Initialize repositories for outcomes and indicators
+        OutcomeRepository outcomeRepository = new OutcomeRepository();
+        IndicatorRepository indicatorRepository = new IndicatorRepository();
+
+        // Create a map to store outcome information
+        Map<Integer, Outcome> outcomeMap = new HashMap<>();
+        for (Outcome outcome : outcomeRepository.findAll()) {
+            outcomeMap.put(outcome.getId(), outcome);
+        }
+
+        // Create a map to store indicator information
+        Map<Integer, List<Indicator>> indicatorMap = new HashMap<>();
+        for (Indicator indicator : indicatorRepository.findAll()) {
+            int outcomeId = indicator.getOutcomeId();
+            if (!indicatorMap.containsKey(outcomeId)) {
+                indicatorMap.put(outcomeId, new ArrayList<>());
+            }
+            indicatorMap.get(outcomeId).add(indicator);
+        }
+
+        // Set attributes for JSTL access
         request.setAttribute("allFCARs", allFCARs);
+        request.setAttribute("outcomeMap", outcomeMap);
+        request.setAttribute("indicatorMap", indicatorMap);
     %>
+
+    <!-- Status Key -->
+    <div class="status-key">
+        <div><span class="status draft"></span> Draft</div>
+        <div><span class="status submitted"></span> Submitted</div>
+        <div><span class="status approved"></span> Approved</div>
+        <div><span class="status rejected"></span> Rejected</div>
+    </div>
 
     <div class="section">
         <h2>Existing FCARs</h2>
@@ -168,8 +244,28 @@
                                 <c:if test="${not empty fcar.outcomeId}">
                                     <div class="fcar-section">
                                         <h4>Student Learning Outcomes</h4>
-                                        <p><strong>Outcome ID:</strong> ${fcar.outcomeId}</p>
-                                        <p><strong>Indicator ID:</strong> ${fcar.indicatorId}</p>
+                                        <c:set var="outcome" value="${outcomeMap[fcar.outcomeId]}" />
+                                        <p><strong>Outcome:</strong> 
+                                            <c:choose>
+                                                <c:when test="${not empty outcome}">
+                                                    ${outcome.outcomeNum}: ${outcome.description}
+                                                </c:when>
+                                                <c:otherwise>
+                                                    Outcome ID: ${fcar.outcomeId}
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </p>
+                                        
+                                        <c:set var="indicators" value="${indicatorMap[fcar.outcomeId]}" />
+                                        <c:forEach var="indicator" items="${indicators}">
+                                            <c:if test="${indicator.indicatorId == fcar.indicatorId}">
+                                                <p><strong>Indicator:</strong> ${fcar.outcomeId}.${indicator.number}: ${indicator.description}</p>
+                                            </c:if>
+                                        </c:forEach>
+                                        
+                                        <c:if test="${empty indicators || not fn:contains(indicators, fcar.indicatorId)}">
+                                            <p><strong>Indicator ID:</strong> ${fcar.indicatorId}</p>
+                                        </c:if>
                                     </div>
                                 </c:if>
 
@@ -237,6 +333,32 @@
                 button.textContent = "Show Details";
             }
         }
+
+        // Function to toggle indicators when an outcome is deselected
+        function toggleIndicators(outcomeId, checked) {
+            const indicatorsDiv = document.getElementById(`indicators_${outcomeId}`);
+            if (indicatorsDiv) {
+                indicatorsDiv.style.display = checked ? 'block' : 'none';
+                
+                // If outcome is unchecked, uncheck all its indicators
+                if (!checked) {
+                    const indicators = document.querySelectorAll(`input[id^="indicator_${outcomeId}_"]`);
+                    indicators.forEach(indicator => {
+                        indicator.checked = false;
+                    });
+                }
+            }
+        }
+
+        // Add event listeners to outcome checkboxes
+        document.addEventListener('DOMContentLoaded', function() {
+            const outcomeCheckboxes = document.querySelectorAll('input[type="checkbox"][id^="outcome_"]');
+            outcomeCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    toggleIndicators(this.value, this.checked);
+                });
+            });
+        });
     </script>
 </div>
 </body>

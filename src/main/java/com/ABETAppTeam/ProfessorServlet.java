@@ -8,13 +8,13 @@ import java.util.Map;
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.OutcomeController;
+import com.ABETAppTeam.model.Admin;
 import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.model.Professor;
 import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.service.FCARService;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -52,7 +52,6 @@ public class ProfessorServlet extends BaseServlet {
         }
 
         Professor professor = (Professor) currentUser;
-
 
         // Get FCARs assigned to this professor only
         FCARController fcarController = getFCARController();
@@ -135,6 +134,14 @@ public class ProfessorServlet extends BaseServlet {
                     String courseOutcomesJson = extractJsonObject(outcomeData, "courseOutcomes");
                     request.setAttribute("courseOutcomes", courseOutcomesJson);
                 }
+
+                // Add outcomes and indicators data for the JSP
+                Map<String, Object> outcomesAndIndicators = outcomeController.getAllOutcomesAndIndicatorsForForm();
+                request.setAttribute("outcomes", outcomesAndIndicators.get("outcomes"));
+                request.setAttribute("indicatorsByOutcome", outcomesAndIndicators.get("indicatorsByOutcome"));
+
+                // Add the OutcomeController to the request for use in the JSP
+                request.setAttribute("outcomeController", outcomeController);
 
                 request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
             } else {
@@ -281,6 +288,103 @@ public class ProfessorServlet extends BaseServlet {
             return m.group(1);
         }
         return "{}";
+    }
+
+    /**
+     * Handles saving or submitting an FCAR
+     */
+    @Override
+    protected void handleSaveOrSubmitFCAR(HttpServletRequest request, HttpServletResponse response,
+            HttpSession session, User currentUser, String action)
+            throws ServletException, IOException {
+        try {
+            // Extract FCAR ID if it exists (for editing an existing FCAR)
+            String fcarIdStr = request.getParameter("fcarId");
+            FCAR fcar;
+
+            if (fcarIdStr != null && !fcarIdStr.isEmpty()) {
+                // Editing an existing FCAR
+                int fcarId = Integer.parseInt(fcarIdStr);
+                FCARController fcarController = getFCARController();
+                fcar = fcarController.getFCAR(fcarId);
+
+                // Verify this professor owns this FCAR
+                if (fcar != null && fcar.getInstructorId() != currentUser.getUserId()
+                        && !(currentUser instanceof Admin)) {
+                    request.setAttribute("error", "You can only update your own FCARs");
+                    request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
+                    return;
+                }
+            } else {
+                // Creating a new FCAR
+                String courseId = request.getParameter("courseId");
+                String semester = request.getParameter("semester");
+                String yearStr = request.getParameter("year");
+
+                // Validate inputs
+                if (courseId == null || courseId.isEmpty() ||
+                        semester == null || semester.isEmpty() ||
+                        yearStr == null || yearStr.isEmpty()) {
+                    request.setAttribute("error", "All fields are required to create an FCAR");
+                    request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+                    return;
+                }
+
+                int year = Integer.parseInt(yearStr);
+                int professorId = currentUser.getUserId();
+
+                // Create a new FCAR
+                fcar = new FCAR(0, courseId, professorId, semester, year);
+            }
+
+            // Update FCAR fields from request parameters
+            updateFCARFromRequest(fcar, request, currentUser);
+
+            // Set status based on action
+            String saveAction = request.getParameter("saveAction");
+            if ("submit".equals(saveAction)) {
+                fcar.setFieldValue("status", "Submitted", currentUser);
+                fcar.setDateFilled(new java.util.Date());
+            } else {
+                // Save action
+                fcar.setFieldValue("status", "Draft", currentUser);
+            }
+
+            // Save the FCAR
+            FCAR savedFcar = FCARFactory.save(fcar);
+
+            if (savedFcar != null) {
+                // Set the appropriate message for the user
+                String successMessage = "submit".equals(saveAction)
+                        ? "FCAR successfully submitted!"
+                        : "FCAR saved as draft.";
+                session.setAttribute("message", successMessage);
+
+                // Redirect to the viewFCAR page
+                response.sendRedirect(request.getContextPath() + "/ViewFCARServlet");
+            } else {
+                request.setAttribute("error",
+                        "Failed to " + ("submit".equals(saveAction) ? "submit" : "save") + " FCAR");
+                request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+            }
+        } catch (SecurityException e) {
+            // Log the access control violation
+            getLogger().logError("Access control violation during FCAR save/submit", e);
+
+            // Access control violation
+            request.setAttribute("error", "Access denied: " + e.getMessage());
+            // Forward back to the edit page
+            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "Invalid number format: " + e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+        } catch (Exception e) {
+            // Log the error
+            getLogger().logError("Error saving FCAR", e);
+
+            request.setAttribute("error", "Error saving FCAR: " + e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+        }
     }
 
     /**

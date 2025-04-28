@@ -1,7 +1,12 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.ABETAppTeam.controller.CourseController;
 import com.ABETAppTeam.controller.DepartmentController;
@@ -9,7 +14,11 @@ import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.OutcomeController;
 import com.ABETAppTeam.controller.UserController;
-import com.ABETAppTeam.model.*;
+import com.ABETAppTeam.model.Admin;
+import com.ABETAppTeam.model.Course;
+import com.ABETAppTeam.model.Department;
+import com.ABETAppTeam.model.FCAR;
+import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.service.LoggingService;
 
 import jakarta.servlet.ServletException;
@@ -182,7 +191,8 @@ public class AdminServlet extends BaseServlet {
     }
 
     /**
-     * Prepares data for the admin dashboard by fetching needed data from the database
+     * Prepares data for the admin dashboard by fetching needed data from the
+     * database
      */
     private void prepareAdminDashboardData(HttpServletRequest request) {
         // Use DisplaySystemController to get dashboard data
@@ -318,7 +328,6 @@ public class AdminServlet extends BaseServlet {
         String lastName = request.getParameter("lastName");
         String email = request.getParameter("email");
         String password = request.getParameter("password");
-        String roleIdStr = request.getParameter("roleId");
         String deptIdStr = request.getParameter("deptId");
 
         // Validate inputs
@@ -326,7 +335,6 @@ public class AdminServlet extends BaseServlet {
                 lastName == null || lastName.isEmpty() ||
                 email == null || email.isEmpty() ||
                 password == null || password.isEmpty() ||
-                roleIdStr == null || roleIdStr.isEmpty() ||
                 deptIdStr == null || deptIdStr.isEmpty()) {
 
             logger.warn("Missing required parameters for user creation");
@@ -336,46 +344,47 @@ public class AdminServlet extends BaseServlet {
         }
 
         try {
-            int roleId = Integer.parseInt(roleIdStr);
+            // For professors, roleId should be 2
+            int roleId = 2; // Professor role
             int deptId = Integer.parseInt(deptIdStr);
 
-            logger.info("Creating new user: {} {}, email={}, roleId={}, deptId={}",
+            logger.info("Creating new professor: {} {}, email={}, roleId={}, deptId={}",
                     firstName, lastName, email, roleId, deptId);
 
             // Create the user through the controller
             User newUser = userController.createUser(firstName, lastName, email, password, roleId, deptId);
 
             if (newUser != null) {
-                logger.info("User created successfully: ID {}", newUser.getUserId());
-                request.setAttribute("message", "User created successfully with ID: " + newUser.getUserId());
+                logger.info("Professor created successfully: ID {}", newUser.getUserId());
+                request.setAttribute("message", "Professor created successfully with ID: " + newUser.getUserId());
 
-                // If this is a professor and courses were specified, assign them
-                String[] selectedCourses = request.getParameterValues("selectedCourses");
-                if (roleId == 2 && selectedCourses != null && selectedCourses.length > 0) {
-                    List<String> courseCodes = Arrays.asList(selectedCourses);
+                // If courses were specified, assign them
+                String[] assignedCourses = request.getParameterValues("assignedCourses");
+                if (assignedCourses != null && assignedCourses.length > 0) {
+                    List<String> courseCodes = Arrays.asList(assignedCourses);
                     userController.assignCoursesToProfessor(newUser.getUserId(), courseCodes);
+                    logger.info("Assigned {} courses to professor ID {}", assignedCourses.length, newUser.getUserId());
                 }
 
                 // Redirect to the admin page with a message
                 response.sendRedirect(request.getContextPath() + "/AdminServlet?message=UserCreated");
             } else {
-                logger.error("Failed to create user: {} {}", firstName, lastName);
-                request.setAttribute("error", "Failed to create user");
+                logger.error("Failed to create professor: {} {}", firstName, lastName);
+                request.setAttribute("error", "Failed to create professor");
                 doGet(request, response);
             }
         } catch (NumberFormatException e) {
             logger.warn("Invalid number format in user creation: {}", e.getMessage());
-            request.setAttribute("error", "Invalid role ID or department ID format");
+            request.setAttribute("error", "Invalid department ID format");
             doGet(request, response);
         }
     }
-
 
     /**
      * Handles updating an existing FCAR
      */
     private void handleUpdateFCAR(HttpServletRequest request, HttpServletResponse response,
-                                  FCARController fcarController)
+            FCARController fcarController)
             throws ServletException, IOException {
         // Extract FCAR ID and ensure it's valid
         int fcarId = Integer.parseInt(request.getParameter("fcarId"));
@@ -485,7 +494,7 @@ public class AdminServlet extends BaseServlet {
      * Handles approving an FCAR
      */
     private void handleApproveFCAR(HttpServletRequest request, HttpServletResponse response,
-                                   User user, FCARController fcarController)
+            User user, FCARController fcarController)
             throws IOException {
         int fcarId = Integer.parseInt(request.getParameter("fcarId"));
         logger.info("Admin user ID {} approving FCAR ID {}", user.getUserId(), fcarId);
@@ -509,7 +518,7 @@ public class AdminServlet extends BaseServlet {
      * Handles rejecting an FCAR
      */
     private void handleRejectFCAR(HttpServletRequest request, HttpServletResponse response,
-                                  User user, FCARController fcarController)
+            User user, FCARController fcarController)
             throws IOException {
         int fcarId = Integer.parseInt(request.getParameter("fcarId"));
         String feedback = request.getParameter("feedback");
@@ -536,7 +545,7 @@ public class AdminServlet extends BaseServlet {
      * Handles deleting an FCAR
      */
     private void handleDeleteFCAR(HttpServletRequest request, HttpServletResponse response,
-                                  User user, FCARController fcarController)
+            User user, FCARController fcarController)
             throws IOException {
         int fcarId = Integer.parseInt(request.getParameter("fcarId"));
         logger.info("Admin user ID {} deleting FCAR ID {}", user.getUserId(), fcarId);
@@ -558,7 +567,8 @@ public class AdminServlet extends BaseServlet {
 
     /**
      * Handles AJAX requests for a professor's assigned courses
-     * @param request HTTP request
+     * 
+     * @param request  HTTP request
      * @param response HTTP response
      * @throws IOException If an I/O error occurs
      */

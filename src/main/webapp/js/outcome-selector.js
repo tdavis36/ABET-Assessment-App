@@ -108,6 +108,14 @@ function toggleIndicators(outcomeId) {
     
     if (indicatorsDiv) {
         indicatorsDiv.style.display = outcomeCheckbox.checked ? 'block' : 'none';
+        
+        // If outcome is unchecked, uncheck all its indicators
+        if (!outcomeCheckbox.checked) {
+            const indicators = document.querySelectorAll(`input[id^="indicator_${outcomeId}_"]`);
+            indicators.forEach(indicator => {
+                indicator.checked = false;
+            });
+        }
     }
 }
 
