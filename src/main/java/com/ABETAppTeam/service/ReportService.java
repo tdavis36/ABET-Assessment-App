@@ -105,8 +105,12 @@ public class ReportService {
         report.setSemester(semester);
         report.setYear(year);
 
-        // Get all approved FCARs for the specified semester and year
-        List<FCAR> completedFCARs = fcarRepository.findBySemesterAndYear(semester, year).stream()
+        // Get FCARs for the specified semester and year
+        // Using the correct repository method to find by semester and year
+        List<FCAR> semesterFCARs = fcarRepository.findBySemesterAndYear(semester, year);
+
+        // Filter to only include approved FCARs
+        List<FCAR> completedFCARs = semesterFCARs.stream()
                 .filter(fcar -> "Approved".equals(fcar.getStatus()))
                 .collect(Collectors.toList());
 

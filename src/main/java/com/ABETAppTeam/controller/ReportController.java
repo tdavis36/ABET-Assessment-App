@@ -79,6 +79,8 @@ public class ReportController {
      * @param year The year
      * @return Map containing the report and related data for the view
      */
+    // In ReportController.java
+
     public Map<String, Object> generateSemesterReportData(String reportTitle, String semester, int year) {
         logger.debug("Generating semester report data: {} for {} {}", reportTitle, semester, year);
 

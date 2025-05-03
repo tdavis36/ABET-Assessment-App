@@ -17,9 +17,9 @@
     <h1>Faculty Course Assessment Report (FCAR)</h1>
     <p>Complete the assessment form below for the course.</p>
 
-    <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="fcarForm">
+    <form action="${pageContext.request.contextPath}/${sessionScope.userRole == 'admin' ? 'admin' : 'professor'}" method="post" id="fcarForm">
         <input type="hidden" name="action" value="saveFCAR"/>
-        <input type="hidden" name="saveAction" id="saveActionInput" value="submit"/>
+        <input type="hidden" name="saveAction" id="saveActionInput" value="save"/>
 
         <!-- Basic Information Section -->
         <div class="form-section">
@@ -34,10 +34,14 @@
                 <input type="text" id="courseId" name="courseId" value="${fcar.courseId}" required />
             </div>
 
-            <div class="form-group">
-                <label for="professorId">Professor:</label>
-                <input type="text" id="professorId" name="professorId" value="${fcar.professorId}" required />
-            </div>
+            <c:choose>
+                   <c:when test="${sessionScope.userRole == 'admin'}">
+                     <input type="text" id="professorId" name="professorId" value="${fcar.professorId}" required />
+                   </c:when>
+                   <c:otherwise>
+                     <input type="text" id="professorId" value="${sessionScope.user.userId}" readonly />
+                   </c:otherwise>
+                 </c:choose>
 
             <div class="form-group">
                 <label for="semester">Semester:</label>
@@ -432,12 +436,12 @@
             <c:choose>
                 <c:when test="${sessionScope.userRole == 'admin'}">
                     <!-- Admin buttons -->
-                    <button type="submit" class="btn-submit" onclick="setAction('submit')">Submit FCAR</button>
-                    <button type="button" class="btn-submit" onclick="saveChanges()">Save Changes</button>
+                    <button type="button" class="btn-submit" onclick="submitFCAR()">Submit FCAR</button>
+                    <button type="button" class="btn-submit" onclick="saveAndExit()">Save Changes</button>
                 </c:when>
                 <c:otherwise>
                     <!-- Professor buttons -->
-                    <button type="submit" class="btn-submit" onclick="setAction('submit')">Submit FCAR</button>
+                    <button type="button" class="btn-submit" onclick="submitFCAR()">Submit FCAR</button>
                     <button type="button" class="btn-submit btn-save" onclick="saveAndExit()">Save as Draft</button>
                 </c:otherwise>
             </c:choose>
@@ -499,17 +503,27 @@
 
     // Function to save as draft and exit
     function saveAndExit() {
-        document.getElementById('saveActionInput').value = 'draft';
+        document.getElementById('saveActionInput').value = 'save';
+
         // Add a hidden field to indicate we want to redirect to ViewFCARServlet
-        var redirectField = document.createElement('input');
+        const redirectField = document.createElement('input');
         redirectField.type = 'hidden';
         redirectField.name = 'redirectToView';
         redirectField.value = 'true';
         document.getElementById('fcarForm').appendChild(redirectField);
+
         // Submit the form with saveFCAR action
         document.getElementById('fcarForm').submit();
     }
-    
+
+    // Function to submit the FCAR
+    function submitFCAR() {
+        if (confirm('Are you sure you want to submit this FCAR? Once submitted, it may not be editable.')) {
+            document.getElementById('saveActionInput').value = 'submit';
+            document.getElementById('fcarForm').submit();
+        }
+    }
+
     // Function to save changes (for admin)
     function saveChanges() {
         document.getElementById('saveActionInput').value = 'save';
@@ -586,7 +600,7 @@
     }
 
     // Initialize outcome data from the server
-    var outcomeData = {
+    const outcomeData = {
         outcomeDescriptions: ${outcomeDescriptions != null ? outcomeDescriptions : "{}"},
         outcomeNumbers: ${outcomeNumbers != null ? outcomeNumbers : "{}"},
         indicators: ${indicators != null ? indicators : "{}"},

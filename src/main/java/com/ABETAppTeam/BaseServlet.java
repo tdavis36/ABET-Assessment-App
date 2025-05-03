@@ -2,6 +2,7 @@ package com.ABETAppTeam;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -219,42 +220,129 @@ public abstract class BaseServlet extends HttpServlet {
      * Handles saving or submitting an FCAR
      */
     protected void handleSaveOrSubmitFCAR(HttpServletRequest request, HttpServletResponse response,
-            HttpSession session, User currentUser, String action)
+                                          HttpSession session, User currentUser, String action)
             throws ServletException, IOException {
         try {
-            int fcarId = Integer.parseInt(request.getParameter("fcarId"));
-            FCARController fcarController = getFCARController();
-            FCAR fcar = (fcarId > 0) ? fcarController.getFCAR(fcarId) : new FCAR();
+            // Extract FCAR ID if it exists (for editing an existing FCAR)
+            String fcarIdStr = request.getParameter("fcarId");
+            FCAR fcar = null;
+
+            if (fcarIdStr != null && !fcarIdStr.isEmpty()) {
+                // Editing an existing FCAR
+                int fcarId = Integer.parseInt(fcarIdStr);
+                FCARController fcarController = getFCARController();
+                fcar = fcarController.getFCAR(fcarId);
+
+                // Verify this professor owns this FCAR
+                int currentProfessorId = currentUser.getUserId();
+                if (fcar != null && fcar.getInstructorId() != currentProfessorId && !(currentUser instanceof Admin)) {
+                    request.setAttribute("error", "You can only update your own FCARs");
+                    request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
+                    return;
+                }
+            } else {
+                // Creating a new FCAR
+                String courseId = request.getParameter("courseId");
+                String semester = request.getParameter("semester");
+                String yearStr = request.getParameter("year");
+
+                // Validate inputs
+                if (courseId == null || courseId.isEmpty() ||
+                        semester == null || semester.isEmpty() ||
+                        yearStr == null || yearStr.isEmpty()) {
+                    request.setAttribute("error", "All fields are required to create an FCAR");
+                    request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+                    return;
+                }
+
+                int year = Integer.parseInt(yearStr);
+                int professorId = currentUser.getUserId();
+
+                // Create a new FCAR
+                fcar = new FCAR(0, courseId, professorId, semester, year);
+            }
 
             // Update FCAR fields from request parameters
             updateFCARFromRequest(fcar, request, currentUser);
 
             // Set status based on action
-            if ("submitFCAR".equals(action)) {
+            String saveAction = request.getParameter("saveAction");
+            assert fcar != null;
+            if ("submit".equals(saveAction)) {
                 fcar.setFieldValue("status", "Submitted", currentUser);
-                fcar.setDateFilled(new Date());
+                fcar.setDateFilled(new java.util.Date());
             } else {
                 // Save action
                 fcar.setFieldValue("status", "Draft", currentUser);
             }
 
+            // Process assessment methods
+            Map<String, String> methods = fcar.getAssessmentMethods();
+            if (methods == null) {
+                methods = new HashMap<>();
+            }
+
+            // Store workUsed and assessmentDescription
+            methods.put("workUsed", request.getParameter("workUsed"));
+            methods.put("assessmentDescription", request.getParameter("assessmentDescription"));
+
+            // Store achievement levels
+            methods.put("level1", request.getParameter("level1"));
+            methods.put("level2", request.getParameter("level2"));
+            methods.put("level3", request.getParameter("level3"));
+            methods.put("level4", request.getParameter("level4") != null ? request.getParameter("level4") : "0");
+            methods.put("level0", request.getParameter("level0") != null ? request.getParameter("level0") : "0");
+
+            // Store any selected outcomes and target goal
+            String selectedOutcomes = request.getParameter("selectedOutcomesInput");
+            if (selectedOutcomes != null && !selectedOutcomes.isEmpty()) {
+                methods.put("selectedOutcomes", selectedOutcomes);
+            }
+
+            String targetGoal = request.getParameter("targetGoal");
+            if (targetGoal != null && !targetGoal.isEmpty()) {
+                methods.put("targetGoal", targetGoal);
+            }
+
+            // Set updated methods map
+            fcar.setAssessmentMethods(methods);
+
+            // Process improvement actions
+            Map<String, String> improvementActions = fcar.getImprovementActions();
+            if (improvementActions == null) {
+                improvementActions = new HashMap<>();
+            }
+
+            // Store summary and improvement actions
+            improvementActions.put("summary", request.getParameter("summary"));
+            improvementActions.put("actions", request.getParameter("improvementActions"));
+
+            // Set updated improvement actions map
+            fcar.setImprovementActions(improvementActions);
+
             // Save the FCAR
             FCAR savedFcar = FCARFactory.save(fcar);
 
-            // Set the appropriate message for the user
-            String successMessage = "submitFCAR".equals(action)
-                    ? "FCAR successfully submitted!"
-                    : "FCAR saved as draft.";
-            session.setAttribute("message", successMessage);
+            if (savedFcar != null) {
+                // Set the appropriate message for the user
+                String successMessage = "submit".equals(saveAction)
+                        ? "FCAR successfully submitted!"
+                        : "FCAR saved as draft.";
+                session.setAttribute("message", successMessage);
 
-            // Check if we should redirect to the viewFCAR page
-            String redirectToView = request.getParameter("redirectToView");
-            if ("true".equals(redirectToView)) {
-                // Redirect to the viewFCAR page
-                response.sendRedirect(request.getContextPath() + "/ViewFCARServlet?action=viewAll");
+                // Check if we should redirect to the viewFCAR page
+                String redirectToView = request.getParameter("redirectToView");
+                if ("true".equals(redirectToView)) {
+                    // Redirect to the viewFCAR page
+                    response.sendRedirect(request.getContextPath() + "/ViewFCARServlet?action=viewAll");
+                } else {
+                    // Redirect based on user role
+                    redirectBasedOnUserRole(request, response, currentUser);
+                }
             } else {
-                // Redirect based on a user role
-                redirectBasedOnUserRole(request, response, currentUser);
+                request.setAttribute("error",
+                        "Failed to " + ("submit".equals(saveAction) ? "submit" : "save") + " FCAR");
+                request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
             }
         } catch (SecurityException e) {
             // Log the access control violation
@@ -264,11 +352,13 @@ public abstract class BaseServlet extends HttpServlet {
             request.setAttribute("error", "Access denied: " + e.getMessage());
             // Forward back to the edit page
             request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "Invalid number format: " + e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
         } catch (Exception e) {
             // Log the error
             getLogger().logError("Error saving FCAR", e);
 
-            System.err.println("Error saving FCAR: " + e.getMessage());
             request.setAttribute("error", "Error saving FCAR: " + e.getMessage());
             request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
         }

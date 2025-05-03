@@ -48,7 +48,7 @@
                             <div class="fcar-actions">
                                 <!-- Open/Edit -->
                                 <form method="get"
-                                      action="${pageContext.request.contextPath}/ProfessorServlet"
+                                      action="${pageContext.request.contextPath}/ViewFCARServlet"
                                       style="display:inline;">
                                     <input type="hidden" name="action" value="editFCAR"/>
                                     <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>

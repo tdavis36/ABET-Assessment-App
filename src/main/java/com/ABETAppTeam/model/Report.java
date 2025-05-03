@@ -112,29 +112,33 @@ public class Report {
         // Collect all achievement levels for each outcome
         for (FCAR fcar : fcarList) {
             Map<String, Integer> outcomes = fcar.getStudentOutcomes();
-            if (outcomes != null) {
+            if (outcomes != null && !outcomes.isEmpty()) {
                 for (Map.Entry<String, Integer> entry : outcomes.entrySet()) {
                     String outcomeId = entry.getKey();
                     Integer value = entry.getValue();
 
-                    outcomeValues.computeIfAbsent(outcomeId, k -> new ArrayList<>())
-                            .add(value);
+                    if (value != null) {
+                        outcomeValues.computeIfAbsent(outcomeId, k -> new ArrayList<>())
+                                .add(value);
+                    }
                 }
             }
         }
 
-        // Calculate average for each outcome
+        // Calculate the average for each outcome
         Map<String, Double> outcomeAverages = new HashMap<>();
         for (Map.Entry<String, List<Integer>> entry : outcomeValues.entrySet()) {
             String outcomeId = entry.getKey();
             List<Integer> values = entry.getValue();
 
-            double average = values.stream()
-                    .mapToInt(Integer::intValue)
-                    .average()
-                    .orElse(0.0);
+            if (!values.isEmpty()) {
+                double average = values.stream()
+                        .mapToInt(Integer::intValue)
+                        .average()
+                        .orElse(0.0);
 
-            outcomeAverages.put(outcomeId, average);
+                outcomeAverages.put(outcomeId, average);
+            }
         }
 
         return outcomeAverages;
