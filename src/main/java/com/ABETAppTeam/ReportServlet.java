@@ -1,9 +1,9 @@
 package com.ABETAppTeam;
 
+import com.ABETAppTeam.controller.CourseController;
+import com.ABETAppTeam.controller.OutcomeController;
 import com.ABETAppTeam.controller.ReportController;
-import com.ABETAppTeam.model.Admin;
-import com.ABETAppTeam.model.User;
-import com.ABETAppTeam.service.AuthenticationService;
+import com.ABETAppTeam.model.*;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -22,6 +22,8 @@ import java.util.Map;
 public class ReportServlet extends HttpServlet {
 
     private final LoggingService logger;
+
+    // Default no-argument constructor required by Jakarta Servlet
     public ReportServlet() {
         this.logger = LoggingService.getInstance();
     }
@@ -137,10 +139,22 @@ public class ReportServlet extends HttpServlet {
                     years.add(currentYear - i);
                 }
 
+                // Add this code to load outcomes
+                OutcomeController outcomeController = OutcomeController.getInstance();
+                List<Outcome> outcomes = outcomeController.getOutcomes();
+
+                // Add course data
+                CourseController courseController = CourseController.getInstance();
+                List<Course> courses = courseController.getAllCourses();
+                Map<Integer, List<Indicator>> indicatorsByOutcome = outcomeController.getIndicatorsByOutcome();
+
+                // Add all the attributes to the request
                 request.setAttribute("reportTypes", reportTypes);
                 request.setAttribute("semesters", semesters);
                 request.setAttribute("years", years);
-
+                request.setAttribute("outcomes", outcomes);
+                request.setAttribute("indicatorsByOutcome", indicatorsByOutcome);
+                request.setAttribute("courses", courses);
                 request.getRequestDispatcher("/WEB-INF/reportDashboard.jsp").forward(request, response);
             }
         } catch (Exception e) {

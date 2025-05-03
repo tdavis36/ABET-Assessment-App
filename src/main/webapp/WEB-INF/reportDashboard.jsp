@@ -1,4 +1,6 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="java.util.List" %>
+<%@ page import="com.ABETAppTeam.model.Report" %>
 <%@ page import="com.ABETAppTeam.model.Outcome" %>
 <%@ page import="com.ABETAppTeam.model.Course" %>
 <%@ page import="com.ABETAppTeam.repository.CourseRepository" %>
@@ -117,13 +119,20 @@
 <script>
     // Populate indicator dropdown
     const indicatorsByOutcome = {};
+
+    <c:if test="${not empty outcomes}">
     <c:forEach items="${outcomes}" var="outcome">
-    indicatorsByOutcome['${outcome.id}'] = [
-        <c:forEach items="${outcome.indicators}" var="ind" varStatus="st">
-        {id:'${ind.id}', description:'${ind.description}'}<c:if test="${!st.last}">,</c:if>
-        </c:forEach>
-    ];
+    indicatorsByOutcome['${outcome.id}'] = [];
+    <c:if test="${not empty indicatorsByOutcome[outcome.id]}">
+    <c:forEach items="${indicatorsByOutcome[outcome.id]}" var="ind" varStatus="st">
+    indicatorsByOutcome['${outcome.id}'].push({
+        id: '${ind.indicatorId}',
+        description: '${ind.description}'
+    });
     </c:forEach>
+    </c:if>
+    </c:forEach>
+    </c:if>
 
     const outcomeSelect = document.getElementById('outcomeSelect');
     const indicatorSelect = document.getElementById('indicatorSelect');

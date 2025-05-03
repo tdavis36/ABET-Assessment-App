@@ -32,13 +32,11 @@ public class AdminServlet extends BaseServlet {
 
     private final LoggingService logger;
     private final UserController userController;
-    private final CourseController courseController;
     private final DepartmentController departmentController;
 
     public AdminServlet() {
         this.logger = LoggingService.getInstance();
         this.userController = UserController.getInstance();
-        this.courseController = CourseController.getInstance();
         this.departmentController = DepartmentController.getInstance();
         logger.info("AdminServlet initialized");
     }

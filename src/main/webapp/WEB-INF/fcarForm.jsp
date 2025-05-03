@@ -1,9 +1,12 @@
+<jsp:useBean id="outcomeDescriptions" scope="request" type="com.ABETAppTeam.model.Outcome"/>
+<jsp:useBean id="outcomeNumbers" scope="request" type="com.ABETAppTeam.model.Outcome"/>
+<jsp:useBean id="indicators" scope="request" type="com.ABETAppTeam.model.Outcome"/>
+<jsp:useBean id="courseOutcomes" scope="request" type="com.ABETAppTeam.model.Outcome"/>
+<jsp:useBean id="fcar" scope="request" type="com.ABETAppTeam.model.FCAR"/>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.Map" %>
-<%@ page import="jakarta.servlet.http.HttpSession" %>
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 <%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -17,7 +20,7 @@
     <h1>Faculty Course Assessment Report (FCAR)</h1>
     <p>Complete the assessment form below for the course.</p>
 
-    <form action="${pageContext.request.contextPath}/${sessionScope.userRole == 'admin' ? 'admin' : 'professor'}" method="post" id="fcarForm">
+    <form action="${pageContext.request.contextPath}/${sessionScope.userRole == 'admin' ? 'AdminServlet' : 'ProfessorServlet'}" method="post" id="fcarForm">
         <input type="hidden" name="action" value="saveFCAR"/>
         <input type="hidden" name="saveAction" id="saveActionInput" value="save"/>
 
@@ -31,30 +34,34 @@
 
             <div class="form-group">
                 <label for="courseId">Course:</label>
-                <input type="text" id="courseId" name="courseId" value="${fcar.courseId}" required />
+                <input type="text" id="courseId" name="courseId" value="${not empty fcar ? fcar.courseCode : ''}" required />
             </div>
 
-            <c:choose>
-                   <c:when test="${sessionScope.userRole == 'admin'}">
-                     <input type="text" id="professorId" name="professorId" value="${fcar.professorId}" required />
-                   </c:when>
-                   <c:otherwise>
-                     <input type="text" id="professorId" value="${sessionScope.user.userId}" readonly />
-                   </c:otherwise>
-                 </c:choose>
+            <div class="form-group">
+                <label for="professorId">Professor:</label>
+                <c:choose>
+                    <c:when test="${sessionScope.userRole == 'admin'}">
+                        <input type="text" id="professorId" name="professorId" value="${not empty fcar ? fcar.instructorId : ''}" required />
+                    </c:when>
+                    <c:otherwise>
+                        <input type="text" id="professorId" value="${sessionScope.user.userId}" readonly />
+                        <input type="hidden" name="professorId" value="${sessionScope.user.userId}" />
+                    </c:otherwise>
+                </c:choose>
+            </div>
 
             <div class="form-group">
                 <label for="semester">Semester:</label>
                 <select id="semester" name="semester" required>
-                    <option value="Spring" ${fcar.semester == 'Spring' ? 'selected' : ''}>Spring</option>
-                    <option value="Summer" ${fcar.semester == 'Summer' ? 'selected' : ''}>Summer</option>
-                    <option value="Fall" ${fcar.semester == 'Fall' ? 'selected' : ''}>Fall</option>
+                    <option value="Spring" ${not empty fcar && fcar.semester == 'Spring' ? 'selected' : ''}>Spring</option>
+                    <option value="Summer" ${not empty fcar && fcar.semester == 'Summer' ? 'selected' : ''}>Summer</option>
+                    <option value="Fall" ${not empty fcar && fcar.semester == 'Fall' ? 'selected' : ''}>Fall</option>
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="year">Year:</label>
-                <input type="number" id="year" name="year" min="2020" max="2030" value="${not empty fcar.year ? fcar.year : '2025'}" required />
+                <input type="number" id="year" name="year" min="2020" max="2030" value="${not empty fcar && not empty fcar.year ? fcar.year : '2025'}" required />
             </div>
         </div>
 
@@ -72,6 +79,7 @@
                 <c:set var="isAdmin" value="${sessionScope.userRole == 'admin'}" />
 
                 <c:choose>
+                    <jsp:useBean id="outcomes" scope="request" type="com.ABETAppTeam.model.Outcome"/>
                     <c:when test="${not empty outcomes}">
                         <%-- Get the course code from the FCAR or from the form input --%>
                         <c:set var="currentCourseCode" value="${not empty fcar.courseCode ? fcar.courseCode : param.courseId}" />
@@ -303,7 +311,7 @@
                                         </c:forEach>
 
                                         <c:if test="${!hasIndicators}">
-                                            <p>No indicators selected for this outcome.</p>
+                                            <p>No indicators are selected for this outcome.</p>
                                         </c:if>
                                     </div>
                                 </div>
@@ -351,9 +359,15 @@
                 </thead>
                 <tbody>
                 <tr>
-                    <td><input type="number" name="level3" min="0" value="${not empty fcar.assessmentMethods['level3'] ? fcar.assessmentMethods['level3'] : '0'}" required /></td>
-                    <td><input type="number" name="level2" min="0" value="${not empty fcar.assessmentMethods['level2'] ? fcar.assessmentMethods['level2'] : '0'}" required /></td>
-                    <td><input type="number" name="level1" min="0" value="${not empty fcar.assessmentMethods['level1'] ? fcar.assessmentMethods['level1'] : '0'}" required /></td>
+                    <td><label>
+                        <input type="number" name="level3" min="0" value="${not empty fcar.assessmentMethods['level3'] ? fcar.assessmentMethods['level3'] : '0'}" required />
+                    </label></td>
+                    <td><label>
+                        <input type="number" name="level2" min="0" value="${not empty fcar.assessmentMethods['level2'] ? fcar.assessmentMethods['level2'] : '0'}" required />
+                    </label></td>
+                    <td><label>
+                        <input type="number" name="level1" min="0" value="${not empty fcar.assessmentMethods['level1'] ? fcar.assessmentMethods['level1'] : '0'}" required />
+                    </label></td>
                 </tr>
                 </tbody>
             </table>
@@ -375,7 +389,9 @@
                     <div class="major-section">
                         <div class="form-group">
                             <label>Major:</label>
-                            <input type="text" name="major[]" placeholder="e.g., Computer Science" />
+                            <label>
+                                <input type="text" name="major[]" placeholder="e.g., Computer Science" />
+                            </label>
                         </div>
                         <table class="achievement-table">
                             <thead>
@@ -389,11 +405,21 @@
                             </thead>
                             <tbody>
                             <tr>
-                                <td><input type="number" name="majorLevel4[]" min="0" value="0" /></td>
-                                <td><input type="number" name="majorLevel3[]" min="0" value="0" /></td>
-                                <td><input type="number" name="majorLevel2[]" min="0" value="0" /></td>
-                                <td><input type="number" name="majorLevel1[]" min="0" value="0" /></td>
-                                <td><input type="number" name="majorLevel0[]" min="0" value="0" /></td>
+                                <td><label>
+                                    <input type="number" name="majorLevel4[]" min="0" value="0" />
+                                </label></td>
+                                <td><label>
+                                    <input type="number" name="majorLevel3[]" min="0" value="0" />
+                                </label></td>
+                                <td><label>
+                                    <input type="number" name="majorLevel2[]" min="0" value="0" />
+                                </label></td>
+                                <td><label>
+                                    <input type="number" name="majorLevel1[]" min="0" value="0" />
+                                </label></td>
+                                <td><label>
+                                    <input type="number" name="majorLevel0[]" min="0" value="0" />
+                                </label></td>
                             </tr>
                             </tbody>
                         </table>
