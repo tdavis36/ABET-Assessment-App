@@ -5,6 +5,7 @@ import com.ABETAppTeam.model.Admin;
 import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.repository.UserRepository;
 import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.PasswordUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,7 +123,7 @@ public class UserController {
         user.setEmail(email);
 
         // In a real app, you would hash the password here
-        user.setPasswordHash(password);
+        user.setPasswordHash(PasswordUtils.hashPassword(password));
 
         user.setRoleId(roleId);
         user.setDeptId(deptId);

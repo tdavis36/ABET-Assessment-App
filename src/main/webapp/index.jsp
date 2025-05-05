@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ABET Assessment Application</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
+    <!-- Add Font Awesome for the eye icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
         /* Local styles for error message - can be moved to global styles.css */
         .error-message {
@@ -15,6 +17,19 @@
             background-color: rgba(220, 53, 69, 0.1); /* --danger with opacity */
             border-radius: 5px;
             border: 1px solid var(--danger);
+        }
+
+        /* Password visibility toggle styles */
+        .password-container {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
         }
     </style>
 </head>
@@ -42,7 +57,12 @@
 
                 <div class="form-group">
                     <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
+                    <div class="password-container">
+                        <input type="password" id="password" name="password" required>
+                        <span class="password-toggle" onclick="togglePasswordVisibility()">
+                            <i class="fa fa-eye" id="togglePasswordIcon"></i>
+                        </span>
+                    </div>
                 </div>
 
                 <div style="display: flex; justify-content: space-between; margin-top: 20px;">
@@ -69,5 +89,23 @@
 <footer style="background-color: var(--primary-dark); color: white; text-align: center; padding: 1rem; margin-top: 2rem;">
     <p>&copy; 2025 ABET Assessment App Team. All rights reserved.</p>
 </footer>
+
+<!-- JavaScript for toggling password visibility -->
+<script>
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('togglePasswordIcon');
+
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            toggleIcon.classList.remove("fa-eye");
+            toggleIcon.classList.add("fa-eye-slash");
+        } else {
+            passwordInput.type = "password";
+            toggleIcon.classList.remove("fa-eye-slash");
+            toggleIcon.classList.add("fa-eye");
+        }
+    }
+</script>
 </body>
 </html>

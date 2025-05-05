@@ -11,6 +11,7 @@ import java.util.List;
 import com.ABETAppTeam.model.*;
 import com.ABETAppTeam.service.LoggingService;
 import com.ABETAppTeam.util.DataSourceFactory;
+import com.ABETAppTeam.util.PasswordUtils;
 import com.zaxxer.hikari.HikariDataSource;
 
 /**
@@ -146,28 +147,24 @@ public class UserRepository {
      * @return The authenticated user or null if authentication fails
      */
     public User authenticate(String email, String password) {
-        // In a real application, you would hash the password here
-        // and compare the hashed values
         logger.info("Attempting to authenticate user: {}", email);
-        logger.info("Using password: {}", password);
 
-        // First check if the user exists
         String checkUserSql = "SELECT u.*, r.role_name, d.dept_name FROM User u " +
                 "JOIN Role r ON u.role_id = r.role_id " +
                 "JOIN Department d ON u.dept_id = d.dept_id " +
                 "WHERE u.email = ?";
 
         try (Connection conn = dataSource.getConnection();
-                PreparedStatement checkStmt = conn.prepareStatement(checkUserSql)) {
+             PreparedStatement checkStmt = conn.prepareStatement(checkUserSql)) {
             checkStmt.setString(1, email);
 
             try (ResultSet checkRs = checkStmt.executeQuery()) {
                 if (checkRs.next()) {
                     String storedHash = checkRs.getString("password_hash");
-                    logger.info("Found user with email: {}. Stored password hash: {}", email, storedHash);
+                    logger.info("Found user with email: {}", email);
 
-                    // Now check if the password matches
-                    if (password.equals(storedHash)) {
+                    // Use BCrypt to check the password
+                    if (PasswordUtils.checkPassword(password, storedHash)) {
                         logger.info("Password matches! Authentication successful.");
                         return mapResultSetToUser(checkRs);
                     } else {
@@ -310,15 +307,16 @@ public class UserRepository {
      * Change a user's password
      * 
      * @param userId          The ID of the user
-     * @param newPasswordHash The new password hash
+     * @param newPassword The new password hash
      * @return true if password change was successful, false otherwise
      */
-    public boolean changePassword(int userId, String newPasswordHash) {
+    public boolean changePassword(int userId, String newPassword) {
+        String hashedPassword = PasswordUtils.hashPassword(newPassword);
         String sql = "UPDATE User SET password_hash = ? WHERE user_id = ?";
 
         try (Connection conn = dataSource.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, newPasswordHash);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, hashedPassword);
             stmt.setInt(2, userId);
 
             return stmt.executeUpdate() > 0;
@@ -387,5 +385,46 @@ public class UserRepository {
         }
 
         return courses;
+    }
+    /**
+     * Migrate existing plaintext passwords to BCrypt hashed passwords
+     * This should be run once after updating the code to use BCrypt
+     *
+     * @return The number of passwords migrated
+     */
+    public int migrateExistingPasswords() {
+        int migratedCount = 0;
+        String sql = "SELECT user_id, password_hash FROM User";
+
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                int userId = rs.getInt("user_id");
+                String currentPassword = rs.getString("password_hash");
+
+                // Check if password is not already BCrypt hashed
+                // BCrypt hashes start with $2a$ or $2b$
+                if (!currentPassword.startsWith("$2a$") && !currentPassword.startsWith("$2b$")) {
+                    // Current password is plaintext, hash it
+                    String newHash = PasswordUtils.hashPassword(currentPassword);
+
+                    // Update with new hash
+                    String updateSql = "UPDATE User SET password_hash = ? WHERE user_id = ?";
+                    try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                        updateStmt.setString(1, newHash);
+                        updateStmt.setInt(2, userId);
+                        updateStmt.executeUpdate();
+                        migratedCount++;
+                    }
+                }
+            }
+            logger.info("Successfully migrated {} passwords to BCrypt hash", migratedCount);
+        } catch (SQLException e) {
+            logger.error("Failed to migrate passwords", e);
+        }
+
+        return migratedCount;
     }
 }
