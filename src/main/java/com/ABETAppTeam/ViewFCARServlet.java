@@ -157,10 +157,10 @@ public class ViewFCARServlet extends BaseServlet {
         if (fcar != null) {
             // Create a fresh report data structure
             Map<String, Object> reportData = new HashMap<>();
-            reportData.put("FCAR", fcar);
-            reportData.put("Assessment Methods", fcar.getAssessmentMethods());
-            reportData.put("Student Outcomes", fcar.getStudentOutcomes());
-            reportData.put("Improvement Actions", fcar.getImprovementActions());
+            reportData.put("fcar", fcar);
+            reportData.put("assessmentMethods", fcar.getAssessmentMethods());
+            reportData.put("studentOutcomes", fcar.getStudentOutcomes());
+            reportData.put("improvementActions", fcar.getImprovementActions());
 
             // Calculate average achievement level if student outcomes exist
             calculateAndAddAverageAchievement(reportData, fcar);
@@ -169,14 +169,12 @@ public class ViewFCARServlet extends BaseServlet {
             Course course = displayController.getCourse(fcar.getCourseId());
             if (course != null) {
                 reportData.put("course", course);
-                reportData.put("courseDetails", course);
             }
 
             // Get related professor data
             User professor = displayController.getUser(fcar.getProfessorId());
             if (professor != null) {
                 reportData.put("professor", professor);
-                reportData.put("professorDetails", professor);
             }
 
             addAttributesToRequest(request, reportData);

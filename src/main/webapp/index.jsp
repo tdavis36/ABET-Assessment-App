@@ -52,7 +52,7 @@
             <form action="${pageContext.request.contextPath}/index" method="post">
                 <div class="form-group">
                     <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" value="${requestScope.emailValue}" required>
                 </div>
 
                 <div class="form-group">

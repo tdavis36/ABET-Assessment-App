@@ -18,15 +18,15 @@ public class CourseController {
     private static CourseController instance;
 
     // Repository instance
-    private final CourseRepository courseRepository;
-    private final LoggingService logger;
+    private static CourseRepository courseRepository = new CourseRepository();
+    private static LoggingService logger = null;
 
     /**
      * Private constructor for a singleton pattern
      */
     private CourseController() {
-        this.courseRepository = new CourseRepository();
-        this.logger = LoggingService.getInstance();
+        courseRepository = new CourseRepository();
+        logger = LoggingService.getInstance();
         logger.debug("CourseController initialized");
     }
 
@@ -58,7 +58,7 @@ public class CourseController {
      *
      * @return List of all courses
      */
-    public List<Course> getAllCourses() {
+    public static List<Course> getAllCourses() {
         logger.debug("Getting all courses");
         return courseRepository.findAll();
     }

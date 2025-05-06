@@ -12,6 +12,7 @@
 <head>
     <title>Faculty Course Assessment Report (FCAR)</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
+    <script src="${pageContext.request.contextPath}/js/ajax-utils.js"></script>
     <script src="${pageContext.request.contextPath}/js/outcome-selector.js"></script>
 </head>
 <body>
@@ -83,15 +84,15 @@
                     <c:when test="${not empty outcomes}">
                         <%-- Get the course code from the FCAR or from the form input --%>
                         <c:set var="currentCourseCode" value="${not empty fcar.courseCode ? fcar.courseCode : param.courseId}" />
-                        
+
                         <%-- Get the course outcomes from the OutcomeController --%>
                         <c:set var="courseOutcomeIds" value="${outcomeController.findByCourseId(currentCourseCode)}" />
-                        
+
                         <%-- Only show outcomes associated with this course --%>
                         <c:forEach var="outcome" items="${outcomes}" varStatus="status">
                             <c:set var="outcomeId" value="${outcome.id}" />
                             <c:set var="outcomeSelected" value="${fn:contains(fcar.assessmentMethods['selectedOutcomes'], outcomeId)}" />
-                            
+
                             <%-- Check if this outcome is associated with the course --%>
                         <c:set var="isAssociatedWithCourse" value="true" />
                         <c:if test="${not empty courseOutcomeIds}">
@@ -102,7 +103,7 @@
                                 </c:if>
                             </c:forEach>
                         </c:if>
-                        
+
                         <%-- Display outcomes associated with this course or if no course is selected yet --%>
                         <c:if test="${isAssociatedWithCourse || isAdmin}">
                                 <div class="outcome-container">
@@ -538,15 +539,84 @@
         redirectField.value = 'true';
         document.getElementById('fcarForm').appendChild(redirectField);
 
-        // Submit the form with saveFCAR action
-        document.getElementById('fcarForm').submit();
+        // Show saving indicator
+        const saveButton = event.target;
+        const originalText = saveButton.textContent;
+        saveButton.textContent = 'Saving...';
+        saveButton.disabled = true;
+
+        // Submit the form with AJAX
+        AjaxUtils.submitForm(document.getElementById('fcarForm'), 
+            function(response) {
+                // Success callback
+                saveButton.textContent = 'Saved!';
+                setTimeout(function() {
+                    // If redirectToView is true, redirect to the view page
+                    if (response.redirectUrl) {
+                        window.location.href = response.redirectUrl;
+                    } else {
+                        saveButton.textContent = originalText;
+                        saveButton.disabled = false;
+                    }
+                }, 1000);
+            },
+            function(error) {
+                // Error callback
+                saveButton.textContent = 'Error Saving';
+                alert('Error saving FCAR: ' + error.message);
+                setTimeout(function() {
+                    saveButton.textContent = originalText;
+                    saveButton.disabled = false;
+                }, 2000);
+            }
+        );
     }
 
     // Function to submit the FCAR
     function submitFCAR() {
-        if (confirm('Are you sure you want to submit this FCAR? Once submitted, it may not be editable.')) {
+        let confirmMessage = 'Are you sure you want to submit this FCAR?';
+
+        // Different message for admin vs professor
+        if (${sessionScope.userRole == 'admin'}) {
+            confirmMessage += ' Once submitted, it can only be edited by administrators.';
+        } else {
+            confirmMessage += ' Once submitted, it may not be editable by you, but administrators can still make changes.';
+        }
+
+        if (confirm(confirmMessage)) {
             document.getElementById('saveActionInput').value = 'submit';
-            document.getElementById('fcarForm').submit();
+
+            // Show submitting indicator
+            const submitButton = event.target;
+            const originalText = submitButton.textContent;
+            submitButton.textContent = 'Submitting...';
+            submitButton.disabled = true;
+
+            // Submit the form with AJAX
+            AjaxUtils.submitForm(document.getElementById('fcarForm'), 
+                function(response) {
+                    // Success callback
+                    submitButton.textContent = 'Submitted!';
+                    setTimeout(function() {
+                        // If redirectUrl is provided, redirect to that URL
+                        if (response.redirectUrl) {
+                            window.location.href = response.redirectUrl;
+                        } else {
+                            submitButton.textContent = originalText;
+                            submitButton.disabled = false;
+                        }
+                    }, 1000);
+                },
+                function(error) {
+                    // Error callback
+                    submitButton.textContent = 'Error Submitting';
+                    alert('Error submitting FCAR: ' + error.message);
+                    setTimeout(function() {
+                        submitButton.textContent = originalText;
+                        submitButton.disabled = false;
+                    }, 2000);
+                }
+            );
         }
     }
 
@@ -655,7 +725,16 @@
         document.getElementById('fcarForm').addEventListener('submit', function(event) {
             // Prevent form submission if the action is 'submit' and confirmation is needed
             if (document.getElementById('saveActionInput').value === 'submit') {
-                if (!confirm('Are you sure you want to submit this FCAR? Once submitted, it may not be editable.')) {
+                let confirmMessage = 'Are you sure you want to submit this FCAR?';
+
+                // Different message for admin vs professor
+                if (${sessionScope.userRole == 'admin'}) {
+                    confirmMessage += ' Once submitted, it can only be edited by administrators.';
+                } else {
+                    confirmMessage += ' Once submitted, it may not be editable by you, but administrators can still make changes.';
+                }
+
+                if (!confirm(confirmMessage)) {
                     event.preventDefault();
                 }
             }

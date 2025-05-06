@@ -316,14 +316,10 @@
                         <td><%= professor.getDeptName() %></td>
                         <td><%= professor.isActive() ? "Active" : "Inactive" %></td>
                         <td>
-                            <button type="button" class="btn" onclick="openEditUserModal(<%= professor.getUserId() %>, '<%= professor.getFirstName() %>', '<%= professor.getLastName() %>', '<%= professor.getEmail() %>', <%= professor.getDeptId() %>)">Edit</button>
-                            <form method="post" action="${pageContext.request.contextPath}/AdminServlet" class="inline">
-                                <input type="hidden" name="action" value="toggleUserStatus" />
-                                <input type="hidden" name="userId" value="<%= professor.getUserId() %>" />
-                                <button type="submit" class="btn <%= professor.isActive() ? "btn-danger" : "btn-success" %>">
-                                    <%= professor.isActive() ? "Deactivate" : "Activate" %>
-                                </button>
-                            </form>
+                            <button type="button" class="btn" onclick="openEditUserModal(<%= professor.getUserId() %>, '<%= professor.getFirstName() %>', '<%= professor.getLastName() %>', '<%= professor.getEmail() %>', <%= professor.getDeptId() %>, <%= professor.getRoleId() %>)">Edit</button>
+                            <button type="button" class="btn <%= professor.isActive() ? "btn-danger" : "btn-success" %>" onclick="confirmToggleStatus(<%= professor.getUserId() %>, '<%= professor.getFirstName() %> <%= professor.getLastName() %>', <%= professor.isActive() %>)">
+                                <%= professor.isActive() ? "Deactivate" : "Activate" %>
+                            </button>
                         </td>
                     </tr>
                     <%
@@ -386,6 +382,14 @@
             </div>
 
             <div class="form-group">
+                <label for="editRole">Role:</label>
+                <select id="editRole" name="roleId" required>
+                    <option value="1">Administrator</option>
+                    <option value="2">Professor</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label>Assign Courses:</label>
                 <div class="course-checkboxes" id="editCourseCheckboxes">
                     <!-- Will be populated dynamically -->
@@ -397,6 +401,25 @@
                 <button type="submit" class="btn-submit">Save Changes</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Hidden form for toggling user status -->
+<form id="toggleStatusForm" method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:none;">
+    <input type="hidden" name="action" value="toggleUserStatus" />
+    <input type="hidden" name="userId" id="toggleUserId" />
+</form>
+
+<!-- Confirmation Modal -->
+<div id="confirmationModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeConfirmationModal()">&times;</span>
+        <h2>Confirm Action</h2>
+        <p id="confirmationMessage"></p>
+        <div class="button-container">
+            <button type="button" class="btn-cancel" onclick="closeConfirmationModal()">Cancel</button>
+            <button type="button" class="btn-submit" id="confirmButton">Confirm</button>
+        </div>
     </div>
 </div>
 
@@ -560,19 +583,45 @@
     }
 
     // Function to open the edit user modal
-    function openEditUserModal(userId, firstName, lastName, email, deptId) {
+    function openEditUserModal(userId, firstName, lastName, email, deptId, roleId) {
         // Set form values
         document.getElementById('editUserId').value = userId;
         document.getElementById('editFirstName').value = firstName;
         document.getElementById('editLastName').value = lastName;
         document.getElementById('editEmail').value = email;
         document.getElementById('editDepartment').value = deptId;
+        document.getElementById('editRole').value = roleId;
 
         // Populate course checkboxes
         populateEditCourseCheckboxes(userId);
 
         // Show the modal
         document.getElementById('editUserModal').style.display = 'block';
+    }
+
+    // Function to confirm toggling user status
+    function confirmToggleStatus(userId, userName, isActive) {
+        // Set the user ID in the hidden form
+        document.getElementById('toggleUserId').value = userId;
+
+        // Set the confirmation message
+        const action = isActive ? "deactivate" : "activate";
+        document.getElementById('confirmationMessage').textContent = 
+            `Are you sure you want to ${action} the user "${userName}"?`;
+
+        // Set the confirm button action
+        const confirmButton = document.getElementById('confirmButton');
+        confirmButton.onclick = function() {
+            document.getElementById('toggleStatusForm').submit();
+        };
+
+        // Show the confirmation modal
+        document.getElementById('confirmationModal').style.display = 'block';
+    }
+
+    // Function to close the confirmation modal
+    function closeConfirmationModal() {
+        document.getElementById('confirmationModal').style.display = 'none';
     }
 
     // Function to close the edit user modal

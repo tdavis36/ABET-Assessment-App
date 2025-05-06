@@ -1,13 +1,17 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serial;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.ABETAppTeam.model.Admin;
 import com.ABETAppTeam.model.Professor;
 import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.repository.UserRepository;
 import com.ABETAppTeam.service.LoggingService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -26,6 +30,7 @@ public class IndexServlet extends BaseServlet {
 
     private final UserRepository userRepository;
     private final LoggingService logger;
+    private final ObjectMapper objectMapper;
 
     /**
      * Initialize the servlet with a user repository
@@ -34,6 +39,7 @@ public class IndexServlet extends BaseServlet {
         super();
         this.userRepository = new UserRepository();
         this.logger = getLogger();
+        this.objectMapper = new ObjectMapper();
         logger.info("IndexServlet initialized");
     }
 
@@ -55,6 +61,12 @@ public class IndexServlet extends BaseServlet {
         String action = request.getParameter("action");
         if ("logout".equals(action)) {
             handleLogout(request, response);
+            return;
+        }
+
+        // Handle AJAX requests
+        if (isAjaxRequest(request)) {
+            handleAjaxRequest(request, response, action);
             return;
         }
 
@@ -113,6 +125,14 @@ public class IndexServlet extends BaseServlet {
 
         String timerId = logger.startTimer("indexServlet.doPost");
 
+        String action = request.getParameter("action");
+
+        // Handle AJAX requests
+        if (isAjaxRequest(request)) {
+            handleAjaxRequest(request, response, action);
+            return;
+        }
+
         try {
             String email = request.getParameter("email");
             String password = request.getParameter("password");
@@ -120,6 +140,10 @@ public class IndexServlet extends BaseServlet {
             // Basic validation
             if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
                 request.setAttribute("error", "Please enter both email and password");
+                // Preserve the email value if it exists
+                if (email != null && !email.isEmpty()) {
+                    request.setAttribute("emailValue", email);
+                }
                 request.getRequestDispatcher("/index.jsp").forward(request, response);
                 return;
             }
@@ -133,12 +157,18 @@ public class IndexServlet extends BaseServlet {
                 // Authentication failed - specify a clear error message
                 logger.warn("Failed login attempt for email: {}", email);
                 request.setAttribute("error", "Error: Incorrect email or password");
+                request.setAttribute("emailValue", email);
                 request.getRequestDispatcher("/index.jsp").forward(request, response);
             }
         } catch (Exception e) {
             // Log the error
             logger.error("Error during authentication: {}", e.getMessage(), e);
             request.setAttribute("error", "Error: Authentication failed. Please try again.");
+            // Preserve the email value
+            String email = request.getParameter("email");
+            if (email != null && !email.isEmpty()) {
+                request.setAttribute("emailValue", email);
+            }
             request.getRequestDispatcher("/index.jsp").forward(request, response);
         } finally {
             logger.stopTimer(timerId, "action=login");
@@ -184,5 +214,62 @@ public class IndexServlet extends BaseServlet {
             // Generic user type - redirect to a default page
             response.sendRedirect(request.getContextPath() + "/index");
         }
+    }
+
+    /**
+     * Handles AJAX requests
+     */
+    private void handleAjaxRequest(HttpServletRequest request, HttpServletResponse response, String action)
+            throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try (PrintWriter out = response.getWriter()) {
+            switch (action) {
+                case "getUserInfo":
+                    handleGetUserInfo(request, out);
+                    break;
+                default:
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.write("{\"error\": \"Invalid action\"}");
+            }
+        } catch (Exception e) {
+            logger.error("Error handling AJAX request: {}", e.getMessage(), e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            String errorJson = "{\"error\": \"" + e.getMessage() + "\"}";
+            try (PrintWriter out = response.getWriter()) {
+                out.write(errorJson);
+            }
+        }
+    }
+
+    /**
+     * Handles AJAX requests for user information
+     */
+    private void handleGetUserInfo(HttpServletRequest request, PrintWriter out) throws IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            out.write("{\"error\": \"User not logged in\"}");
+            return;
+        }
+
+        User user = (User) session.getAttribute("user");
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("userId", user.getUserId());
+        userInfo.put("firstName", user.getFirstName());
+        userInfo.put("lastName", user.getLastName());
+        userInfo.put("email", user.getEmail());
+        userInfo.put("role", user.getRoleName());
+
+        String json = objectMapper.writeValueAsString(userInfo);
+        out.write(json);
+    }
+
+    /**
+     * Checks if the request is an AJAX request
+     */
+    private boolean isAjaxRequest(HttpServletRequest request) {
+        String requestedWith = request.getHeader("X-Requested-With");
+        return "XMLHttpRequest".equals(requestedWith);
     }
 }
