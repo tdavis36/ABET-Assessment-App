@@ -4,6 +4,7 @@ import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.repository.FCARAssignmentRepository;
 import com.ABETAppTeam.repository.IFCARRepository;
 import com.ABETAppTeam.repository.FCARRepository;
+import com.ABETAppTeam.util.AppUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +37,8 @@ public abstract class FCARFactory {
 
             if (!assignmentCreated) {
                 // Log error if assignment creation failed
-                System.err.println("Failed to create FCAR assignment for FCAR ID: "
-                        + savedFCAR.getId() + " and professor ID: " + professorId);
+                AppUtils.error("Failed to create FCAR assignment for FCAR ID: {} and professor ID: {}", 
+                        savedFCAR.getId(), professorId);
             }
         }
 

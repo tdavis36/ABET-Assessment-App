@@ -197,22 +197,6 @@ body {
     color: white;
 }
 
-.status-draft {
-    background-color: var(--status-draft);
-}
-
-.status-submitted {
-    background-color: var(--status-submitted);
-}
-
-.status-approved {
-    background-color: var(--status-approved);
-}
-
-.status-rejected {
-    background-color: var(--status-rejected);
-}
-
 /* Statistics */
 .stat-container {
     display: flex;

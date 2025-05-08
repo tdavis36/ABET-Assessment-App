@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.ABETAppTeam.model.Indicator;
 import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.AppUtils;
 import com.ABETAppTeam.util.DataSourceFactory;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -144,9 +145,14 @@ public class IndicatorRepository {
                 stmt.setString(3, indicator.getDescription());
 
                 // Execute and time the update
-                long startTime = System.currentTimeMillis();
-                int affectedRows = stmt.executeUpdate();
-                long executionTime = System.currentTimeMillis() - startTime;
+                int affectedRows = AppUtils.timeOperation("executeIndicatorUpdate", () -> {
+                    try {
+                        return stmt.executeUpdate();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                long executionTime = 0; // Timing is now handled by AppUtils.timeOperation
 
                 // Log execution
                 logger.logStatementExecuted(stmt, sql, executionTime);

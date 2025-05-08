@@ -1,8 +1,4 @@
-<jsp:useBean id="outcomeDescriptions" scope="request" type="com.ABETAppTeam.model.Outcome"/>
-<jsp:useBean id="outcomeNumbers" scope="request" type="com.ABETAppTeam.model.Outcome"/>
-<jsp:useBean id="indicators" scope="request" type="com.ABETAppTeam.model.Outcome"/>
-<jsp:useBean id="courseOutcomes" scope="request" type="com.ABETAppTeam.model.Outcome"/>
-<jsp:useBean id="fcar" scope="request" type="com.ABETAppTeam.model.FCAR"/>
+<%-- Removed incorrect useBean declarations --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 <%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
@@ -80,7 +76,7 @@
                 <c:set var="isAdmin" value="${sessionScope.userRole == 'admin'}" />
 
                 <c:choose>
-                    <jsp:useBean id="outcomes" scope="request" type="com.ABETAppTeam.model.Outcome"/>
+                    <%-- Check if outcomes attribute exists --%>
                     <c:when test="${not empty outcomes}">
                         <%-- Get the course code from the FCAR or from the form input --%>
                         <c:set var="currentCourseCode" value="${not empty fcar.courseCode ? fcar.courseCode : param.courseId}" />
@@ -697,10 +693,10 @@
 
     // Initialize outcome data from the server
     const outcomeData = {
-        outcomeDescriptions: ${outcomeDescriptions != null ? outcomeDescriptions : "{}"},
-        outcomeNumbers: ${outcomeNumbers != null ? outcomeNumbers : "{}"},
-        indicators: ${indicators != null ? indicators : "{}"},
-        courseOutcomes: ${courseOutcomes != null ? courseOutcomes : "{}"}
+        outcomeDescriptions: ${requestScope.outcomeDescriptions != null ? requestScope.outcomeDescriptions : "{}"},
+        outcomeNumbers: ${requestScope.outcomeNumbers != null ? requestScope.outcomeNumbers : "{}"},
+        indicators: ${requestScope.indicators != null ? requestScope.indicators : "{}"},
+        courseOutcomes: ${requestScope.courseOutcomes != null ? requestScope.courseOutcomes : "{}"}
     };
 
     // Complete the DOMContentLoaded function at the bottom of your file

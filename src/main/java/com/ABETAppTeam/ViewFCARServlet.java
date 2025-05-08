@@ -11,6 +11,7 @@ import com.ABETAppTeam.controller.OutcomeController;
 import com.ABETAppTeam.model.Course;
 import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.model.User;
+import com.ABETAppTeam.util.AppUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,6 +37,9 @@ public class ViewFCARServlet extends BaseServlet {
         // Set cache control headers
         setCacheControlHeaders(response);
 
+        // Start request timing and logging
+        String timerId = startRequest(request);
+
         HttpSession session = request.getSession();
         String fcarId = request.getParameter("fcarId");
         String action = request.getParameter("action");
@@ -46,6 +50,13 @@ public class ViewFCARServlet extends BaseServlet {
         loadCommonData(request);
 
         try {
+            // Get user info for logging if available
+            User user = (User) session.getAttribute("user");
+            String userId = user != null ? String.valueOf(user.getUserId()) : "anonymous";
+
+            AppUtils.info("ViewFCAR request: action={}, fcarId={}, professorId={}, courseId={}, userId={}",
+                    action, fcarId, professorId, courseId, userId);
+
             // Process request based on parameters
             if ("edit".equals(action) && fcarId != null && !fcarId.isEmpty()) {
                 handleEditFCAR(request, response, session, fcarId);
@@ -62,7 +73,11 @@ public class ViewFCARServlet extends BaseServlet {
                 handleViewAllFCARs(request, response);
             }
         } catch (Exception e) {
-            handleError(response, e);
+            // Use enhanced error handling with request context
+            handleError(request, response, e);
+        } finally {
+            // Finish request timing and cleanup
+            finishRequest(timerId, request);
         }
     }
 
@@ -214,11 +229,18 @@ public class ViewFCARServlet extends BaseServlet {
         // Set cache control headers
         setCacheControlHeaders(response);
 
+        // Start request timing and logging
+        String timerId = startRequest(request);
+
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
         User currentUser = (User) session.getAttribute("user");
 
         try {
+            // Log the action with user context
+            String userId = currentUser != null ? String.valueOf(currentUser.getUserId()) : "anonymous";
+            AppUtils.info("ViewFCAR POST request: action={}, userId={}", action, userId);
+
             // Load common data for all forms
             loadCommonData(request);
 
@@ -233,7 +255,11 @@ public class ViewFCARServlet extends BaseServlet {
                 doGet(request, response);
             }
         } catch (Exception e) {
-            handleError(response, e);
+            // Use enhanced error handling with request context
+            handleError(request, response, e);
+        } finally {
+            // Finish request timing and cleanup
+            finishRequest(timerId, request);
         }
     }
 
@@ -245,8 +271,17 @@ public class ViewFCARServlet extends BaseServlet {
         String fcarId = request.getParameter("fcarId");
         String exportFormat = request.getParameter("format");
 
-        // Log the export request
-        getLogger().info("Exporting FCAR ID {} in format {}", fcarId, exportFormat);
+        // Get user info for logging
+        HttpSession session = request.getSession(false);
+        User user = session != null ? (User) session.getAttribute("user") : null;
+        String userId = user != null ? String.valueOf(user.getUserId()) : "anonymous";
+
+        // Log the export request with user context
+        AppUtils.info("Exporting FCAR ID {} in format {} by user {}", fcarId, exportFormat, userId);
+
+        // Log access event
+        AppUtils.logAccess(userId, getClientIpAddress(request), 
+                "FCAR_EXPORT", "FCAR ID: " + fcarId + ", Format: " + exportFormat);
 
         // This would be implemented to export FCAR data in different formats
         // For now, redirect back to the FCAR view

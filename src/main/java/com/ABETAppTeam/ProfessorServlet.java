@@ -15,6 +15,7 @@ import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.model.Professor;
 import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.AppUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletException;
@@ -78,7 +79,24 @@ public class ProfessorServlet extends BaseServlet {
             }
             // … (your draft-to-draft logic here) …
             request.setAttribute("fcar", fcar);
-            // … load outcomeData, indicators …
+
+            // Load outcome data for the form
+            OutcomeController outcomeController = getOutcomeController();
+            request.setAttribute("outcomeData", outcomeController.getOutcomeDataAsJson());
+
+            // Get outcome and indicators data for the forms
+            Map<String, Object> outcomeData = outcomeController.getAllOutcomesAndIndicatorsForForm();
+            request.setAttribute("outcomes", outcomeData.get("outcomes"));
+            request.setAttribute("indicatorsByOutcome", outcomeData.get("indicatorsByOutcome"));
+
+            // Parse the JSON string to get individual outcome data components
+            String outcomeDataJson = outcomeController.getOutcomeDataAsJson();
+            // Extract outcomeDescriptions, outcomeNumbers, indicators, and courseOutcomes
+            request.setAttribute("outcomeDescriptions", extractJsonObject(outcomeDataJson, "outcomeDescriptions"));
+            request.setAttribute("outcomeNumbers", extractJsonObject(outcomeDataJson, "outcomeNumbers"));
+            request.setAttribute("indicators", extractJsonObject(outcomeDataJson, "indicators"));
+            request.setAttribute("courseOutcomes", extractJsonObject(outcomeDataJson, "courseOutcomes"));
+
             request.getRequestDispatcher("/WEB-INF/fcarForm.jsp")
                     .forward(request, response);
             return;
@@ -546,13 +564,13 @@ public class ProfessorServlet extends BaseServlet {
             }
         } catch (SecurityException e) {
             // Log the access control violation
-            getLogger().logError("Access control violation during FCAR save/submit", e);
+            AppUtils.error("Access control violation during FCAR save/submit", e);
             sendJsonError(response, "Access denied: " + e.getMessage(), HttpServletResponse.SC_FORBIDDEN);
         } catch (NumberFormatException e) {
             sendJsonError(response, "Invalid number format: " + e.getMessage(), HttpServletResponse.SC_BAD_REQUEST);
         } catch (Exception e) {
             // Log the error
-            getLogger().logError("Error saving FCAR", e);
+            AppUtils.error("Error saving FCAR", e);
             sendJsonError(response, "Error saving FCAR: " + e.getMessage(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }

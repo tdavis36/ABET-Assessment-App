@@ -10,7 +10,7 @@ import com.ABETAppTeam.model.Admin;
 import com.ABETAppTeam.model.Professor;
 import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.repository.UserRepository;
-import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.AppUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletException;
@@ -29,7 +29,6 @@ public class IndexServlet extends BaseServlet {
     private static final long serialVersionUID = 1L;
 
     private final UserRepository userRepository;
-    private final LoggingService logger;
     private final ObjectMapper objectMapper;
 
     /**
@@ -38,9 +37,8 @@ public class IndexServlet extends BaseServlet {
     public IndexServlet() {
         super();
         this.userRepository = new UserRepository();
-        this.logger = getLogger();
         this.objectMapper = new ObjectMapper();
-        logger.info("IndexServlet initialized");
+        AppUtils.info("IndexServlet initialized");
     }
 
     /**
@@ -55,7 +53,7 @@ public class IndexServlet extends BaseServlet {
         // Set cache control headers
         setCacheControlHeaders(response);
 
-        String timerId = logger.startTimer("indexServlet.doGet");
+        String timerId = AppUtils.startTimer("indexServlet.doGet");
         HttpSession session = request.getSession(false);
 
         String action = request.getParameter("action");
@@ -77,7 +75,7 @@ public class IndexServlet extends BaseServlet {
                 String userId = String.valueOf(user.getUserId());
                 String userRole = user.getRoleName();
 
-                logger.info("User already logged in (userId={}, role={}), redirecting to dashboard", userId, userRole);
+                AppUtils.info("User already logged in (userId={}, role={}), redirecting to dashboard", userId, userRole);
 
                 // Redirect based on a user role using the common method
                 redirectToUserDashboard(request, response, user);
@@ -85,13 +83,13 @@ public class IndexServlet extends BaseServlet {
             }
 
             // Forwards user to index with auth error
-            logger.debug("No valid session or user not logged in, showing login page");
+            AppUtils.debug("No valid session or user not logged in, showing login page");
             request.getRequestDispatcher("/index.jsp").forward(request, response);
         } catch (Exception e) {
-            logger.error("Error in IndexServlet.doGet: {}", e.getMessage(), e);
+            AppUtils.error("Error in IndexServlet.doGet: {}", e.getMessage(), e);
             handleError(response, e);
         } finally {
-            logger.stopTimer(timerId, "url=" + request.getRequestURI());
+            AppUtils.stopTimer(timerId, "url=" + request.getRequestURI());
         }
     }
 
@@ -101,10 +99,10 @@ public class IndexServlet extends BaseServlet {
     private void redirectToUserDashboard(HttpServletRequest request, HttpServletResponse response, User user)
             throws IOException {
         if (user instanceof Admin) {
-            logger.debug("Redirecting admin to AdminServlet");
+            AppUtils.debug("Redirecting admin to AdminServlet");
             response.sendRedirect(request.getContextPath() + "/admin");
         } else if (user instanceof Professor) {
-            logger.debug("Redirecting professor to ProfessorServlet");
+            AppUtils.debug("Redirecting professor to ProfessorServlet");
             response.sendRedirect(request.getContextPath() + "/professor");
         } else {
             // Default redirect for unknown user types
@@ -123,7 +121,7 @@ public class IndexServlet extends BaseServlet {
         // Set cache control headers
         setCacheControlHeaders(response);
 
-        String timerId = logger.startTimer("indexServlet.doPost");
+        String timerId = AppUtils.startTimer("indexServlet.doPost");
 
         String action = request.getParameter("action");
 
@@ -155,14 +153,14 @@ public class IndexServlet extends BaseServlet {
                 handleSuccessfulLogin(request, response, user);
             } else {
                 // Authentication failed - specify a clear error message
-                logger.warn("Failed login attempt for email: {}", email);
+                AppUtils.warn("Failed login attempt for email: {}", email);
                 request.setAttribute("error", "Error: Incorrect email or password");
                 request.setAttribute("emailValue", email);
                 request.getRequestDispatcher("/index.jsp").forward(request, response);
             }
         } catch (Exception e) {
             // Log the error
-            logger.error("Error during authentication: {}", e.getMessage(), e);
+            AppUtils.error("Error during authentication: {}", e.getMessage(), e);
             request.setAttribute("error", "Error: Authentication failed. Please try again.");
             // Preserve the email value
             String email = request.getParameter("email");
@@ -171,7 +169,7 @@ public class IndexServlet extends BaseServlet {
             }
             request.getRequestDispatcher("/index.jsp").forward(request, response);
         } finally {
-            logger.stopTimer(timerId, "action=login");
+            AppUtils.stopTimer(timerId, "action=login");
         }
     }
 
@@ -193,11 +191,11 @@ public class IndexServlet extends BaseServlet {
 
         // Log the successful login
         String ipAddress = getClientIpAddress(request);
-        logger.info("User login successful: userId={}, role={}, IP={}",
+        AppUtils.info("User login successful: userId={}, role={}, IP={}",
                 user.getUserId(), user.getRoleName(), ipAddress);
 
         // Log security event
-        logger.logSecurityEvent("LOGIN",
+        AppUtils.logSecurityEvent("LOGIN",
                 String.valueOf(user.getUserId()),
                 ipAddress,
                 "User logged in successfully",
@@ -234,7 +232,7 @@ public class IndexServlet extends BaseServlet {
                     out.write("{\"error\": \"Invalid action\"}");
             }
         } catch (Exception e) {
-            logger.error("Error handling AJAX request: {}", e.getMessage(), e);
+            AppUtils.error("Error handling AJAX request: {}", e.getMessage(), e);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             String errorJson = "{\"error\": \"" + e.getMessage() + "\"}";
             try (PrintWriter out = response.getWriter()) {

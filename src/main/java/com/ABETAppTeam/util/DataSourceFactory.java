@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.AppUtils;
 
 /**
  * Factory class for creating and managing database connections with enhanced logging
@@ -227,9 +228,14 @@ public class DataSourceFactory {
                 java.sql.Statement stmt = conn.createStatement();
                 logger.logStatementCreated(stmt, "SELECT 1 FROM User LIMIT 1");
 
-                long startTime = System.currentTimeMillis();
-                boolean hasResultSet = stmt.execute("SELECT 1 FROM User LIMIT 1");
-                long executionTime = System.currentTimeMillis() - startTime;
+                boolean hasResultSet = AppUtils.timeOperation("executeSchemaCheck", () -> {
+                    try {
+                        return stmt.execute("SELECT 1 FROM User LIMIT 1");
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                long executionTime = 0; // Timing is now handled by AppUtils.timeOperation
 
                 logger.logStatementExecuted(stmt, "SELECT 1 FROM User LIMIT 1", executionTime);
 

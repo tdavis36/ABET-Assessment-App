@@ -14,7 +14,7 @@ import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.model.Professor;
 import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.service.FCARService;
-import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.AppUtils;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -45,11 +45,7 @@ public abstract class BaseServlet extends HttpServlet {
         return new FCARService();
     }
 
-    protected LoggingService logger = LoggingService.getInstance();
-
-    protected LoggingService getLogger() {
-        return logger;
-    }
+    // Using AppUtils for standardized logging, error handling, and timing
 
     /**
      * Sets standard cache control headers
@@ -67,7 +63,7 @@ public abstract class BaseServlet extends HttpServlet {
     public void handleLogout(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
-        String timerId = logger.startTimer("indexServlet.handleLogout");
+        String timerId = AppUtils.startTimer("indexServlet.handleLogout");
         HttpSession session = request.getSession(false);
 
         try {
@@ -77,17 +73,17 @@ public abstract class BaseServlet extends HttpServlet {
                 String userId = user != null ? String.valueOf(user.getUserId()) : "unknown";
                 String ipAddress = getClientIpAddress(request);
 
-                logger.info("User logout: userId={}, sessionId={}, IP={}",
+                AppUtils.info("User logout: userId={}, sessionId={}, IP={}",
                         userId, session.getId(), ipAddress);
 
                 // Log security event
-                logger.logSecurityEvent("LOGOUT", userId, ipAddress,
+                AppUtils.logSecurityEvent("LOGOUT", userId, ipAddress,
                         "User logged out successfully", true);
 
                 session.invalidate();
-                logger.debug("Session invalidated during logout");
+                AppUtils.debug("Session invalidated during logout");
             } else {
-                logger.debug("No active session found during logout attempt");
+                AppUtils.debug("No active session found during logout attempt");
             }
 
             // Set cache control headers using method from BaseServlet
@@ -105,7 +101,7 @@ public abstract class BaseServlet extends HttpServlet {
 
             response.sendRedirect(request.getContextPath() + "/index.jsp?loggedOut=true");
         } finally {
-            logger.stopTimer(timerId, null);
+            AppUtils.stopTimer(timerId);
         }
     }
 
@@ -151,13 +147,11 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Verifies the user has appropriate access privileges.
-     * Sends HTTP 403 error if the user doesn't have access.
+     * Verifies the user has appropriate access privileges for a specific FCAR.
      *
-     * @param user     The user to verify
-     * @param response The HTTP response to send an error if needed
-     * @return true if the user doesn't have access, false otherwise
-     * @throws IOException if an I/O error occurs
+     * @param fcar The FCAR to check access for
+     * @param user The user to verify
+     * @return true if the user has access, false otherwise
      */
     protected boolean canAccessFCAR(FCAR fcar, User user) {
         if (user instanceof Admin)
@@ -346,7 +340,7 @@ public abstract class BaseServlet extends HttpServlet {
             }
         } catch (SecurityException e) {
             // Log the access control violation
-            getLogger().logError("Access control violation during FCAR save/submit", e);
+            AppUtils.logError("Access control violation during FCAR save/submit", e);
 
             // Access control violation
             request.setAttribute("error", "Access denied: " + e.getMessage());
@@ -357,7 +351,7 @@ public abstract class BaseServlet extends HttpServlet {
             request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
         } catch (Exception e) {
             // Log the error
-            getLogger().logError("Error saving FCAR", e);
+            AppUtils.logError("Error saving FCAR", e);
 
             request.setAttribute("error", "Error saving FCAR: " + e.getMessage());
             request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
@@ -389,9 +383,9 @@ public abstract class BaseServlet extends HttpServlet {
             request.getRequestDispatcher("/WEB-INF/viewFCAR.jsp").forward(request, response);
         } catch (Exception e) {
             // Log the error
-            getLogger().logError("Error filtering FCARs by semester", e);
+            AppUtils.logError("Error filtering FCARs by semester", e);
 
-            System.err.println("Error filtering FCARs: " + e.getMessage());
+            // Send error response
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Error filtering FCARs: " + e.getMessage());
         }
@@ -422,16 +416,91 @@ public abstract class BaseServlet extends HttpServlet {
     }
 
     /**
-     * Handles errors consistently using the LoggingService
+     * Handles errors consistently using the AppUtils
      */
     protected void handleError(HttpServletResponse response, Exception e)
             throws IOException {
-        System.err.println("Error processing request" + ": " + e.getMessage());
-
-        // Use the LoggingService to log the error with full context
-        getLogger().logError("An error occurred during processing", e);
+        // Log the error with full context using AppUtils
+        AppUtils.logError("An error occurred during processing", e);
 
         response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                 "Error processing request" + ": " + e.getMessage());
+    }
+
+    /**
+     * Handles errors with additional context information
+     */
+    protected void handleError(HttpServletRequest request, HttpServletResponse response, Exception e)
+            throws IOException {
+        // Get user information if available
+        HttpSession session = request.getSession(false);
+        String userId = "unknown";
+        String userRole = "unknown";
+
+        if (session != null && session.getAttribute("user") != null) {
+            User user = (User) session.getAttribute("user");
+            userId = String.valueOf(user.getUserId());
+            userRole = user.getRoleName();
+        }
+
+        // Create request info map
+        Map<String, Object> requestInfo = new HashMap<>();
+        requestInfo.put("requestURI", request.getRequestURI());
+        requestInfo.put("requestMethod", request.getMethod());
+        requestInfo.put("remoteAddr", getClientIpAddress(request));
+        requestInfo.put("userAgent", request.getHeader("User-Agent"));
+
+        // Log the error with full context
+        AppUtils.logContextualError("Error processing request", e, userId, requestInfo);
+
+        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                "Error processing request" + ": " + e.getMessage());
+    }
+
+    /**
+     * Starts request processing and sets up logging context
+     * Call this at the beginning of doGet/doPost methods
+     * 
+     * @param request The HTTP request
+     * @return A timer ID to be used with finishRequest
+     */
+    protected String startRequest(HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
+        String method = request.getMethod();
+        String timerId = AppUtils.startTimer(method + " " + requestURI);
+
+        // Set user context for logging if user is logged in
+        HttpSession session = request.getSession(false);
+        if (session != null && session.getAttribute("user") != null) {
+            User user = (User) session.getAttribute("user");
+            String userId = String.valueOf(user.getUserId());
+            String userRole = user.getRoleName();
+            AppUtils.setUserContext(userId, userRole);
+
+            // Log access
+            AppUtils.logAccess(userId, getClientIpAddress(request), requestURI, method);
+        } else {
+            // Log anonymous access
+            AppUtils.logAccess("anonymous", getClientIpAddress(request), requestURI, method);
+        }
+
+        return timerId;
+    }
+
+    /**
+     * Finishes request processing and cleans up logging context
+     * Call this at the end of doGet/doPost methods
+     * 
+     * @param timerId The timer ID returned from startRequest
+     * @param request The HTTP request
+     */
+    protected void finishRequest(String timerId, HttpServletRequest request) {
+        String additionalInfo = "url=" + request.getRequestURI();
+        if (request.getQueryString() != null) {
+            additionalInfo += "?" + request.getQueryString();
+        }
+
+        AppUtils.stopTimer(timerId, additionalInfo);
+        AppUtils.clearUserContext();
     }
 }

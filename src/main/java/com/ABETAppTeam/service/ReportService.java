@@ -139,7 +139,7 @@ public class ReportService {
         // Get all approved FCARs
         List<FCAR> completedFCARs = fcarRepository.findAll().stream()
                 .filter(fcar -> "Approved".equals(fcar.getStatus()))
-                .collect(Collectors.toList());
+                .toList();
 
         // Group FCARs by course code
         Map<String, List<FCAR>> fcarsByCourse = completedFCARs.stream()
@@ -291,16 +291,12 @@ public class ReportService {
     public String exportReport(Report report, String format) {
         logger.info("Exporting report {} in {} format", report.getReportId(), format);
 
-        switch (format.toUpperCase()) {
-            case "CSV":
-                return exportToCSV(report);
-            case "HTML":
-                return exportToHTML(report);
-            case "PDF":
-                return "PDF export not implemented yet";
-            default:
-                return exportToPlainText(report);
-        }
+        return switch (format.toUpperCase()) {
+            case "CSV" -> exportToCSV(report);
+            case "HTML" -> exportToHTML(report);
+            case "PDF" -> "PDF export not implemented yet";
+            default -> exportToPlainText(report);
+        };
     }
 
     /**

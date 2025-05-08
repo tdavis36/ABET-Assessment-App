@@ -2,6 +2,7 @@ package com.ABETAppTeam;
 
 import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.model.Report;
+import com.ABETAppTeam.util.AppUtils;
 
 import java.util.*;
 import java.util.UUID;
@@ -105,7 +106,7 @@ public class ReportFactory {
         if (report == null || filePath == null) {
             return false;
         }
-        System.out.println("Exporting report to PDF (placeholder) at " + filePath);
+        AppUtils.info("Exporting report to PDF (placeholder) at {}", filePath);
         return true;
     }
 
@@ -121,7 +122,7 @@ public class ReportFactory {
         if (report == null || filePath == null) {
             return false;
         }
-        System.out.println("Exporting report to CSV (placeholder) at " + filePath);
+        AppUtils.info("Exporting report to CSV (placeholder) at {}", filePath);
         return true;
     }
 
