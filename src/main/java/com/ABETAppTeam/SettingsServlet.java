@@ -49,6 +49,17 @@ public class SettingsServlet extends BaseServlet {
         HttpSession session = request.getSession();
         User currentUser = (User) session.getAttribute("user");
 
+        AppUtils.debug("SettingsServlet.doGet called with request URL: {}", request.getRequestURL().toString());
+        if (currentUser != null) {
+            AppUtils.debug("User class: {}", currentUser.getClass().getName());
+            AppUtils.debug("User ID: {}", currentUser.getUserId());
+            AppUtils.debug("User role: {}", currentUser.getRoleName());
+            AppUtils.debug("User role ID: {}", currentUser.getRoleId());
+            AppUtils.debug("Is admin: {}", (currentUser instanceof Admin));
+        } else {
+            AppUtils.debug("Current user is null in session");
+        }
+
         try {
             // Check if user is logged in and is an admin
             if (currentUser == null) {

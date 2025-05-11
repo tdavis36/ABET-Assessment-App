@@ -2,6 +2,10 @@
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 <%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 
+<%-- Convert potentially problematic values to explicit booleans --%>
+<c:set var="hasSuccessMessage" value="${not empty successMessage}" />
+<c:set var="hasErrorMessage" value="${not empty errorMessage}" />
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -128,14 +132,14 @@
     <h1>Application Settings</h1>
 
     <!-- Message Display Section -->
-    <c:if test="${not empty successMessage || not empty errorMessage}">
+    <c:if test="${hasSuccessMessage || hasErrorMessage}">
         <div class="message-container">
-            <c:if test="${not empty successMessage}">
+            <c:if test="${hasSuccessMessage}">
                 <div class="success-message">
                     <p>${successMessage}</p>
                 </div>
             </c:if>
-            <c:if test="${not empty errorMessage}">
+            <c:if test="${hasErrorMessage}">
                 <div class="error-message">
                     <p>${errorMessage}</p>
                 </div>
@@ -205,7 +209,7 @@
             <li>improvementActions - Proposed actions for improvement (optional)</li>
         </ul>
 
-        <form action="${pageContext.request.contextPath}/ImportFCARServlet" method="post" enctype="multipart/form-data">
+        <form action="${pageContext.request.contextPath}/import" method="post" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="fcarFile">Select CSV File:</label>
                 <input type="file" id="fcarFile" name="fcarFile" accept=".csv" required>
@@ -299,16 +303,39 @@
                         </thead>
                         <tbody>
                         <c:forEach items="${professors}" var="professor">
+                            <%-- Convert professor.active to an explicit boolean --%>
+                            <c:set var="isProfessorActive" value="false" />
+                            <c:if test="${professor.active == true}">
+                                <c:set var="isProfessorActive" value="true" />
+                            </c:if>
+
                             <tr>
                                 <td>${professor.userId}</td>
                                 <td>${professor.firstName} ${professor.lastName}</td>
                                 <td>${professor.email}</td>
                                 <td>${professor.deptName}</td>
-                                <td>${professor.active ? "Active" : "Inactive"}</td>
+                                <td>
+                                    <c:choose>
+                                        <c:when test="${isProfessorActive}">Active</c:when>
+                                        <c:otherwise>Inactive</c:otherwise>
+                                    </c:choose>
+                                </td>
                                 <td>
                                     <button type="button" class="btn" onclick="openEditUserModal(${professor.userId}, '${professor.firstName}', '${professor.lastName}', '${professor.email}', ${professor.deptId}, ${professor.roleId})">Edit</button>
-                                    <button type="button" class="btn ${professor.active ? 'btn-danger' : 'btn-success'}" onclick="confirmToggleStatus(${professor.userId}, '${professor.firstName} ${professor.lastName}', ${professor.active})">
-                                        ${professor.active ? "Deactivate" : "Activate"}
+                                    <button type="button" class="btn
+                                        <c:choose>
+                                            <c:when test="${isProfessorActive}">btn-danger</c:when>
+                                            <c:otherwise>btn-success</c:otherwise>
+                                        </c:choose>"
+                                            onclick="confirmToggleStatus(${professor.userId}, '${professor.firstName} ${professor.lastName}',
+                                            <c:choose>
+                                            <c:when test="${isProfessorActive}">true</c:when>
+                                            <c:otherwise>false</c:otherwise>
+                                            </c:choose>)">
+                                        <c:choose>
+                                            <c:when test="${isProfessorActive}">Deactivate</c:when>
+                                            <c:otherwise>Activate</c:otherwise>
+                                        </c:choose>
                                     </button>
                                 </td>
                             </tr>
@@ -329,7 +356,7 @@
     <div class="modal-content">
         <span class="close" onclick="closeEditUserModal()">&times;</span>
         <h2>Edit Professor</h2>
-        <form action="${pageContext.request.contextPath}/SettingsServlet" method="post" id="editUserForm">
+        <form action="${pageContext.request.contextPath}/settings" method="post" id="editUserForm">
             <input type="hidden" name="action" value="editUser" />
             <input type="hidden" name="userId" id="editUserId" />
 
@@ -387,7 +414,7 @@
 </div>
 
 <!-- Hidden form for toggling user status -->
-<form id="toggleStatusForm" method="post" action="${pageContext.request.contextPath}/SettingsServlet" style="display:none;">
+<form id="toggleStatusForm" method="post" action="${pageContext.request.contextPath}/settings" style="display:none;">
     <input type="hidden" name="action" value="toggleUserStatus" />
     <input type="hidden" name="userId" id="toggleUserId" />
 </form>
@@ -425,12 +452,15 @@
 
     // Function to confirm toggling user status
     function confirmToggleStatus(userId, userName, isActive) {
+        // Ensure isActive is a boolean
+        isActive = (isActive === true || isActive === "true");
+
         // Set the user ID in the hidden form
         document.getElementById('toggleUserId').value = userId;
 
         // Set the confirmation message
         const action = isActive ? "deactivate" : "activate";
-        document.getElementById('confirmationMessage').textContent = 
+        document.getElementById('confirmationMessage').textContent =
             `Are you sure you want to ${action} the user "${userName}"?`;
 
         // Set the confirm button action
@@ -459,7 +489,7 @@
         container.innerHTML = '';
 
         // Make an AJAX call to get assigned courses for this professor
-        fetch(`${pageContext.request.contextPath}/SettingsServlet?action=getProfessorCourses&userId=${userId}`)
+        fetch(`${pageContext.request.contextPath}/settings?action=getProfessorCourses&userId=${userId}`)
             .then(response => response.json())
             .then(assignedCourses => {
                 // Add all available courses with checkboxes
@@ -525,17 +555,17 @@
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Connection successful!');
-            } else {
-                alert('Connection failed: ' + data.message);
-            }
-        })
-        .catch(error => {
-            alert('Error testing connection: ' + error);
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Connection successful!');
+                } else {
+                    alert('Connection failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error testing connection: ' + error);
+            });
     }
 
     // Function to restart connection pool
@@ -549,17 +579,17 @@
                 },
                 body: 'action=restartConnectionPool'
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Connection pool restarted successfully!');
-                } else {
-                    alert('Failed to restart connection pool: ' + data.message);
-                }
-            })
-            .catch(error => {
-                alert('Error restarting connection pool: ' + error);
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Connection pool restarted successfully!');
+                    } else {
+                        alert('Failed to restart connection pool: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error restarting connection pool: ' + error);
+                });
         }
     }
 
@@ -589,7 +619,7 @@
                         if (headerRow && lines.length > 0) {
                             headers = lines[0].split(',');
                             for (let header of headers) {
-                                previewHTML += `<th>${header ? header.trim() : ''}</th>`;
+                                previewHTML += `<th>\${header ? header.trim() : ''}</th>`;
                             }
                             previewHTML += '</tr></thead><tbody>';
 
@@ -600,7 +630,7 @@
                                     previewHTML += '<tr>';
                                     const cells = lines[i].split(',');
                                     for (let cell of cells) {
-                                        previewHTML += `<td>${cell ? cell.trim() : ''}</td>`;
+                                        previewHTML += `<td>\${cell ? cell.trim() : ''}</td>`;
                                     }
                                     previewHTML += '</tr>';
                                 }
@@ -609,7 +639,7 @@
                             // No header row, just show data
                             const firstRow = lines[0].split(',');
                             for (let i = 0; i < firstRow.length; i++) {
-                                previewHTML += `<th>Column ${i+1}</th>`;
+                                previewHTML += `<th>Column \${i+1}</th>`;
                             }
                             previewHTML += '</tr></thead><tbody>';
 
@@ -620,7 +650,7 @@
                                     previewHTML += '<tr>';
                                     const cells = lines[i].split(',');
                                     for (let cell of cells) {
-                                        previewHTML += `<td>${cell ? cell.trim() : ''}</td>`;
+                                        previewHTML += `<td>\${cell ? cell.trim() : ''}</td>`;
                                     }
                                     previewHTML += '</tr>';
                                 }
@@ -630,7 +660,7 @@
                         previewHTML += '</tbody></table>';
 
                         if (lines.length > 6) {
-                            previewHTML += `<p>...and ${lines.length - 6} more rows</p>`;
+                            previewHTML += `<p>...and \${lines.length - 6} more rows</p>`;
                         }
 
                         document.getElementById('previewContent').innerHTML = previewHTML;
