@@ -12,124 +12,14 @@
     <meta charset="UTF-8">
     <title>ABET App Settings</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
-    <style>
-        .settings-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .settings-section {
-            background-color: var(--card-bg);
-            border-radius: 5px;
-            margin-bottom: 20px;
-            padding: 20px;
-            box-shadow: 0 1px 3px var(--shadow);
-        }
-
-        .settings-section h2 {
-            margin-top: 0;
-            color: var(--primary);
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        .form-group input[type="text"],
-        .form-group input[type="password"],
-        .form-group input[type="number"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        .button-container {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        .btn-secondary {
-            background-color: var(--secondary);
-            color: white;
-        }
-
-        .message-container {
-            margin-bottom: 20px;
-        }
-
-        .success-message {
-            background-color: #dff0d8;
-            border: 1px solid #d6e9c6;
-            color: #3c763d;
-            padding: 15px;
-            border-radius: 4px;
-        }
-
-        .error-message {
-            background-color: #f2dede;
-            border: 1px solid #ebccd1;
-            color: #a94442;
-            padding: 15px;
-            border-radius: 4px;
-        }
-
-        /* Import section styling */
-        .import-preview {
-            margin-top: 15px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 15px;
-            background-color: var(--form-bg);
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        .data-table th, .data-table td {
-            border: 1px solid var(--border);
-            padding: 8px;
-            text-align: left;
-        }
-
-        .data-table th {
-            background-color: #f5f5f5; /* Light gray background for table headers */
-        }
-    </style>
 </head>
 <body>
 <jsp:include page="/WEB-INF/navbar.jsp" />
 
-<div class="settings-container">
-    <h1>Application Settings</h1>
+<div class="dashboard" id="settingsDashboard">
+    <div class="header-container">
+        <h1>Application Settings</h1>
+    </div>
 
     <!-- Message Display Section -->
     <c:if test="${hasSuccessMessage || hasErrorMessage}">
@@ -148,95 +38,99 @@
     </c:if>
 
     <!-- Database Connection Settings Section -->
-    <div class="settings-section">
+    <div class="section">
         <h2>Database Connection Settings</h2>
         <p>Configure the database connection parameters. Changes will take effect after restarting the connection pool.</p>
 
-        <form action="${pageContext.request.contextPath}/SettingsServlet" method="post">
-            <input type="hidden" name="action" value="saveDbSettings">
+        <div class="form-section">
+            <form action="${pageContext.request.contextPath}/settings" method="post">
+                <input type="hidden" name="action" value="saveDbSettings">
 
-            <div class="form-group">
-                <label for="dbHost">Database Host:</label>
-                <input type="text" id="dbHost" name="dbHost" value="${dbConfig.host}" required>
-            </div>
+                <div class="form-group">
+                    <label for="dbHost">Database Host:</label>
+                    <input type="text" id="dbHost" name="dbHost" value="${dbConfig.host}" required>
+                </div>
 
-            <div class="form-group">
-                <label for="dbPort">Database Port:</label>
-                <input type="number" id="dbPort" name="dbPort" value="${dbConfig.port}" required>
-            </div>
+                <div class="form-group">
+                    <label for="dbPort">Database Port:</label>
+                    <input type="number" id="dbPort" name="dbPort" value="${dbConfig.port}" required>
+                </div>
 
-            <div class="form-group">
-                <label for="dbName">Database Name:</label>
-                <input type="text" id="dbName" name="dbName" value="${dbConfig.name}" required>
-            </div>
+                <div class="form-group">
+                    <label for="dbName">Database Name:</label>
+                    <input type="text" id="dbName" name="dbName" value="${dbConfig.name}" required>
+                </div>
 
-            <div class="form-group">
-                <label for="dbUsername">Database Username:</label>
-                <input type="text" id="dbUsername" name="dbUsername" value="${dbConfig.username}" required>
-            </div>
+                <div class="form-group">
+                    <label for="dbUsername">Database Username:</label>
+                    <input type="text" id="dbUsername" name="dbUsername" value="${dbConfig.username}" required>
+                </div>
 
-            <div class="form-group">
-                <label for="dbPassword">Database Password:</label>
-                <input type="password" id="dbPassword" name="dbPassword" value="${dbConfig.password}" required>
-            </div>
+                <div class="form-group">
+                    <label for="dbPassword">Database Password:</label>
+                    <input type="password" id="dbPassword" name="dbPassword" value="${dbConfig.password}" required>
+                </div>
 
-            <div class="button-container">
-                <button type="submit" class="btn btn-primary">Save Settings</button>
-                <button type="button" class="btn btn-secondary" onclick="testConnection()">Test Connection</button>
-                <button type="button" class="btn btn-secondary" onclick="restartConnectionPool()">Restart Connection Pool</button>
-            </div>
-        </form>
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-submit">Save Settings</button>
+                    <button type="button" class="btn" onclick="testConnection()">Test Connection</button>
+                    <button type="button" class="btn" onclick="restartConnectionPool()">Restart Connection Pool</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Import FCAR Section -->
-    <div class="settings-section">
+    <div class="section">
         <h2>Import FCARs</h2>
-        <p>Upload a CSV file to import multiple FCARs at once. The CSV file should have the following columns:</p>
-        <ul>
-            <li>courseCode - Course code (e.g., CS101)</li>
-            <li>instructorId - Professor ID</li>
-            <li>semester - Semester (Spring, Summer, Fall)</li>
-            <li>year - Year (e.g., 2025)</li>
-            <li>outcomeId - Outcome ID (optional)</li>
-            <li>indicatorId - Indicator ID (optional)</li>
-            <li>workUsed - Work used for assessment (optional)</li>
-            <li>assessmentDescription - Description of assessment method (optional)</li>
-            <li>level1 - Number of students below expectations (optional)</li>
-            <li>level2 - Number of students meeting expectations (optional)</li>
-            <li>level3 - Number of students exceeding expectations (optional)</li>
-            <li>targetGoal - Target goal percentage (optional)</li>
-            <li>summary - Summary of results (optional)</li>
-            <li>improvementActions - Proposed actions for improvement (optional)</li>
-        </ul>
+        <div class="form-section">
+            <p>Upload a CSV file to import multiple FCARs at once. The CSV file should have the following columns:</p>
+            <ul>
+                <li>courseCode - Course code (e.g., CS101)</li>
+                <li>instructorId - Professor ID</li>
+                <li>semester - Semester (Spring, Summer, Fall)</li>
+                <li>year - Year (e.g., 2025)</li>
+                <li>outcomeId - Outcome ID (optional)</li>
+                <li>indicatorId - Indicator ID (optional)</li>
+                <li>workUsed - Work used for assessment (optional)</li>
+                <li>assessmentDescription - Description of assessment method (optional)</li>
+                <li>level1 - Number of students below expectations (optional)</li>
+                <li>level2 - Number of students meeting expectations (optional)</li>
+                <li>level3 - Number of students exceeding expectations (optional)</li>
+                <li>targetGoal - Target goal percentage (optional)</li>
+                <li>summary - Summary of results (optional)</li>
+                <li>improvementActions - Proposed actions for improvement (optional)</li>
+            </ul>
 
-        <form action="${pageContext.request.contextPath}/import" method="post" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="fcarFile">Select CSV File:</label>
-                <input type="file" id="fcarFile" name="fcarFile" accept=".csv" required>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="headerRow" name="headerRow" checked>
-                    File contains header row
-                </label>
-            </div>
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Import FCARs</button>
-            </div>
-        </form>
+            <form action="${pageContext.request.contextPath}/ImportFCARServlet" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="fcarFile">Select CSV File:</label>
+                    <input type="file" id="fcarFile" name="fcarFile" accept=".csv" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="headerRow" name="headerRow" checked>
+                        File contains header row
+                    </label>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-submit">Import FCARs</button>
+                </div>
+            </form>
 
-        <div id="importPreview" class="import-preview" style="display: none;">
-            <h3>Import Preview</h3>
-            <div id="previewContent"></div>
+            <div id="importPreview" class="import-preview" style="display: none;">
+                <h3>Import Preview</h3>
+                <div id="previewContent"></div>
+            </div>
         </div>
     </div>
 
     <!-- User Management Section -->
-    <div class="settings-section">
+    <div class="section">
         <h2>Manage Users</h2>
         <div class="form-section">
             <h3>Create New Professor Account</h3>
-            <form action="${pageContext.request.contextPath}/SettingsServlet" method="post" id="createUserForm">
+            <form action="${pageContext.request.contextPath}/settings" method="post" id="createUserForm">
                 <input type="hidden" name="action" value="createUser" />
 
                 <div class="form-group">
@@ -281,7 +175,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn-submit">Create Professor Account</button>
+                <button type="submit" class="btn btn-submit">Create Professor Account</button>
             </form>
         </div>
 
@@ -320,7 +214,7 @@
                                         <c:otherwise>Inactive</c:otherwise>
                                     </c:choose>
                                 </td>
-                                <td>
+                                <td class="fcar-actions">
                                     <button type="button" class="btn" onclick="openEditUserModal(${professor.userId}, '${professor.firstName}', '${professor.lastName}', '${professor.email}', ${professor.deptId}, ${professor.roleId})">Edit</button>
                                     <button type="button" class="btn
                                         <c:choose>
@@ -406,8 +300,8 @@
             </div>
 
             <div class="button-container">
-                <button type="button" class="btn-cancel" onclick="closeEditUserModal()">Cancel</button>
-                <button type="submit" class="btn-submit">Save Changes</button>
+                <button type="button" class="btn btn-cancel" onclick="closeEditUserModal()">Cancel</button>
+                <button type="submit" class="btn btn-submit">Save Changes</button>
             </div>
         </form>
     </div>
@@ -426,8 +320,8 @@
         <h2>Confirm Action</h2>
         <p id="confirmationMessage"></p>
         <div class="button-container">
-            <button type="button" class="btn-cancel" onclick="closeConfirmationModal()">Cancel</button>
-            <button type="button" class="btn-submit" id="confirmButton">Confirm</button>
+            <button type="button" class="btn btn-cancel" onclick="closeConfirmationModal()">Cancel</button>
+            <button type="button" class="btn btn-submit" id="confirmButton">Confirm</button>
         </div>
     </div>
 </div>
@@ -551,7 +445,7 @@
         formData.append('dbPassword', password);
 
         // Send AJAX request
-        fetch('${pageContext.request.contextPath}/SettingsServlet', {
+        fetch('${pageContext.request.contextPath}/settings', {
             method: 'POST',
             body: formData
         })
@@ -572,7 +466,7 @@
     function restartConnectionPool() {
         if (confirm('Are you sure you want to restart the database connection pool? This may temporarily interrupt database operations.')) {
             // Send AJAX request
-            fetch('${pageContext.request.contextPath}/SettingsServlet', {
+            fetch('${pageContext.request.contextPath}/settings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -660,7 +554,7 @@
                         previewHTML += '</tbody></table>';
 
                         if (lines.length > 6) {
-                            previewHTML += `<p>...and \${lines.length - 6} more rows</p>`;
+                            previewHTML += `<p>...and ${lines.length - 6} more rows</p>`;
                         }
 
                         document.getElementById('previewContent').innerHTML = previewHTML;

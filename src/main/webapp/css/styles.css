@@ -1166,3 +1166,60 @@ form.inline {
         justify-content: flex-end;
     }
 }
+
+/* Import Preview Styling */
+.import-preview {
+    margin-top: 15px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 15px;
+    background-color: var(--form-bg);
+}
+
+/* Settings specific styles */
+#settingsDashboard .form-section {
+    margin-bottom: 20px;
+}
+
+#settingsDashboard .action-buttons {
+    margin-top: 20px;
+}
+
+#settingsDashboard ul {
+    margin-left: 20px;
+    margin-bottom: 15px;
+}
+
+#settingsDashboard .import-preview h3 {
+    margin-top: 0;
+    color: var(--primary);
+    margin-bottom: 15px;
+}
+
+/* Make modals more responsive */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+}
+
+/* Enhance course checkboxes for better readability */
+.course-checkboxes {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--input-border);
+    padding: 10px;
+    border-radius: 4px;
+    background-color: var(--input-bg);
+    margin-top: 5px;
+}
+
+.course-checkboxes div {
+    margin-bottom: 5px;
+}
+
+.course-checkboxes label {
+    display: inline;
+    margin-left: 5px;
+}
