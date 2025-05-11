@@ -30,7 +30,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-@WebServlet("/AdminServlet")
+@WebServlet(value = "/AdminServlet", urlPatterns ="/admin")
 public class AdminServlet extends BaseServlet {
 
     private final LoggingService logger;
@@ -1122,14 +1122,6 @@ public class AdminServlet extends BaseServlet {
     }
 
     /**
-     * Checks if the request is an AJAX request
-     */
-    private boolean isAjaxRequest(HttpServletRequest request) {
-        String requestedWith = request.getHeader("X-Requested-With");
-        return "XMLHttpRequest".equals(requestedWith);
-    }
-
-    /**
      * Handles AJAX requests to save or submit an FCAR
      */
     private void handleAjaxSaveOrSubmitFCAR(HttpServletRequest request, HttpServletResponse response, String action) 
@@ -1296,19 +1288,6 @@ public class AdminServlet extends BaseServlet {
 
         try (PrintWriter out = response.getWriter()) {
             out.write(new ObjectMapper().writeValueAsString(errorData));
-        }
-    }
-
-    /**
-     * Sends a JSON success response
-     */
-    private void sendJsonResponse(HttpServletResponse response, Map<String, Object> data) throws IOException {
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-
-        try (PrintWriter out = response.getWriter()) {
-            out.write(new ObjectMapper().writeValueAsString(data));
         }
     }
 }

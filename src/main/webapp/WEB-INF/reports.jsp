@@ -22,7 +22,7 @@
     <div class="section">
         <h2>Generate Report</h2>
         <p>Select an outcome and report type. If "Academic Year" is chosen, select a year.</p>
-        <form action="${pageContext.request.contextPath}/ReportServlet" method="get" class="form-inline">
+        <form action="${pageContext.request.contextPath}/reports" method="get" class="form-inline">
             <div class="form-group">
                 <label for="outcomeId">Outcome:</label>
                 <select id="outcomeId" name="outcomeId" class="form-control" required>
@@ -64,12 +64,12 @@
                             <span class="report-title">${r.reportTitle}</span>
                             <span class="report-date">${r.generatedDate}</span>
                             <div class="report-actions">
-                                <form action="${pageContext.request.contextPath}/ReportServlet" method="get" style="display:inline;">
+                                <form action="${pageContext.request.contextPath}/reports" method="get" style="display:inline;">
                                     <input type="hidden" name="action" value="downloadOutcomeReport" />
                                     <input type="hidden" name="id" value="${r.reportId}" />
                                     <button type="submit" class="btn">Download (.xlsx)</button>
                                 </form>
-                                <form action="${pageContext.request.contextPath}/ReportServlet" method="get" style="display:inline;">
+                                <form action="${pageContext.request.contextPath}/reports" method="get" style="display:inline;">
                                     <input type="hidden" name="action" value="viewOutcomeReport" />
                                     <input type="hidden" name="id" value="${r.reportId}" />
                                     <button type="submit" class="btn">View</button>

@@ -7,6 +7,8 @@
 <%@ page import="com.ABETAppTeam.model.User" %>
 <%@ page import="com.ABETAppTeam.model.Professor" %>
 <%@ page import="com.ABETAppTeam.model.Department" %>
+<%@ page import="com.ABETAppTeam.model.Outcome" %>
+<%@ page import="com.ABETAppTeam.model.Indicator" %>
 <%@ page import="java.util.HashMap" %>
 
 <!DOCTYPE html>
@@ -34,7 +36,6 @@
 
     <!-- Statistics Section -->
     <div class="section">
-        <h2>Dashboard Statistics</h2>
         <div class="stat-container">
             <%
                 List<FCAR> allFCARs = (List<FCAR>) request.getAttribute("allFCARs");
@@ -74,7 +75,7 @@
 
     <!-- Action Buttons -->
     <div class="action-buttons">
-        <form action="${pageContext.request.contextPath}/ViewFCARServlet" method="get">
+        <form action="${pageContext.request.contextPath}/view" method="get">
             <input type="hidden" name="action" value="viewAll"/>
             <button type="submit" class="btn">View All FCARs</button>
         </form>
@@ -99,27 +100,42 @@
                     <div>
                         <span class="status <%= status %>"></span>
                         <strong>Course:</strong> <%= fcar.getCourseId() %> -
-                        <strong>Professor:</strong> <%= fcar.getProfessorId() %> -
+                        <strong>Instructor:</strong> <% 
+                            // Look up the professor's last name using their ID
+                            int professorId = fcar.getProfessorId();
+                            String professorLastName = "";
+                            List<User> professors = (List<User>) request.getAttribute("professors");
+                            if (professors != null) {
+                                for (User prof : professors) {
+                                    if (prof.getUserId() == professorId) {
+                                        professorLastName = prof.getLastName();
+                                        break;
+                                    }
+                                }
+                            }
+                            // Display the professor's last name if found, otherwise display the ID
+                            out.print(professorLastName.isEmpty() ? professorId : professorLastName);
+                        %> -
                         <strong>Semester:</strong> <%= fcar.getSemester() %> <%= fcar.getYear() %> -
                         <strong>Status:</strong> <%= fcar.getStatus() %>
                     </div>
                     <div class="fcar-actions">
-                        <form method="get" action="${pageContext.request.contextPath}/ViewFCARServlet" style="display:inline;">
+                        <form method="get" action="${pageContext.request.contextPath}/view" style="display:inline;">
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
                             <button type="submit" class="btn">View</button>
                         </form>
-                        <form method="get" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
+                        <form method="get" action="${pageContext.request.contextPath}/admin" style="display:inline;">
                             <input type="hidden" name="action" value="editFCAR"/>
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
                             <button type="submit" class="btn">Edit</button>
                         </form>
                         <% if ("submitted".equals(status)) { %>
-                        <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
+                        <form method="post" action="${pageContext.request.contextPath}/admin" style="display:inline;">
                             <input type="hidden" name="action" value="approveFCAR"/>
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
                             <button type="submit" class="btn" style="background-color: var(--success);">Approve</button>
                         </form>
-                        <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
+                        <form method="post" action="${pageContext.request.contextPath}/admin" style="display:inline;">
                             <input type="hidden" name="action" value="rejectFCAR"/>
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
                             <button type="submit" class="btn" style="background-color: var(--danger);">Reject</button>
@@ -218,210 +234,10 @@
         </div>
     </div>
 
-    <!-- 'Manage Users' section moved to the bottom -->
-    <div class="section">
-        <h2>Manage Users</h2>
-        <div class="form-section">
-            <h3>Create New Professor Account</h3>
-            <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="createUserForm">
-                <input type="hidden" name="action" value="createUser" />
-
-                <div class="form-group">
-                    <label for="firstName">First Name:</label>
-                    <input type="text" id="firstName" name="firstName" required />
-                </div>
-
-                <div class="form-group">
-                    <label for="lastName">Last Name:</label>
-                    <input type="text" id="lastName" name="lastName" required />
-                </div>
-
-                <div class="form-group">
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" required />
-                </div>
-
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required />
-                </div>
-
-                <div class="form-group">
-                    <label for="department">Department:</label>
-                    <select id="department" name="deptId" required>
-                        <option value="">Select a Department</option>
-                        <%
-                            List<Department> departments = (List<Department>) request.getAttribute("departments");
-                            if (departments != null && !departments.isEmpty()) {
-                                for (Department dept : departments) {
-                        %>
-                        <option value="<%= dept.getId() %>"><%= dept.getName() %></option>
-                        <%
-                                }
-                            }
-                        %>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Assign Courses:</label>
-                    <div class="course-checkboxes">
-                        <%
-                            if (courses != null && !courses.isEmpty()) {
-                                for (Course course : courses) {
-                        %>
-                        <div>
-                            <input type="checkbox" id="course_<%= course.getCourseCode() %>" name="assignedCourses" value="<%= course.getCourseCode() %>" />
-                            <label for="course_<%= course.getCourseCode() %>"><%= course.getCourseCode() %>: <%= course.getCourseName() %></label>
-                        </div>
-                        <%
-                                }
-                            }
-                        %>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-submit">Create Professor Account</button>
-            </form>
-        </div>
-
-        <!-- Existing Professors List -->
-        <div class="form-section">
-            <h3>Existing Professors</h3>
-            <div class="user-list">
-                <%
-                    if (professors != null && !professors.isEmpty()) {
-                %>
-                <table class="data-table">
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Department</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <%
-                        for (User user : professors) {
-                            if (user instanceof Professor) {
-                                Professor professor = (Professor) user;
-                    %>
-                    <tr>
-                        <td><%= professor.getUserId() %></td>
-                        <td><%= professor.getFirstName() %> <%= professor.getLastName() %></td>
-                        <td><%= professor.getEmail() %></td>
-                        <td><%= professor.getDeptName() %></td>
-                        <td><%= professor.isActive() ? "Active" : "Inactive" %></td>
-                        <td>
-                            <button type="button" class="btn" onclick="openEditUserModal(<%= professor.getUserId() %>, '<%= professor.getFirstName() %>', '<%= professor.getLastName() %>', '<%= professor.getEmail() %>', <%= professor.getDeptId() %>, <%= professor.getRoleId() %>)">Edit</button>
-                            <button type="button" class="btn <%= professor.isActive() ? "btn-danger" : "btn-success" %>" onclick="confirmToggleStatus(<%= professor.getUserId() %>, '<%= professor.getFirstName() %> <%= professor.getLastName() %>', <%= professor.isActive() %>)">
-                                <%= professor.isActive() ? "Deactivate" : "Activate" %>
-                            </button>
-                        </td>
-                    </tr>
-                    <%
-                            }
-                        }
-                    %>
-                    </tbody>
-                </table>
-                <% } else { %>
-                <p>No professors found.</p>
-                <% } %>
-            </div>
-        </div>
-    </div>
+    <!-- User management has been moved to the Settings page -->
 </div>
 
-<!-- Edit User Modal -->
-<div id="editUserModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeEditUserModal()">&times;</span>
-        <h2>Edit Professor</h2>
-        <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="editUserForm">
-            <input type="hidden" name="action" value="editUser" />
-            <input type="hidden" name="userId" id="editUserId" />
-
-            <div class="form-group">
-                <label for="editFirstName">First Name:</label>
-                <input type="text" id="editFirstName" name="firstName" required />
-            </div>
-
-            <div class="form-group">
-                <label for="editLastName">Last Name:</label>
-                <input type="text" id="editLastName" name="lastName" required />
-            </div>
-
-            <div class="form-group">
-                <label for="editEmail">Email:</label>
-                <input type="email" id="editEmail" name="email" required />
-            </div>
-
-            <div class="form-group">
-                <label for="editPassword">New Password (leave blank to keep current):</label>
-                <input type="password" id="editPassword" name="password" />
-            </div>
-
-            <div class="form-group">
-                <label for="editDepartment">Department:</label>
-                <select id="editDepartment" name="deptId" required>
-                    <option value="">Select a Department</option>
-                    <%
-                        if (departments != null && !departments.isEmpty()) {
-                            for (Department dept : departments) {
-                    %>
-                    <option value="<%= dept.getId() %>"><%= dept.getName() %></option>
-                    <%
-                            }
-                        }
-                    %>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="editRole">Role:</label>
-                <select id="editRole" name="roleId" required>
-                    <option value="1">Administrator</option>
-                    <option value="2">Professor</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Assign Courses:</label>
-                <div class="course-checkboxes" id="editCourseCheckboxes">
-                    <!-- Will be populated dynamically -->
-                </div>
-            </div>
-
-            <div class="button-container">
-                <button type="button" class="btn-cancel" onclick="closeEditUserModal()">Cancel</button>
-                <button type="submit" class="btn-submit">Save Changes</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Hidden form for toggling user status -->
-<form id="toggleStatusForm" method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:none;">
-    <input type="hidden" name="action" value="toggleUserStatus" />
-    <input type="hidden" name="userId" id="toggleUserId" />
-</form>
-
-<!-- Confirmation Modal -->
-<div id="confirmationModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeConfirmationModal()">&times;</span>
-        <h2>Confirm Action</h2>
-        <p id="confirmationMessage"></p>
-        <div class="button-container">
-            <button type="button" class="btn-cancel" onclick="closeConfirmationModal()">Cancel</button>
-            <button type="button" class="btn-submit" id="confirmButton">Confirm</button>
-        </div>
-    </div>
-</div>
+<!-- User management modals have been moved to the Settings page -->
 
 <script>
     // Get outcomeData from the controller
@@ -430,6 +246,32 @@
     if (outcomeData != null && !outcomeData.isEmpty()) {
         out.println(outcomeData);
     } 
+
+    // Get outcomes from request attributes for dynamic access
+    List<Outcome> outcomes = (List<Outcome>) request.getAttribute("outcomes");
+    Map<Integer, String> dynamicOutcomeDescriptions = new HashMap<>();
+    if (outcomes != null) {
+        for (Outcome outcome : outcomes) {
+            dynamicOutcomeDescriptions.put(outcome.getId(), outcome.getDescription());
+        }
+    }
+
+    // Convert dynamicOutcomeDescriptions to JSON for JavaScript
+    StringBuilder dynamicOutcomeDescriptionsJson = new StringBuilder();
+    dynamicOutcomeDescriptionsJson.append("const dynamicOutcomeDescriptions = {");
+    for (Map.Entry<Integer, String> entry : dynamicOutcomeDescriptions.entrySet()) {
+        dynamicOutcomeDescriptionsJson.append(entry.getKey())
+                .append(": \"")
+                .append(entry.getValue().replace("\"", "\\\""))
+                .append("\", ");
+    }
+    if (!dynamicOutcomeDescriptions.isEmpty()) {
+        dynamicOutcomeDescriptionsJson.delete(dynamicOutcomeDescriptionsJson.length() - 2, dynamicOutcomeDescriptionsJson.length());
+    }
+    dynamicOutcomeDescriptionsJson.append("};");
+
+    // Output the dynamic outcome descriptions
+    out.println(dynamicOutcomeDescriptionsJson.toString());
     %>
 
     // Function to show the outcomes for the selected course
@@ -501,7 +343,8 @@
             const outcomeLabel = document.createElement('label');
             outcomeLabel.htmlFor = outcomeCheckbox.id;
             outcomeLabel.className = 'outcome-label';
-            outcomeLabel.textContent = `Outcome ${outcomeId}: ${outcomeDescriptions[outcomeId]}`;
+            // Use dynamic outcome descriptions if available, fall back to static if not
+            outcomeLabel.textContent = `Outcome ${outcomeId}: ${dynamicOutcomeDescriptions[outcomeId] || outcomeDescriptions[outcomeId]}`;
 
             // Add checkbox and label to container
             outcomeCheckboxContainer.appendChild(outcomeCheckbox);
@@ -582,126 +425,7 @@
         document.getElementById('selectedOutcomesInput').value = selectedOutcomes.join(',');
     }
 
-    // Function to open the edit user modal
-    function openEditUserModal(userId, firstName, lastName, email, deptId, roleId) {
-        // Set form values
-        document.getElementById('editUserId').value = userId;
-        document.getElementById('editFirstName').value = firstName;
-        document.getElementById('editLastName').value = lastName;
-        document.getElementById('editEmail').value = email;
-        document.getElementById('editDepartment').value = deptId;
-        document.getElementById('editRole').value = roleId;
-
-        // Populate course checkboxes
-        populateEditCourseCheckboxes(userId);
-
-        // Show the modal
-        document.getElementById('editUserModal').style.display = 'block';
-    }
-
-    // Function to confirm toggling user status
-    function confirmToggleStatus(userId, userName, isActive) {
-        // Set the user ID in the hidden form
-        document.getElementById('toggleUserId').value = userId;
-
-        // Set the confirmation message
-        const action = isActive ? "deactivate" : "activate";
-        document.getElementById('confirmationMessage').textContent = 
-            `Are you sure you want to ${action} the user "${userName}"?`;
-
-        // Set the confirm button action
-        const confirmButton = document.getElementById('confirmButton');
-        confirmButton.onclick = function() {
-            document.getElementById('toggleStatusForm').submit();
-        };
-
-        // Show the confirmation modal
-        document.getElementById('confirmationModal').style.display = 'block';
-    }
-
-    // Function to close the confirmation modal
-    function closeConfirmationModal() {
-        document.getElementById('confirmationModal').style.display = 'none';
-    }
-
-    // Function to close the edit user modal
-    function closeEditUserModal() {
-        document.getElementById('editUserModal').style.display = 'none';
-    }
-
-    // Function to populate course checkboxes in the edit modal
-    function populateEditCourseCheckboxes(userId) {
-        const container = document.getElementById('editCourseCheckboxes');
-        container.innerHTML = '';
-
-        // Make an AJAX call to get assigned courses for this professor
-        fetch(`${pageContext.request.contextPath}/AdminServlet?action=getProfessorCourses&userId=${userId}`)
-            .then(response => response.json())
-            .then(assignedCourses => {
-                // Get all available courses from the courses array
-                const courseSelect = document.getElementById('courseId');
-                const options = Array.from(courseSelect.options);
-
-                // Skip the first option which is "Select a Course"
-                for (let i = 1; i < options.length; i++) {
-                    const courseCode = options[i].value;
-                    const courseName = options[i].text;
-
-                    const courseDiv = document.createElement('div');
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = `edit_course_${courseCode}`;
-                    checkbox.name = 'assignedCourses';
-                    checkbox.value = courseCode;
-                    checkbox.checked = assignedCourses.includes(courseCode);
-
-                    const label = document.createElement('label');
-                    label.htmlFor = `edit_course_${courseCode}`;
-                    label.textContent = courseName;
-
-                    courseDiv.appendChild(checkbox);
-                    courseDiv.appendChild(document.createTextNode(' '));
-                    courseDiv.appendChild(label);
-
-                    container.appendChild(courseDiv);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching assigned courses:', error);
-                // Fallback: just show all courses unchecked
-                addCoursesToModal(container, []);
-            });
-    }
-
-    // Helper function to add courses to the modal
-    function addCoursesToModal(container, assignedCourses) {
-        const courseSelect = document.getElementById('courseId');
-        const options = Array.from(courseSelect.options);
-
-        // Skip the first option which is "Select a Course"
-        for (let i = 1; i < options.length; i++) {
-            const courseCode = options[i].value;
-            const courseName = options[i].text;
-
-            const courseDiv = document.createElement('div');
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `edit_course_${courseCode}`;
-            checkbox.name = 'assignedCourses';
-            checkbox.value = courseCode;
-            checkbox.checked = assignedCourses.includes(courseCode);
-
-            const label = document.createElement('label');
-            label.htmlFor = `edit_course_${courseCode}`;
-            label.textContent = courseName;
-
-            courseDiv.appendChild(checkbox);
-            courseDiv.appendChild(document.createTextNode(' '));
-            courseDiv.appendChild(label);
-
-            container.appendChild(courseDiv);
-        }
-    }
+    // User management functions have been moved to the Settings page
 
     // Add event listeners
     document.addEventListener('DOMContentLoaded', function() {
@@ -720,12 +444,6 @@
             });
         }
 
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            const modal = document.getElementById('editUserModal');
-            if (event.target === modal) {
-                closeEditUserModal();
-            }
-        };
+        // User management modal handling has been moved to the Settings page
     });
 </script>

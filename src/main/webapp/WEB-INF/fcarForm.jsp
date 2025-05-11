@@ -1,4 +1,3 @@
-<%-- Removed incorrect useBean declarations --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 <%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
@@ -526,14 +525,24 @@
 
     // Function to save as draft and exit
     function saveAndExit() {
+        // Validate form before saving
+        if (!validateForm()) {
+            return false;
+        }
+
+        // Set the action to 'save'
         document.getElementById('saveActionInput').value = 'save';
 
         // Add a hidden field to indicate we want to redirect to ViewFCARServlet
-        const redirectField = document.createElement('input');
-        redirectField.type = 'hidden';
-        redirectField.name = 'redirectToView';
+        let redirectField = document.getElementById('redirectToViewField');
+        if (!redirectField) {
+            redirectField = document.createElement('input');
+            redirectField.type = 'hidden';
+            redirectField.id = 'redirectToViewField';
+            redirectField.name = 'redirectToView';
+            document.getElementById('fcarForm').appendChild(redirectField);
+        }
         redirectField.value = 'true';
-        document.getElementById('fcarForm').appendChild(redirectField);
 
         // Show saving indicator
         const saveButton = event.target;
@@ -541,35 +550,93 @@
         saveButton.textContent = 'Saving...';
         saveButton.disabled = true;
 
-        // Submit the form with AJAX
-        AjaxUtils.submitForm(document.getElementById('fcarForm'), 
-            function(response) {
+        // Get form data
+        const form = document.getElementById('fcarForm');
+        const formData = new FormData(form);
+
+        // Get form action URL
+        const actionUrl = form.getAttribute('action');
+
+        // Submit the form with fetch API
+        fetch(actionUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
                 // Success callback
                 saveButton.textContent = 'Saved!';
+
+                // Show success message if provided in the response
+                if (data.message) {
+                    // You can display a toast notification or alert here
+                    console.log('Success: ' + data.message);
+                }
+
+                // Redirect after a short delay
                 setTimeout(function() {
-                    // If redirectToView is true, redirect to the view page
-                    if (response.redirectUrl) {
-                        window.location.href = response.redirectUrl;
+                    // If redirectUrl is provided in the response, use it
+                    if (data.redirectUrl) {
+                        window.location.href = data.redirectUrl;
                     } else {
-                        saveButton.textContent = originalText;
-                        saveButton.disabled = false;
+                        // Otherwise, redirect to the view page
+                        window.location.href = '${pageContext.request.contextPath}/ViewFCARServlet?action=viewAll';
                     }
                 }, 1000);
-            },
-            function(error) {
+            })
+            .catch(error => {
                 // Error callback
+                console.error('Error:', error);
                 saveButton.textContent = 'Error Saving';
                 alert('Error saving FCAR: ' + error.message);
+
+                // Reset button after a delay
                 setTimeout(function() {
                     saveButton.textContent = originalText;
                     saveButton.disabled = false;
                 }, 2000);
+            });
+
+        // Prevent default form submission
+        return false;
+    }
+
+    // Validate the form before submission
+    function validateForm() {
+        const requiredFields = document.querySelectorAll('[required]');
+        let isValid = true;
+
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('error');
+                isValid = false;
+            } else {
+                field.classList.remove('error');
             }
-        );
+        });
+
+        if (!isValid) {
+            alert('Please fill in all required fields before saving.');
+        }
+
+        return isValid;
     }
 
     // Function to submit the FCAR
     function submitFCAR() {
+        // Validate form before submitting
+        if (!validateForm()) {
+            return false;
+        }
+
         let confirmMessage = 'Are you sure you want to submit this FCAR?';
 
         // Different message for admin vs professor
@@ -588,32 +655,61 @@
             submitButton.textContent = 'Submitting...';
             submitButton.disabled = true;
 
-            // Submit the form with AJAX
-            AjaxUtils.submitForm(document.getElementById('fcarForm'), 
-                function(response) {
+            // Get form data
+            const form = document.getElementById('fcarForm');
+            const formData = new FormData(form);
+
+            // Get form action URL
+            const actionUrl = form.getAttribute('action');
+
+            // Submit the form with fetch API
+            fetch(actionUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
                     // Success callback
                     submitButton.textContent = 'Submitted!';
+
+                    // Show success message if provided
+                    if (data.message) {
+                        console.log('Success: ' + data.message);
+                    }
+
+                    // Redirect after a short delay
                     setTimeout(function() {
-                        // If redirectUrl is provided, redirect to that URL
-                        if (response.redirectUrl) {
-                            window.location.href = response.redirectUrl;
+                        if (data.redirectUrl) {
+                            window.location.href = data.redirectUrl;
                         } else {
-                            submitButton.textContent = originalText;
-                            submitButton.disabled = false;
+                            window.location.href = '${pageContext.request.contextPath}/ViewFCARServlet?action=viewAll';
                         }
                     }, 1000);
-                },
-                function(error) {
+                })
+                .catch(error => {
                     // Error callback
+                    console.error('Error:', error);
                     submitButton.textContent = 'Error Submitting';
                     alert('Error submitting FCAR: ' + error.message);
+
+                    // Reset button after a delay
                     setTimeout(function() {
                         submitButton.textContent = originalText;
                         submitButton.disabled = false;
                     }, 2000);
-                }
-            );
+                });
         }
+
+        // Prevent default form submission
+        return false;
     }
 
     // Function to save changes (for admin)

@@ -18,7 +18,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet("/ReportServlet")
+@WebServlet(value = "/ReportServlet", urlPatterns = "/reports")
 public class ReportServlet extends HttpServlet {
 
     private final LoggingService logger;

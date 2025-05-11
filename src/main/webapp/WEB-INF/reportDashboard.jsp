@@ -25,7 +25,7 @@
     <!-- Generate Reports Section -->
     <div class="section">
         <h2>Generate Report</h2>
-        <form action="${pageContext.request.contextPath}/ReportServlet" method="get" class="action-buttons form-inline">
+        <form action="${pageContext.request.contextPath}/reports" method="get" class="action-buttons form-inline">
             <!-- Outcome Selection -->
             <div class="form-group">
                 <label for="outcomeSelect">Outcome:</label>
@@ -92,12 +92,12 @@
                             <span class="report-title">${r.reportTitle}</span>
                             <span class="report-date">${r.generatedDate}</span>
                             <div class="report-actions">
-                                <form action="${pageContext.request.contextPath}/ReportServlet" method="get" style="display:inline;">
+                                <form action="${pageContext.request.contextPath}/reports" method="get" style="display:inline;">
                                     <input type="hidden" name="action" value="downloadOutcomeReport" />
                                     <input type="hidden" name="reportId" value="${r.reportId}" />
                                     <button type="submit" class="btn">Download (.xlsx)</button>
                                 </form>
-                                <form action="${pageContext.request.contextPath}/ReportServlet" method="get" style="display:inline;">
+                                <form action="${pageContext.request.contextPath}/reports" method="get" style="display:inline;">
                                     <input type="hidden" name="action" value="viewOutcomeReport" />
                                     <input type="hidden" name="reportId" value="${r.reportId}" />
                                     <button type="submit" class="btn">View</button>

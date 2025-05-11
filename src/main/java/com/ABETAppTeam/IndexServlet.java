@@ -263,11 +263,4 @@ public class IndexServlet extends BaseServlet {
         out.write(json);
     }
 
-    /**
-     * Checks if the request is an AJAX request
-     */
-    private boolean isAjaxRequest(HttpServletRequest request) {
-        String requestedWith = request.getHeader("X-Requested-With");
-        return "XMLHttpRequest".equals(requestedWith);
-    }
 }

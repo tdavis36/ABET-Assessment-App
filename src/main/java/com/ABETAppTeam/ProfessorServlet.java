@@ -10,6 +10,7 @@ import java.util.Map;
 
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
+import com.ABETAppTeam.controller.OutcomeController;
 import com.ABETAppTeam.model.Admin;
 import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.model.Professor;
@@ -19,10 +20,12 @@ import com.ABETAppTeam.util.AppUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+@WebServlet (value = "/ProfessorServlet", urlPatterns = "/professor")
 public class ProfessorServlet extends BaseServlet {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -80,22 +83,8 @@ public class ProfessorServlet extends BaseServlet {
             // … (your draft-to-draft logic here) …
             request.setAttribute("fcar", fcar);
 
-            // Load outcome data for the form
-            OutcomeController outcomeController = getOutcomeController();
-            request.setAttribute("outcomeData", outcomeController.getOutcomeDataAsJson());
-
-            // Get outcome and indicators data for the forms
-            Map<String, Object> outcomeData = outcomeController.getAllOutcomesAndIndicatorsForForm();
-            request.setAttribute("outcomes", outcomeData.get("outcomes"));
-            request.setAttribute("indicatorsByOutcome", outcomeData.get("indicatorsByOutcome"));
-
-            // Parse the JSON string to get individual outcome data components
-            String outcomeDataJson = outcomeController.getOutcomeDataAsJson();
-            // Extract outcomeDescriptions, outcomeNumbers, indicators, and courseOutcomes
-            request.setAttribute("outcomeDescriptions", extractJsonObject(outcomeDataJson, "outcomeDescriptions"));
-            request.setAttribute("outcomeNumbers", extractJsonObject(outcomeDataJson, "outcomeNumbers"));
-            request.setAttribute("indicators", extractJsonObject(outcomeDataJson, "indicators"));
-            request.setAttribute("courseOutcomes", extractJsonObject(outcomeDataJson, "courseOutcomes"));
+            // Set outcome data attributes needed for the form
+            setOutcomeDataAttributes(request);
 
             request.getRequestDispatcher("/WEB-INF/fcarForm.jsp")
                     .forward(request, response);
@@ -192,6 +181,10 @@ public class ProfessorServlet extends BaseServlet {
                 yearStr == null || yearStr.isEmpty()) {
 
             request.setAttribute("error", "All fields are required to create an FCAR");
+
+            // Set outcome data attributes needed for the form
+            setOutcomeDataAttributes(request);
+
             request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
             return;
         }
@@ -231,26 +224,14 @@ public class ProfessorServlet extends BaseServlet {
             response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
         } catch (NumberFormatException e) {
             request.setAttribute("error", "Invalid year format");
+
+            // Set outcome data attributes needed for the form
+            setOutcomeDataAttributes(request);
+
             request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
         }
     }
 
-    /**
-     * Extract a JSON object from a JavaScript constant declaration
-     *
-     * @param jsCode     The JavaScript code containing the constant declaration
-     * @param objectName The name of the constant to extract
-     * @return The JSON object as a string
-     */
-    private String extractJsonObject(String jsCode, String objectName) {
-        String pattern = "const " + objectName + " = (\\{[^;]*});";
-        java.util.regex.Pattern r = java.util.regex.Pattern.compile(pattern, java.util.regex.Pattern.DOTALL);
-        java.util.regex.Matcher m = r.matcher(jsCode);
-        if (m.find()) {
-            return m.group(1);
-        }
-        return "{}";
-    }
 
     /**
      * Handles updating an existing FCAR
@@ -590,26 +571,5 @@ public class ProfessorServlet extends BaseServlet {
         try (PrintWriter out = response.getWriter()) {
             out.write(objectMapper.writeValueAsString(errorData));
         }
-    }
-
-    /**
-     * Sends a JSON success response
-     */
-    private void sendJsonResponse(HttpServletResponse response, Map<String, Object> data) throws IOException {
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-
-        try (PrintWriter out = response.getWriter()) {
-            out.write(objectMapper.writeValueAsString(data));
-        }
-    }
-
-    /**
-     * Checks if the request is an AJAX request
-     */
-    private boolean isAjaxRequest(HttpServletRequest request) {
-        String requestedWith = request.getHeader("X-Requested-With");
-        return "XMLHttpRequest".equals(requestedWith);
     }
 }

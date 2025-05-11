@@ -1,6 +1,7 @@
 package com.ABETAppTeam;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -217,6 +218,10 @@ public abstract class BaseServlet extends HttpServlet {
                                           HttpSession session, User currentUser, String action)
             throws ServletException, IOException {
         try {
+            // Check if this is an AJAX request
+            boolean isAjaxRequest = "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
+            Map<String, Object> jsonResponse = new HashMap<>();
+
             // Extract FCAR ID if it exists (for editing an existing FCAR)
             String fcarIdStr = request.getParameter("fcarId");
             FCAR fcar = null;
@@ -230,8 +235,14 @@ public abstract class BaseServlet extends HttpServlet {
                 // Verify this professor owns this FCAR
                 int currentProfessorId = currentUser.getUserId();
                 if (fcar != null && fcar.getInstructorId() != currentProfessorId && !(currentUser instanceof Admin)) {
-                    request.setAttribute("error", "You can only update your own FCARs");
-                    request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
+                    if (isAjaxRequest) {
+                        jsonResponse.put("success", false);
+                        jsonResponse.put("error", "You can only update your own FCARs");
+                        sendJsonResponse(response, jsonResponse);
+                    } else {
+                        request.setAttribute("error", "You can only update your own FCARs");
+                        request.getRequestDispatcher("/WEB-INF/professor.jsp").forward(request, response);
+                    }
                     return;
                 }
             } else {
@@ -244,8 +255,14 @@ public abstract class BaseServlet extends HttpServlet {
                 if (courseId == null || courseId.isEmpty() ||
                         semester == null || semester.isEmpty() ||
                         yearStr == null || yearStr.isEmpty()) {
-                    request.setAttribute("error", "All fields are required to create an FCAR");
-                    request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+                    if (isAjaxRequest) {
+                        jsonResponse.put("success", false);
+                        jsonResponse.put("error", "All fields are required to create an FCAR");
+                        sendJsonResponse(response, jsonResponse);
+                    } else {
+                        request.setAttribute("error", "All fields are required to create an FCAR");
+                        request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+                    }
                     return;
                 }
 
@@ -322,39 +339,139 @@ public abstract class BaseServlet extends HttpServlet {
                 String successMessage = "submit".equals(saveAction)
                         ? "FCAR successfully submitted!"
                         : "FCAR saved as draft.";
-                session.setAttribute("message", successMessage);
 
                 // Check if we should redirect to the viewFCAR page
                 String redirectToView = request.getParameter("redirectToView");
-                if ("true".equals(redirectToView)) {
-                    // Redirect to the viewFCAR page
-                    response.sendRedirect(request.getContextPath() + "/ViewFCARServlet?action=viewAll");
+                String redirectUrl = request.getContextPath() + "/ViewFCARServlet?action=viewAll";
+
+                // For AJAX requests, send JSON response
+                if (isAjaxRequest) {
+                    jsonResponse.put("success", true);
+                    jsonResponse.put("message", successMessage);
+                    jsonResponse.put("fcarId", savedFcar.getFcarId());
+
+                    if ("true".equals(redirectToView)) {
+                        jsonResponse.put("redirectUrl", redirectUrl);
+                    }
+
+                    sendJsonResponse(response, jsonResponse);
                 } else {
-                    // Redirect based on user role
-                    redirectBasedOnUserRole(request, response, currentUser);
+                    // For regular form submission, set session message and redirect
+                    session.setAttribute("successMessage", successMessage);
+
+                    if ("true".equals(redirectToView)) {
+                        response.sendRedirect(redirectUrl);
+                    } else {
+                        // Redirect based on user role
+                        redirectBasedOnUserRole(request, response, currentUser);
+                    }
                 }
             } else {
-                request.setAttribute("error",
-                        "Failed to " + ("submit".equals(saveAction) ? "submit" : "save") + " FCAR");
-                request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+                if (isAjaxRequest) {
+                    jsonResponse.put("success", false);
+                    jsonResponse.put("error", "Failed to " + ("submit".equals(saveAction) ? "submit" : "save") + " FCAR");
+                    sendJsonResponse(response, jsonResponse);
+                } else {
+                    request.setAttribute("error",
+                            "Failed to " + ("submit".equals(saveAction) ? "submit" : "save") + " FCAR");
+                    // Set outcome data attributes needed for the form
+                    setOutcomeDataAttributes(request);
+                    request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+                }
             }
         } catch (SecurityException e) {
             // Log the access control violation
             AppUtils.logError("Access control violation during FCAR save/submit", e);
 
-            // Access control violation
-            request.setAttribute("error", "Access denied: " + e.getMessage());
-            // Forward back to the edit page
-            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+            if (isAjaxRequest(request)) {
+                Map<String, Object> jsonResponse = new HashMap<>();
+                jsonResponse.put("success", false);
+                jsonResponse.put("error", "Access denied: " + e.getMessage());
+                sendJsonResponse(response, jsonResponse);
+            } else {
+                // Access control violation
+                request.setAttribute("error", "Access denied: " + e.getMessage());
+                // Set outcome data attributes needed for the form
+                setOutcomeDataAttributes(request);
+                // Forward back to the edit page
+                request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+            }
         } catch (NumberFormatException e) {
-            request.setAttribute("error", "Invalid number format: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+            if (isAjaxRequest(request)) {
+                Map<String, Object> jsonResponse = new HashMap<>();
+                jsonResponse.put("success", false);
+                jsonResponse.put("error", "Invalid number format: " + e.getMessage());
+                sendJsonResponse(response, jsonResponse);
+            } else {
+                request.setAttribute("error", "Invalid number format: " + e.getMessage());
+                // Set outcome data attributes needed for the form
+                setOutcomeDataAttributes(request);
+                request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+            }
         } catch (Exception e) {
             // Log the error
             AppUtils.logError("Error saving FCAR", e);
 
-            request.setAttribute("error", "Error saving FCAR: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+            if (isAjaxRequest(request)) {
+                Map<String, Object> jsonResponse = new HashMap<>();
+                jsonResponse.put("success", false);
+                jsonResponse.put("error", "Error saving FCAR: " + e.getMessage());
+                sendJsonResponse(response, jsonResponse);
+            } else {
+                request.setAttribute("error", "Error saving FCAR: " + e.getMessage());
+                // Set outcome data attributes needed for the form
+                setOutcomeDataAttributes(request);
+                request.getRequestDispatcher("/WEB-INF/fcarForm.jsp").forward(request, response);
+            }
+        }
+    }
+
+    /**
+     * Checks if the request is an AJAX request
+     */
+    protected boolean isAjaxRequest(HttpServletRequest request) {
+        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
+    }
+
+    /**
+     * Send JSON response
+     */
+    protected void sendJsonResponse(HttpServletResponse response, Map<String, Object> data)
+            throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        // Use Jackson or another JSON library to convert the map to JSON
+        // For simplicity, doing a basic conversion here
+        StringBuilder json = new StringBuilder("{");
+        boolean first = true;
+
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            if (!first) {
+                json.append(",");
+            }
+            first = false;
+
+            json.append("\"").append(entry.getKey()).append("\":");
+
+            Object value = entry.getValue();
+            if (value instanceof String) {
+                json.append("\"").append(value.toString().replace("\"", "\\\"")).append("\"");
+            } else if (value instanceof Number) {
+                json.append(value);
+            } else if (value instanceof Boolean) {
+                json.append(value);
+            } else if (value == null) {
+                json.append("null");
+            } else {
+                json.append("\"").append(value.toString().replace("\"", "\\\"")).append("\"");
+            }
+        }
+
+        json.append("}");
+
+        try (PrintWriter out = response.getWriter()) {
+            out.write(json.toString());
         }
     }
 
@@ -412,6 +529,33 @@ public abstract class BaseServlet extends HttpServlet {
     protected void addAttributesToRequest(HttpServletRequest request, Map<String, Object> data) {
         for (Map.Entry<String, Object> entry : data.entrySet()) {
             request.setAttribute(entry.getKey(), entry.getValue());
+        }
+    }
+
+    /**
+     * Sets outcome data attributes needed for the FCAR form
+     */
+    protected void setOutcomeDataAttributes(HttpServletRequest request) {
+        // Load outcome data for the form
+        OutcomeController outcomeController = getOutcomeController();
+        String outcomeDataJson = outcomeController.getOutcomeDataAsJson();
+        request.setAttribute("outcomeData", outcomeDataJson);
+
+        // Get outcome and indicators data for the forms
+        Map<String, Object> outcomeData = outcomeController.getAllOutcomesAndIndicatorsForForm();
+        request.setAttribute("outcomes", outcomeData.get("outcomes"));
+        request.setAttribute("indicatorsByOutcome", outcomeData.get("indicatorsByOutcome"));
+
+        // Extract individual outcome data components from the JSON string
+        // This is needed for the JavaScript in the JSP
+        String pattern = "const (\\w+) = (\\{[^;]*});";
+        java.util.regex.Pattern r = java.util.regex.Pattern.compile(pattern, java.util.regex.Pattern.DOTALL);
+        java.util.regex.Matcher m = r.matcher(outcomeDataJson);
+
+        while (m.find()) {
+            String objectName = m.group(1);
+            String objectValue = m.group(2);
+            request.setAttribute(objectName, objectValue);
         }
     }
 

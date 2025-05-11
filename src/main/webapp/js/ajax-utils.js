@@ -1,170 +1,161 @@
 /**
- * AJAX Utilities for ABETApp
- * This file provides common functions for making AJAX requests and handling responses.
+ * AJAX Utilities for ABET Assessment Application
  */
-
-// Global AJAX settings
 const AjaxUtils = {
-    // Base URL for AJAX requests (automatically determined from current page)
-    baseUrl: window.location.origin + window.location.pathname.substring(0, window.location.pathname.indexOf('/WEB-INF')),
-    
     /**
-     * Make a GET request
-     * @param {string} url - The URL to send the request to
-     * @param {Object} params - URL parameters as an object
-     * @param {Function} successCallback - Function to call on success
-     * @param {Function} errorCallback - Function to call on error
-     */
-    get: function(url, params, successCallback, errorCallback) {
-        // Build query string from params object
-        const queryString = params ? '?' + Object.keys(params)
-            .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(params[key]))
-            .join('&') : '';
-            
-        // Make the request
-        fetch(this.baseUrl + url + queryString, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (successCallback) successCallback(data);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            if (errorCallback) errorCallback(error);
-        });
-    },
-    
-    /**
-     * Make a POST request
-     * @param {string} url - The URL to send the request to
-     * @param {Object} data - The data to send in the request body
-     * @param {Function} successCallback - Function to call on success
-     * @param {Function} errorCallback - Function to call on error
-     */
-    post: function(url, data, successCallback, errorCallback) {
-        fetch(this.baseUrl + url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (successCallback) successCallback(data);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            if (errorCallback) errorCallback(error);
-        });
-    },
-    
-    /**
-     * Submit a form via AJAX
+     * Submit a form using AJAX
      * @param {HTMLFormElement} form - The form element to submit
-     * @param {Function} successCallback - Function to call on success
-     * @param {Function} errorCallback - Function to call on error
+     * @param {Function} successCallback - Function to call on successful submission
+     * @param {Function} errorCallback - Function to call on submission error
      */
     submitForm: function(form, successCallback, errorCallback) {
-        // Get form data
-        const formData = new FormData(form);
-        const data = {};
-        
-        // Convert FormData to JSON object
-        formData.forEach((value, key) => {
-            // Handle multiple values for the same key (like checkboxes)
-            if (data[key]) {
-                if (!Array.isArray(data[key])) {
-                    data[key] = [data[key]];
-                }
-                data[key].push(value);
-            } else {
-                data[key] = value;
-            }
-        });
-        
-        // Make the request
-        fetch(form.action, {
-            method: form.method.toUpperCase(),
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (successCallback) successCallback(data);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            if (errorCallback) errorCallback(error);
-        });
-    },
-    
-    /**
-     * Load content into an element via AJAX
-     * @param {string} url - The URL to load content from
-     * @param {string} targetElementId - The ID of the element to load content into
-     * @param {Object} params - URL parameters as an object
-     * @param {Function} callback - Function to call after content is loaded
-     */
-    loadContent: function(url, targetElementId, params, callback) {
-        const targetElement = document.getElementById(targetElementId);
-        if (!targetElement) {
-            console.error('Target element not found:', targetElementId);
+        if (!form) {
+            if (errorCallback) errorCallback(new Error('Form element not found'));
             return;
         }
-        
-        // Show loading indicator
-        targetElement.innerHTML = '<div class="loading">Loading...</div>';
-        
-        // Build query string from params object
-        const queryString = params ? '?' + Object.keys(params)
-            .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(params[key]))
-            .join('&') : '';
-            
-        // Make the request
-        fetch(this.baseUrl + url + queryString, {
+
+        // Get the form's action URL
+        const actionUrl = form.getAttribute('action');
+        if (!actionUrl) {
+            if (errorCallback) errorCallback(new Error('Form action URL not specified'));
+            return;
+        }
+
+        // Create a FormData object to gather the form fields
+        const formData = new FormData(form);
+
+        // Send the data using the Fetch API
+        fetch(actionUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server responded with status: ' + response.status);
+                }
+
+                // Try to parse the response as JSON
+                return response.json().catch(() => {
+                    // If JSON parsing fails, return a simple success object
+                    return { success: true };
+                });
+            })
+            .then(data => {
+                if (data.success === false) {
+                    // Server returned an error
+                    throw new Error(data.error || 'Unknown server error');
+                }
+
+                // Call the success callback
+                if (successCallback) successCallback(data);
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+
+                // Call the error callback
+                if (errorCallback) errorCallback(error);
+            });
+    },
+
+    /**
+     * Load content from a URL using AJAX
+     * @param {string} url - The URL to load content from
+     * @param {Function} successCallback - Function to call on successful load
+     * @param {Function} errorCallback - Function to call on load error
+     */
+    loadContent: function(url, successCallback, errorCallback) {
+        if (!url) {
+            if (errorCallback) errorCallback(new Error('URL not specified'));
+            return;
+        }
+
+        fetch(url, {
             method: 'GET',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.statusText);
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server responded with status: ' + response.status);
+                }
+
+                // Try to parse as JSON first
+                return response.json()
+                    .catch(() => {
+                        // If not JSON, get as text
+                        return response.text();
+                    });
+            })
+            .then(data => {
+                // Call the success callback
+                if (successCallback) successCallback(data);
+            })
+            .catch(error => {
+                console.error('Error loading content:', error);
+
+                // Call the error callback
+                if (errorCallback) errorCallback(error);
+            });
+    },
+
+    /**
+     * Send a simple AJAX request
+     * @param {string} url - The URL to send the request to
+     * @param {string} method - HTTP method (GET, POST, etc.)
+     * @param {Object} data - Data to send (will be converted to JSON for POST)
+     * @param {Function} successCallback - Function to call on success
+     * @param {Function} errorCallback - Function to call on error
+     */
+    sendRequest: function(url, method, data, successCallback, errorCallback) {
+        if (!url) {
+            if (errorCallback) errorCallback(new Error('URL not specified'));
+            return;
+        }
+
+        const options = {
+            method: method || 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
             }
-            return response.text();
-        })
-        .then(html => {
-            targetElement.innerHTML = html;
-            if (callback) callback();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            targetElement.innerHTML = '<div class="error">Error loading content: ' + error.message + '</div>';
-        });
+        };
+
+        // Add JSON body for POST requests with data
+        if ((method === 'POST' || method === 'PUT') && data) {
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(data);
+        }
+
+        fetch(url, options)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server responded with status: ' + response.status);
+                }
+
+                // Try to parse as JSON
+                return response.json()
+                    .catch(() => {
+                        // If not JSON, return text
+                        return response.text();
+                    });
+            })
+            .then(data => {
+                // Check for error response
+                if (data && data.success === false) {
+                    throw new Error(data.error || 'Unknown server error');
+                }
+
+                // Call the success callback
+                if (successCallback) successCallback(data);
+            })
+            .catch(error => {
+                console.error('Error in AJAX request:', error);
+
+                // Call the error callback
+                if (errorCallback) errorCallback(error);
+            });
     }
 };

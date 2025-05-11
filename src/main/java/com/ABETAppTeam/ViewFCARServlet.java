@@ -22,7 +22,7 @@ import jakarta.servlet.http.HttpSession;
  * Servlet for viewing FCAR data
  * This servlet handles requests to view FCAR reports
  */
-@WebServlet("/ViewFCARServlet")
+@WebServlet(value = "/ViewFCARServlet", urlPatterns = "/view")
 public class ViewFCARServlet extends BaseServlet {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -93,6 +93,24 @@ public class ViewFCARServlet extends BaseServlet {
         Map<String, Object> outcomeData = outcomeController.getAllOutcomesAndIndicatorsForForm();
         request.setAttribute("outcomes", outcomeData.get("outcomes"));
         request.setAttribute("indicatorsByOutcome", outcomeData.get("indicatorsByOutcome"));
+
+        // Check for success or error messages from import process
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            // Check for success message
+            String successMessage = (String) session.getAttribute("successMessage");
+            if (successMessage != null) {
+                request.setAttribute("successMessage", successMessage);
+                session.removeAttribute("successMessage");
+            }
+
+            // Check for error message
+            String errorMessage = (String) session.getAttribute("errorMessage");
+            if (errorMessage != null) {
+                request.setAttribute("errorMessage", errorMessage);
+                session.removeAttribute("errorMessage");
+            }
+        }
     }
 
     /**

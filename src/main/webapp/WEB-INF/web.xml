@@ -29,7 +29,17 @@
         <servlet-name>ReportServlet</servlet-name>
         <servlet-class>com.ABETAppTeam.ReportServlet</servlet-class>
     </servlet>
+    
+    <servlet>
+        <servlet-name>SettingsServlet</servlet-name>
+        <servlet-class>com.ABETAppTeam.SettingsServlet</servlet-class>
+    </servlet>
 
+    <servlet>
+        <servlet-name>ViewFCARServlet</servlet-name>
+        <servlet-class>com.ABETAppTeam.ViewFCARServlet</servlet-class>
+    </servlet>
+    
     <!-- Servlet Mappings -->
     <servlet-mapping>
         <servlet-name>IndexServlet</servlet-name>
@@ -48,7 +58,17 @@
 
     <servlet-mapping>
         <servlet-name>ReportServlet</servlet-name>
-        <url-pattern>/report</url-pattern>
+        <url-pattern>/reports</url-pattern>
+    </servlet-mapping>
+    
+    <servlet-mapping>
+        <servlet-name>SettingsServlet</servlet-name>
+        <url-pattern>/settings</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewFCARServlet</servlet-name>
+        <url-pattern>/view</url-pattern>
     </servlet-mapping>
 
     <welcome-file-list>

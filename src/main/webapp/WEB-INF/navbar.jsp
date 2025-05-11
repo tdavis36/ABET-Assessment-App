@@ -11,29 +11,35 @@
 
     <div class="navbar-menu">
       <ul class="navbar-items">
-        <c:if test="${sessionScope.userRole == 'admin'}">
+        <c:if test="${sessionScope.user != null && sessionScope.user['class'].simpleName == 'Admin'}">
           <li class="navbar-item">
-            <a class="navbar-link ${activePage == 'admin' ? 'active' : ''}" href="${pageContext.request.contextPath}/AdminServlet">Admin Dashboard</a>
+            <a class="navbar-link ${activePage == 'admin' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin">Admin Dashboard</a>
+          </li>
+          <li class="navbar-item">
+            <a class="navbar-link ${activePage == 'settings' ? 'active' : ''}" href="${pageContext.request.contextPath}/settings">Settings</a>
           </li>
         </c:if>
-        <c:if test="${sessionScope.userRole == 'professor'}">
+        <c:if test="${sessionScope.user != null && sessionScope.user['class'].simpleName == 'Professor'}">
           <li class="navbar-item">
-            <a class="navbar-link ${activePage == 'professor' ? 'active' : ''}" href="${pageContext.request.contextPath}/ProfessorServlet">Professor Dashboard</a>
+            <a class="navbar-link ${activePage == 'professor' ? 'active' : ''}" href="${pageContext.request.contextPath}/professor">Professor Dashboard</a>
+          </li>
+          <li class="navbar-item">
+            <a class="navbar-link ${activePage == 'settings' ? 'active' : ''}" href="${pageContext.request.contextPath}/professorsettings">Settings</a>
           </li>
         </c:if>
         <li class="navbar-item">
-          <a class="navbar-link ${activePage == 'reports' ? 'active' : ''}" href="${pageContext.request.contextPath}/ReportServlet">Reports</a>
+          <a class="navbar-link ${activePage == 'reports' ? 'active' : ''}" href="${pageContext.request.contextPath}/reports">Reports</a>
         </li>
         <li class="navbar-item">
-          <a class="navbar-link ${activePage == 'viewFCAR' ? 'active' : ''}" href="${pageContext.request.contextPath}/ViewFCARServlet?action=viewAll">View FCARs</a>
+          <a class="navbar-link ${activePage == 'viewFCAR' ? 'active' : ''}" href="${pageContext.request.contextPath}/view?action=viewAll">View FCARs</a>
         </li>
       </ul>
     </div>
 
     <div class="navbar-right">
-      <c:if test="${not empty sessionScope.user}">
-        <span class="user-greeting">Welcome, ${sessionScope.user.firstName} ${sessionScope.user.lastName}</span>
-        <a class="navbar-link logout-link" href="${pageContext.request.contextPath}/${sessionScope.userRole == 'admin' ? 'AdminServlet?action=logout' : (sessionScope.userRole == 'professor' ? 'ProfessorServlet?action=logout' : '?action=logout')}">
+      <c:if test="${sessionScope.user != null && not empty sessionScope.user}">
+        <span class="user-greeting">Welcome, ${sessionScope.user.firstName}</span>
+        <a class="navbar-link logout-link" href="${pageContext.request.contextPath}/${sessionScope.user['class'].simpleName == 'Admin' ? 'AdminServlet?action=logout' : (sessionScope.user['class'].simpleName == 'Professor' ? 'ProfessorServlet?action=logout' : '?action=logout')}">
           Logout
         </a>
       </c:if>
