@@ -48,7 +48,7 @@
                             <div class="fcar-actions">
                                 <!-- Open/Edit -->
                                 <form method="get"
-                                      action="${pageContext.request.contextPath}/ViewFCARServlet"
+                                      action="${pageContext.request.contextPath}/view"
                                       style="display:inline;">
                                     <input type="hidden" name="action" value="editFCAR"/>
                                     <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>
@@ -57,7 +57,7 @@
                                 <!-- Submit if not yet submitted/approved -->
                                 <c:if test="${fcar.status != 'Submitted' && fcar.status != 'Approved'}">
                                     <form method="post"
-                                          action="${pageContext.request.contextPath}/ProfessorServlet"
+                                          action="${pageContext.request.contextPath}/professor"
                                           style="display:inline;">
                                         <input type="hidden" name="action" value="submitFCARStatus"/>
                                         <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>

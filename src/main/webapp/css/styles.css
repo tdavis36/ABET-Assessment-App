@@ -35,8 +35,8 @@
     --shadow: rgba(0, 0, 0, 0.1); /* Shadow color */
 
     /* Results Colors */
-    --results-bg: #e6f4ee;       /* Light green results background */
-    --results-border: #aad9c5;   /* Light green results border */
+    --results-bg: #181313;       /* Light green results background */
+    --results-border: #1e201f;   /* Light green results border */
 
     /* Form Colors */
     --form-bg: #f9f9f9;          /* Form background */

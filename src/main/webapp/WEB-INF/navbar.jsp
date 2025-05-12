@@ -39,7 +39,7 @@
     <div class="navbar-right">
       <c:if test="${sessionScope.user != null && not empty sessionScope.user}">
         <span class="user-greeting">Welcome, ${sessionScope.user.firstName}</span>
-        <a class="navbar-link logout-link" href="${pageContext.request.contextPath}/${sessionScope.user['class'].simpleName == 'Admin' ? 'AdminServlet?action=logout' : (sessionScope.user['class'].simpleName == 'Professor' ? 'ProfessorServlet?action=logout' : '?action=logout')}">
+        <a class="navbar-link logout-link" href="${pageContext.request.contextPath}/logout">
           Logout
         </a>
       </c:if>
