@@ -23,7 +23,7 @@ public class OutcomeController {
     /**
      * Private constructor (singleton pattern)
      */
-    private OutcomeController() {
+    OutcomeController() {
         this.outcomeRepository = new OutcomeRepository();
         this.indicatorRepository = new IndicatorRepository();
     }

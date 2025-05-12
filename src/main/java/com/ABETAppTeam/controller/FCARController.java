@@ -22,7 +22,7 @@ public class FCARController {
     /**
      * Private constructor for a singleton pattern
      */
-    private FCARController() {
+    FCARController() {
         this.fcarService = new FCARService();
     }
 

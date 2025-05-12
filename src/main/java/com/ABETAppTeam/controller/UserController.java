@@ -4,7 +4,7 @@ import com.ABETAppTeam.model.Professor;
 import com.ABETAppTeam.model.Admin;
 import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.repository.UserRepository;
-import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.AppUtils;
 import com.ABETAppTeam.util.PasswordUtils;
 
 import java.util.ArrayList;
@@ -19,17 +19,15 @@ public class UserController {
     // Singleton instance
     private static UserController instance;
 
-    // Service and repository instances
+    // Repository instance
     private final UserRepository userRepository;
-    private final LoggingService logger;
 
     /**
      * Private constructor for a singleton pattern
      */
-    private UserController() {
+    UserController() {
         this.userRepository = new UserRepository();
-        this.logger = LoggingService.getInstance();
-        logger.debug("UserController initialized");
+        AppUtils.debug("UserController initialized");
     }
 
     /**
@@ -51,7 +49,7 @@ public class UserController {
      * @return The user if found, null otherwise
      */
     public User getUserById(int userId) {
-        logger.debug("Getting user with ID: {}", userId);
+        AppUtils.debug("Getting user with ID: {}", userId);
         return userRepository.findById(userId);
     }
 
@@ -62,7 +60,7 @@ public class UserController {
      * @return The user if found, null otherwise
      */
     public User getUserByEmail(String email) {
-        logger.debug("Getting user with email: {}", email);
+        AppUtils.debug("Getting user with email: {}", email);
         return userRepository.findByEmail(email);
     }
 
@@ -72,7 +70,7 @@ public class UserController {
      * @return List of all users
      */
     public List<User> getAllUsers() {
-        logger.debug("Getting all users");
+        AppUtils.debug("Getting all users");
         return userRepository.findAll();
     }
 
@@ -82,7 +80,7 @@ public class UserController {
      * @return List of all professors
      */
     public List<User> getAllProfessors() {
-        logger.debug("Getting all professors");
+        AppUtils.debug("Getting all professors");
         List<User> professors = new ArrayList<>();
         for (User user : userRepository.findAll()) {
             if (user instanceof Professor) {
@@ -104,7 +102,7 @@ public class UserController {
      * @return The created user, or null if creation failed
      */
     public User createUser(String firstName, String lastName, String email, String password, int roleId, int deptId) {
-        logger.info("Creating new user: {} {}, email: {}, roleId: {}, deptId: {}",
+        AppUtils.info("Creating new user: {} {}, email: {}, roleId: {}, deptId: {}",
                 firstName, lastName, email, roleId, deptId);
 
         // Create the appropriate user type based on a role
@@ -141,7 +139,7 @@ public class UserController {
      * @return true if update was successful, false otherwise
      */
     public boolean updateUser(User user) {
-        logger.info("Updating user with ID: {}", user.getUserId());
+        AppUtils.info("Updating user with ID: {}", user.getUserId());
         return userRepository.update(user);
     }
 
@@ -152,7 +150,7 @@ public class UserController {
      * @return true if deletion was successful, false otherwise
      */
     public boolean deleteUser(int userId) {
-        logger.info("Deleting user with ID: {}", userId);
+        AppUtils.info("Deleting user with ID: {}", userId);
         return userRepository.delete(userId);
     }
 
@@ -163,7 +161,7 @@ public class UserController {
      * @return true if the toggle was successful, false otherwise
      */
     public boolean toggleUserStatus(int userId) {
-        logger.info("Toggling active status for user with ID: {}", userId);
+        AppUtils.info("Toggling active status for user with ID: {}", userId);
 
         User user = userRepository.findById(userId);
         if (user != null) {
@@ -181,7 +179,7 @@ public class UserController {
      * @return true if password change was successful, false otherwise
      */
     public boolean changePassword(int userId, String newPassword) {
-        logger.info("Changing password for user with ID: {}", userId);
+        AppUtils.info("Changing password for user with ID: {}", userId);
 
         // Temp before adding hash functionality
         return userRepository.changePassword(userId, newPassword);
@@ -194,7 +192,7 @@ public class UserController {
      * @return List of course codes assigned to the professor
      */
     public List<String> getProfessorCourses(int professorId) {
-        logger.debug("Getting courses for professor with ID: {}", professorId);
+        AppUtils.debug("Getting courses for professor with ID: {}", professorId);
         return userRepository.getProfessorCourses(professorId);
     }
 
@@ -206,14 +204,14 @@ public class UserController {
      * @return true if assignment was successful, false otherwise
      */
     public boolean assignCoursesToProfessor(int professorId, List<String> courseCodes) {
-        logger.info("Assigning {} courses to professor with ID: {}",
+        AppUtils.info("Assigning {} courses to professor with ID: {}",
                 courseCodes != null ? courseCodes.size() : 0, professorId);
 
         // Log the courses being assigned for debugging
         if (courseCodes != null && !courseCodes.isEmpty()) {
-            logger.debug("Courses being assigned to professor {}: {}", professorId, String.join(", ", courseCodes));
+            AppUtils.debug("Courses being assigned to professor {}: {}", professorId, String.join(", ", courseCodes));
         } else {
-            logger.debug("No courses provided to assign to professor {}", professorId);
+            AppUtils.debug("No courses provided to assign to professor {}", professorId);
         }
 
         // Call the repository method to perform the database operation
@@ -221,9 +219,9 @@ public class UserController {
 
         // Log the result
         if (result) {
-            logger.info("Successfully assigned courses to professor ID {}", professorId);
+            AppUtils.info("Successfully assigned courses to professor ID {}", professorId);
         } else {
-            logger.error("Failed to assign courses to professor ID {}", professorId);
+            AppUtils.error("Failed to assign courses to professor ID {}", professorId);
         }
 
         return result;

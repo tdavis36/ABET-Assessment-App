@@ -69,7 +69,10 @@ public class Admin extends User {
      * @return List of permission strings
      */
     public List<String> getPermissions() {
-        return permissions;
+        if (permissions == null) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(permissions);
     }
 
     /**
@@ -87,8 +90,11 @@ public class Admin extends User {
      * @param permission Permission string to add
      */
     public void addPermission(String permission) {
-        if (!this.permissions.contains(permission)) {
-            this.permissions.add(permission);
+        if (permissions == null) {
+            permissions = new ArrayList<>();
+        }
+        if (permission != null && !permission.isEmpty() && !permissions.contains(permission)) {
+            permissions.add(permission);
         }
     }
 

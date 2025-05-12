@@ -5,7 +5,6 @@ import com.ABETAppTeam.model.Report;
 import com.ABETAppTeam.util.AppUtils;
 
 import java.util.*;
-import java.util.UUID;
 
 /**
  * ReportFactory class for generating and exporting reports that aggregate data
@@ -38,12 +37,11 @@ public class ReportFactory {
         report.setYear(year);
 
         // 1. Retrieve all FCARs for the given semester/year
-        Map<String, FCAR> fcarMap = (Map<String, FCAR>) FCARFactory.getFCARsBySemester(semester, year);
-        // 2. Convert map values to a list and set them in the report
-        List<FCAR> fcarList = new ArrayList<>(fcarMap.values());
+        // Fixed: FCARFactory.getFCARsBySemester returns a List<FCAR>, not a Map
+        List<FCAR> fcarList = FCARFactory.getFCARsBySemester(semester, year);
         report.setFcarList(fcarList);
 
-        // 3. (Future) Retrieve Indicators, Outcomes, etc., for the same semester/year
+        // 2. (Future) Retrieve Indicators, Outcomes, etc., for the same semester/year
 
         // Store the report in memory
         reportMap.put(reportId, report);
@@ -127,7 +125,9 @@ public class ReportFactory {
     }
 
     /**
-     * Optional: Return all generated reports in memory.
+     * Get all generated reports in memory.
+     *
+     * @return A Map containing all reports with their IDs as keys
      */
     public static Map<String, Report> getAllReports() {
         return reportMap;

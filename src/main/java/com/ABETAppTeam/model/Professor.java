@@ -3,127 +3,172 @@ package com.ABETAppTeam.model;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Professor class for the ABET Assessment Application
- *
- * This class represents a professor user who can manage courses, create and
- * submit FCAR reports, and view assessment data.
- */
 public class Professor extends User {
     private List<String> courseIds;
     private List<Integer> fcarIds;
 
-    /**
-     * Default constructor
-     */
+    // Constructors
     public Professor() {
         super();
         this.courseIds = new ArrayList<>();
-        this.fcarIds = new ArrayList<Integer>();
+        this.fcarIds = new ArrayList<>();
     }
 
-    /**
-     * Parameterized constructor
-     *
-     * @param userId       Unique identifier for the professor
-     * @param firstName    Professor's first name
-     * @param lastName     Professor's last name
-     * @param email        Professor's email address
-     * @param passwordHash Professor's hashed password
-     * @param roleId       ID of the professor's role
-     * @param deptId       ID of the professor's department
-     * @param isActive     Whether the professor is active
-     */
     public Professor(int userId, String firstName, String lastName, String email,
                      String passwordHash, int roleId, int deptId, boolean isActive) {
         super(userId, firstName, lastName, email, passwordHash, roleId, deptId, isActive);
         this.courseIds = new ArrayList<>();
-        this.fcarIds = new ArrayList<Integer>();
+        this.fcarIds = new ArrayList<>();
     }
 
     /**
-     * Get the list of course IDs the professor is teaching
+     * Sets the user ID for this professor.
      *
-     * @return List of course IDs
+     * @param id The user ID to set
+     */
+    public void setId(int id) {
+        this.setUserId(id);
+    }
+
+    /**
+     * Adds a course ID to the professor's course IDs list if it's not already present.
+     * Handles empty strings and comparison with existing IDs in a case-insensitive manner.
+     * Empty strings are not added.
+     *
+     * @param courseId The course ID to add
+     */
+    public void addCourseId(String courseId) {
+        if (courseIds == null) {
+            courseIds = new ArrayList<>();
+        }
+
+        // Don't add empty strings
+        if (courseId != null && courseId.trim().isEmpty()) {
+            return;
+        }
+
+        if (courseId == null) {
+            // Only add null if it doesn't exist
+            if (!courseIds.contains(null)) {
+                courseIds.add(null);
+            }
+            return;
+        }
+
+        // Case insensitive check for duplicates
+        for (String id : courseIds) {
+            if (id != null && id.equalsIgnoreCase(courseId)) {
+                // Duplicate found, don't add
+                return;
+            }
+        }
+
+        // No duplicate found, add the course ID
+        courseIds.add(courseId);
+    }
+
+    /**
+     * Removes a course ID from the professor's course IDs list.
+     * Safely handles null values and non-existent course IDs.
+     *
+     * @param courseId The course ID to remove
+     */
+    public void removeCourseId(String courseId) {
+        if (courseIds == null) {
+            return;
+        }
+
+        if (courseId == null) {
+            courseIds.remove(null);
+            return;
+        }
+
+        // Case insensitive removal
+        String toRemove = null;
+        for (String id : courseIds) {
+            if (id != null && id.equalsIgnoreCase(courseId)) {
+                toRemove = id;
+                break;
+            }
+        }
+
+        if (toRemove != null) {
+            courseIds.remove(toRemove);
+        }
+    }
+
+    /**
+     * Gets the list of course IDs for the professor.
+     *
+     * @return The list of course IDs
      */
     public List<String> getCourseIds() {
-        return courseIds;
+        if (courseIds == null) {
+            courseIds = new ArrayList<>();
+        }
+
+        // Return a copy to prevent external modification
+        return new ArrayList<>(courseIds);
     }
 
     /**
-     * Set the list of course IDs the professor is teaching
+     * Sets the list of course IDs for the professor.
      *
-     * @param courseIds List of course IDs
+     * @param courseIds The new list of course IDs
      */
     public void setCourseIds(List<String> courseIds) {
         this.courseIds = courseIds;
     }
 
     /**
-     * Add a course ID to the professor's list of courses
+     * Adds an FCAR ID to the professor's FCAR IDs list if it's not already present.
      *
-     * @param courseId Course ID to add
+     * @param fcarId The FCAR ID to add
      */
-    public void addCourseId(String courseId) {
-        if (!this.courseIds.contains(courseId)) {
-            this.courseIds.add(courseId);
+    public void addFcarId(int fcarId) {
+        if (fcarIds == null) {
+            fcarIds = new ArrayList<>();
+        }
+
+        Integer boxedId = fcarId;
+        if (!fcarIds.contains(boxedId)) {
+            fcarIds.add(boxedId);
         }
     }
 
     /**
-     * Remove a course ID from the professor's list of courses
+     * Removes an FCAR ID from the professor's FCAR IDs list.
      *
-     * @param courseId Course ID to remove
+     * @param fcarId The FCAR ID to remove
      */
-    public void removeCourseId(String courseId) {
-        this.courseIds.remove(courseId);
+    public void removeFcarId(int fcarId) {
+        if (fcarIds == null) {
+            return;
+        }
+
+        fcarIds.remove(Integer.valueOf(fcarId));
     }
 
     /**
-     * Get the list of FCAR IDs the professor has created
+     * Gets the list of FCAR IDs for the professor.
      *
-     * @return List of FCAR IDs
+     * @return The list of FCAR IDs
      */
     public List<Integer> getFcarIds() {
-        return fcarIds;
+        if (fcarIds == null) {
+            fcarIds = new ArrayList<>();
+        }
+
+        // Return a copy to prevent external modification
+        return new ArrayList<>(fcarIds);
     }
 
     /**
-     * Set the list of FCAR IDs the professor has created
+     * Sets the list of FCAR IDs for the professor.
      *
-     * @param fcarIds List of FCAR IDs
+     * @param fcarIds The new list of FCAR IDs
      */
     public void setFcarIds(List<Integer> fcarIds) {
         this.fcarIds = fcarIds;
-    }
-
-    /**
-     * Add an FCAR ID to the professor's list of FCARs
-     *
-     * @param fcarId FCAR ID to add
-     */
-    public void addFcarId(int fcarId) {
-        if (!this.fcarIds.contains(fcarId)) {
-            this.fcarIds.add(fcarId);
-        }
-    }
-
-    /**
-     * Remove an FCAR ID from the professor's list of FCARs
-     *
-     * @param fcarId FCAR ID to remove
-     */
-    public void removeFcarId(int fcarId) {
-        this.fcarIds.remove(fcarId);
-    }
-
-    /**
-     * Set the professor's ID
-     * This method overrides the parent class's setId method to accept an integer
-     *
-     * @param id The professor's ID
-     */
-    public void setId(int id) {
-        super.setUserId(id);
     }
 }
