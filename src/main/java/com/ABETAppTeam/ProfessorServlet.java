@@ -124,7 +124,7 @@ public class ProfessorServlet extends BaseServlet {
         if ("logout".equals(action)) {
             // Invalidate session and redirect to login
             session.invalidate();
-            response.sendRedirect(request.getContextPath() + "/login.jsp");
+            response.sendRedirect(request.getContextPath() + "/index");
             return;
         }
 
@@ -155,7 +155,7 @@ public class ProfessorServlet extends BaseServlet {
                     break;
                 default:
                     // Default: redirect to professor dashboard
-                    response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
+                    response.sendRedirect(request.getContextPath() + "/professor");
             }
         } catch (Exception e) {
             // Handle errors
@@ -221,7 +221,7 @@ public class ProfessorServlet extends BaseServlet {
             }
 
             // Redirect to professor dashboard
-            response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
+            response.sendRedirect(request.getContextPath() + "/professor");
         } catch (NumberFormatException e) {
             request.setAttribute("error", "Invalid year format");
 
@@ -276,7 +276,7 @@ public class ProfessorServlet extends BaseServlet {
         }
 
         // Redirect to professor dashboard
-        response.sendRedirect(request.getContextPath() + "/ProfessorServlet");
+        response.sendRedirect(request.getContextPath() + "/professor");
     }
 
     /**
@@ -534,7 +534,7 @@ public class ProfessorServlet extends BaseServlet {
                 // Check if we should redirect to the viewFCAR page
                 String redirectToView = request.getParameter("redirectToView");
                 if ("true".equals(redirectToView)) {
-                    responseData.put("redirectUrl", request.getContextPath() + "/ViewFCARServlet?action=viewAll");
+                    responseData.put("redirectUrl", request.getContextPath() + "/view?action=viewAll");
                 }
 
                 // Send JSON response

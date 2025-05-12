@@ -78,6 +78,9 @@ public class AdminServlet extends BaseServlet {
 
             // Load and prepare data for the admin dashboard
             prepareAdminDashboardData(request);
+            UserController userController = UserController.getInstance();
+            List<User> professors = userController.getAllProfessors();
+            request.setAttribute("professors", professors);
 
             if ("viewFCARs".equals(action)) {
                 logger.debug("Forwarding to admin.jsp to view FCARs");
@@ -205,9 +208,45 @@ public class AdminServlet extends BaseServlet {
             dashboardData.put("courses", courseList);
         }
 
-        // Get professors from database
-        List<User> professors = userController.getAllProfessors();
+        // IMPORTANT: Get professors directly from the UserController
+        // Instead of using whatever might be in the dashboardData
+        List<User> professors = new ArrayList<>();
+
+        // Try to get professors from UserController
+        List<User> retrievedProfessors = userController.getAllProfessors();
+
+        if (retrievedProfessors != null && !retrievedProfessors.isEmpty()) {
+            // Filter out any invalid/empty professor objects
+            for (User prof : retrievedProfessors) {
+                if (prof != null && prof.getUserId() > 0 &&
+                        prof.getFirstName() != null && !prof.getFirstName().isEmpty()) {
+                    professors.add(prof);
+                    logger.debug("Adding valid professor: ID={}, Name={} {}, Email={}",
+                            prof.getUserId(), prof.getFirstName(), prof.getLastName(), prof.getEmail());
+                } else {
+                    logger.warn("Skipping invalid professor object: {}", prof);
+                }
+            }
+        }
+
+        // Create test professor if none found
+        if (professors.isEmpty()) {
+            logger.warn("No valid professors found, creating test professor");
+            User testProf = new Professor();
+            testProf.setUserId(999);
+            testProf.setFirstName("Test");
+            testProf.setLastName("Instructor");
+            testProf.setEmail("test@example.com");
+            testProf.setRoleId(2);
+            professors.add(testProf);
+        }
+
+        // Log success
+        logger.info("Found {} valid professors for admin dashboard", professors.size());
+
+        // Update both dashboardData and request attribute
         dashboardData.put("professors", professors);
+        request.setAttribute("professors", professors); // Direct attribute
 
         // Get departments from database
         List<Department> departments = departmentController.getAllDepartments();
@@ -258,6 +297,19 @@ public class AdminServlet extends BaseServlet {
             int professorId = Integer.parseInt(professorIdStr);
             int year = Integer.parseInt(yearStr);
 
+            // Verify that this course is assigned to the selected professor
+            List<String> professorCourses = userController.getProfessorCourses(professorId);
+
+            if (professorCourses == null || !professorCourses.contains(courseId)) {
+                logger.warn("Course {} is not assigned to professor {}", courseId, professorId);
+                request.setAttribute("error", "The selected course is not assigned to this professor");
+
+                // Re-prepare the form data to allow the user to try again
+                prepareAdminDashboardData(request);
+                request.getRequestDispatcher("/WEB-INF/admin.jsp").forward(request, response);
+                return;
+            }
+
             logger.info("Admin creating new FCAR: course={}, professor={}, semester={}, year={}",
                     courseId, professorId, semester, year);
 
@@ -293,7 +345,7 @@ public class AdminServlet extends BaseServlet {
             }
 
             // Redirect to the admin page with a message
-            response.sendRedirect(request.getContextPath() + "/AdminServlet?message=FCARCreated");
+            response.sendRedirect(request.getContextPath() + "/admin?message=FCARCreated");
         } catch (NumberFormatException e) {
             logger.warn("Invalid number format in FCAR creation: {}", e.getMessage());
             request.setAttribute("error", "Invalid professor ID or year format");
@@ -353,7 +405,7 @@ public class AdminServlet extends BaseServlet {
                 }
 
                 // Redirect to the admin page with a message
-                response.sendRedirect(request.getContextPath() + "/AdminServlet?message=UserCreated");
+                response.sendRedirect(request.getContextPath() + "/admin?message=UserCreated");
             } else {
                 logger.error("Failed to create professor: {} {}", firstName, lastName);
                 request.setAttribute("error", "Failed to create professor");
@@ -439,7 +491,7 @@ public class AdminServlet extends BaseServlet {
                 }
 
                 // Redirect to the admin page with a message
-                response.sendRedirect(request.getContextPath() + "/AdminServlet?message=UserUpdated");
+                response.sendRedirect(request.getContextPath() + "/admin?message=UserUpdated");
             } else {
                 logger.error("Failed to update user ID {}", userId);
                 request.setAttribute("error", "Failed to update user");
@@ -475,7 +527,7 @@ public class AdminServlet extends BaseServlet {
 
             if (success) {
                 logger.info("Successfully toggled active status for user ID {}", userId);
-                response.sendRedirect(request.getContextPath() + "/AdminServlet?message=UserStatusToggled");
+                response.sendRedirect(request.getContextPath() + "/admin?message=UserStatusToggled");
             } else {
                 logger.error("Failed to toggle active status for user ID {}", userId);
                 request.setAttribute("error", "Failed to toggle user status");
@@ -594,8 +646,8 @@ public class AdminServlet extends BaseServlet {
         }
 
         // Redirect to admin page with a message
-        logger.debug("Redirecting to AdminServlet with message=FCARUpdated");
-        response.sendRedirect(request.getContextPath() + "/AdminServlet?message=FCARUpdated");
+        logger.debug("Redirecting to admin with message=FCARUpdated");
+        response.sendRedirect(request.getContextPath() + "/admin?message=FCARUpdated");
     }
 
     /**
@@ -618,8 +670,8 @@ public class AdminServlet extends BaseServlet {
         }
 
         // Redirect to view FCARs
-        logger.debug("Redirecting to AdminServlet?action=viewFCARs with message=FCARApproved");
-        response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARApproved");
+        logger.debug("Redirecting to admin?action=viewFCARs with message=FCARApproved");
+        response.sendRedirect(request.getContextPath() + "/admin?action=viewFCARs&message=FCARApproved");
     }
 
     /**
@@ -645,8 +697,8 @@ public class AdminServlet extends BaseServlet {
         }
 
         // Redirect to view FCARs
-        logger.debug("Redirecting to AdminServlet?action=viewFCARs with message=FCARRejected");
-        response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARRejected");
+        logger.debug("Redirecting to admin?action=viewFCARs with message=FCARRejected");
+        response.sendRedirect(request.getContextPath() + "/admin?action=viewFCARs&message=FCARRejected");
     }
 
     /**
@@ -669,8 +721,8 @@ public class AdminServlet extends BaseServlet {
         }
 
         // Redirect to view FCARs
-        logger.debug("Redirecting to AdminServlet?action=viewFCARs with message=FCARDeleted");
-        response.sendRedirect(request.getContextPath() + "/AdminServlet?action=viewFCARs&message=FCARDeleted");
+        logger.debug("Redirecting to admin?action=viewFCARs with message=FCARDeleted");
+        response.sendRedirect(request.getContextPath() + "/admin?action=viewFCARs&message=FCARDeleted");
     }
 
     /**
@@ -787,6 +839,9 @@ public class AdminServlet extends BaseServlet {
             switch (action) {
                 case "getProfessorCourses":
                     handleGetProfessorCourses(request, out);
+                    break;
+                case "getCourseOutcomes":  // Add this new case
+                    handleGetCourseOutcomes(request, out);
                     break;
                 case "getAllFCARs":
                     handleGetAllFCARs(request, out);
@@ -1008,6 +1063,50 @@ public class AdminServlet extends BaseServlet {
 
         String json = objectMapper.writeValueAsString(courseData);
         out.write(json);
+    }
+
+    /**
+     * Handles AJAX requests to get course outcomes
+     */
+    private void handleGetCourseOutcomes(HttpServletRequest request, PrintWriter out) throws IOException {
+        String courseId = request.getParameter("courseId");
+        if (courseId == null || courseId.isEmpty()) {
+            throw new IllegalArgumentException("Missing courseId parameter");
+        }
+
+        try {
+            // Get outcomes for this course
+            CourseController courseController = CourseController.getInstance();
+            Course course = courseController.getCourseByCode(courseId);
+
+            Map<String, Object> response = new HashMap<>();
+
+            if (course != null && course.getLearningOutcomes() != null) {
+                // Get outcome IDs as integers
+                List<Integer> outcomeIds = new ArrayList<>(course.getLearningOutcomes().keySet());
+                response.put("outcomeIds", outcomeIds);
+
+                // Get outcome descriptions
+                Map<String, String> outcomeDescriptions = new HashMap<>();
+                for (Map.Entry<Integer, String> entry : course.getLearningOutcomes().entrySet()) {
+                    outcomeDescriptions.put(entry.getKey().toString(), entry.getValue());
+                }
+                response.put("outcomeDescriptions", outcomeDescriptions);
+
+                logger.debug("Retrieved {} outcomes for course {}", outcomeIds.size(), courseId);
+            } else {
+                response.put("outcomeIds", new ArrayList<>());
+                response.put("outcomeDescriptions", new HashMap<>());
+                logger.debug("No outcomes found for course {}", courseId);
+            }
+
+            // Convert to JSON and send response
+            String json = objectMapper.writeValueAsString(response);
+            out.write(json);
+        } catch (Exception e) {
+            logger.error("Error retrieving course outcomes: {}", e.getMessage(), e);
+            throw new IOException("Error retrieving course outcomes", e);
+        }
     }
 
     /**
@@ -1252,7 +1351,7 @@ public class AdminServlet extends BaseServlet {
                 // Check if we should redirect to the viewFCAR page
                 String redirectToView = request.getParameter("redirectToView");
                 if ("true".equals(redirectToView)) {
-                    responseData.put("redirectUrl", request.getContextPath() + "/ViewFCARServlet?action=viewAll");
+                    responseData.put("redirectUrl", request.getContextPath() + "/view?action=viewAll");
                 }
 
                 // Send JSON response

@@ -1204,22 +1204,181 @@ form.inline {
     }
 }
 
-/* Enhance course checkboxes for better readability */
+/* Enhanced styling for course assignment functionality */
+
+/* Modal loading state */
+.modal.loading .modal-content {
+    opacity: 0.7;
+}
+
+.modal.loading::after {
+    content: "Loading...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    z-index: 1001;
+}
+
+/* Course selection area */
 .course-checkboxes {
-    max-height: 200px;
+    margin-top: 10px;
+    max-height: 300px;
     overflow-y: auto;
-    border: 1px solid var(--input-border);
-    padding: 10px;
+    border: 1px solid var(--border);
+    padding: 15px;
     border-radius: 4px;
     background-color: var(--input-bg);
-    margin-top: 5px;
 }
 
-.course-checkboxes div {
-    margin-bottom: 5px;
+.course-search {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.course-checkboxes label {
+.course-search input {
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.course-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.course-actions button {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.course-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.course-item {
+    padding: 5px;
+    transition: background-color 0.2s;
+    border-radius: 3px;
+}
+
+.course-item:hover {
+    background-color: var(--form-bg);
+}
+
+.course-item label {
+    cursor: pointer;
     display: inline;
     margin-left: 5px;
+}
+
+/* Error messages */
+.error-message {
+    color: var(--danger);
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+/* Import FCAR section enhancements */
+.import-preview {
+    margin-top: 15px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 15px;
+    background-color: var(--form-bg);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.data-table th, .data-table td {
+    border: 1px solid var(--border);
+    padding: 8px;
+    text-align: left;
+}
+
+.data-table th {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.import-help {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: rgba(0, 131, 80, 0.1);
+    border-left: 3px solid var(--primary);
+    border-radius: 3px;
+}
+
+.import-help h4 {
+    margin-top: 0;
+    color: var(--primary);
+}
+
+.import-help code {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.import-help ul {
+    margin-bottom: 0;
+}
+
+/* Form improvements */
+.form-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background-color: var(--form-bg);
+}
+
+.form-section h3 {
+    margin-top: 0;
+    color: var(--primary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.button-container {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    .course-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .import-help {
+        background-color: rgba(0, 131, 80, 0.2);
+    }
+
+    .import-help code {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #ddd;
+    }
+
+    .course-checkboxes {
+        background-color: #333;
+        border-color: #444;
+    }
 }

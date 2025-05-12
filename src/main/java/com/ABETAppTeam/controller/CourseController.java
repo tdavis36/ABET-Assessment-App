@@ -2,7 +2,7 @@ package com.ABETAppTeam.controller;
 
 import com.ABETAppTeam.model.Course;
 import com.ABETAppTeam.repository.CourseRepository;
-import com.ABETAppTeam.service.LoggingService;
+import com.ABETAppTeam.util.AppUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,15 +19,13 @@ public class CourseController {
 
     // Repository instance
     private static CourseRepository courseRepository = new CourseRepository();
-    private static LoggingService logger = null;
 
     /**
      * Private constructor for a singleton pattern
      */
     private CourseController() {
         courseRepository = new CourseRepository();
-        logger = LoggingService.getInstance();
-        logger.debug("CourseController initialized");
+        AppUtils.debug("CourseController initialized");
     }
 
     /**
@@ -49,8 +47,19 @@ public class CourseController {
      * @return The course if found, null otherwise
      */
     public Course getCourseByCode(String courseCode) {
-        logger.debug("Getting course with code: {}", courseCode);
+        AppUtils.debug("Getting course with code: {}", courseCode);
         return courseRepository.findByCourseCode(courseCode);
+    }
+
+    /**
+     * Get a course (alias for getCourseByCode for compatibility)
+     *
+     * @param courseCode The code of the course to get
+     * @return The course if found, null otherwise
+     */
+    public Course getCourse(String courseCode) {
+        AppUtils.debug("Getting course with code (getCourse): {}", courseCode);
+        return getCourseByCode(courseCode);
     }
 
     /**
@@ -59,7 +68,7 @@ public class CourseController {
      * @return List of all courses
      */
     public static List<Course> getAllCourses() {
-        logger.debug("Getting all courses");
+        AppUtils.debug("Getting all courses");
         return courseRepository.findAll();
     }
 
@@ -70,7 +79,7 @@ public class CourseController {
      * @return List of courses in the department
      */
     public List<Course> getCoursesByDepartment(int deptId) {
-        logger.debug("Getting courses for department with ID: {}", deptId);
+        AppUtils.debug("Getting courses for department with ID: {}", deptId);
         return courseRepository.findByDepartment(deptId);
     }
 
@@ -87,7 +96,7 @@ public class CourseController {
      */
     public Course createCourse(String courseCode, String courseName, String description,
                                int deptId, int credits, String semesterOffered) {
-        logger.info("Creating new course: {} - {}, deptId: {}", courseCode, courseName, deptId);
+        AppUtils.info("Creating new course: {} - {}, deptId: {}", courseCode, courseName, deptId);
 
         Course course = new Course();
         course.setCourseCode(courseCode);
@@ -107,7 +116,7 @@ public class CourseController {
      * @return true if update was successful, false otherwise
      */
     public boolean updateCourse(Course course) {
-        logger.info("Updating course with code: {}", course.getCourseCode());
+        AppUtils.info("Updating course with code: {}", course.getCourseCode());
         Course result = courseRepository.save(course);
         return result != null;
     }
@@ -119,7 +128,7 @@ public class CourseController {
      * @return true if deletion was successful, false otherwise
      */
     public boolean deleteCourse(String courseCode) {
-        logger.info("Deleting course with code: {}", courseCode);
+        AppUtils.info("Deleting course with code: {}", courseCode);
         return courseRepository.delete(courseCode);
     }
 
@@ -131,11 +140,11 @@ public class CourseController {
      * @return true if assignment was successful, false otherwise
      */
     public boolean assignOutcomesToCourse(String courseCode, List<Integer> outcomeIds) {
-        logger.info("Assigning outcomes to course with code: {}", courseCode);
+        AppUtils.info("Assigning outcomes to course with code: {}", courseCode);
 
         Course course = courseRepository.findByCourseCode(courseCode);
         if (course == null) {
-            logger.warn("Course with code {} not found", courseCode);
+            AppUtils.warn("Course with code {} not found", courseCode);
             return false;
         }
 
@@ -163,7 +172,7 @@ public class CourseController {
      * @return Map of statistics about courses
      */
     public Map<String, Object> getCourseStatistics() {
-        logger.debug("Getting course statistics");
+        AppUtils.debug("Getting course statistics");
 
         Map<String, Object> stats = new HashMap<>();
         List<Course> courses = courseRepository.findAll();
@@ -195,7 +204,7 @@ public class CourseController {
      * @return Map of course codes to lists of outcome IDs
      */
     public Map<String, List<Integer>> getCourseOutcomeMapping() {
-        logger.debug("Getting course outcome mapping");
+        AppUtils.debug("Getting course outcome mapping");
 
         Map<String, List<Integer>> mapping = new HashMap<>();
         List<Course> courses = courseRepository.findAll();

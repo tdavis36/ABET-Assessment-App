@@ -8,6 +8,7 @@ import com.ABETAppTeam.service.LoggingService;
 import com.ABETAppTeam.util.PasswordUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -182,14 +183,14 @@ public class UserController {
     public boolean changePassword(int userId, String newPassword) {
         logger.info("Changing password for user with ID: {}", userId);
 
-        // In a real app, you would hash the password here
+        // Temp before adding hash functionality
         return userRepository.changePassword(userId, newPassword);
     }
 
     /**
      * Get courses assigned to a professor
      *
-     * @param professorId The ID of the professor
+     * @param professorId The professor ID
      * @return List of course codes assigned to the professor
      */
     public List<String> getProfessorCourses(int professorId) {
@@ -200,28 +201,31 @@ public class UserController {
     /**
      * Assign courses to a professor
      *
-     * @param professorId The ID of the professor
+     * @param professorId The professor ID
      * @param courseCodes List of course codes to assign
+     * @return true if assignment was successful, false otherwise
      */
-    public void assignCoursesToProfessor(int professorId, List<String> courseCodes) {
-        logger.info("Assigning courses to professor with ID: {}", professorId);
+    public boolean assignCoursesToProfessor(int professorId, List<String> courseCodes) {
+        logger.info("Assigning {} courses to professor with ID: {}",
+                courseCodes != null ? courseCodes.size() : 0, professorId);
 
-        // Get the professor
-        User user = userRepository.findById(professorId);
-        if (!(user instanceof Professor professor)) {
-            logger.warn("User with ID {} is not a professor", professorId);
-            return;
+        // Log the courses being assigned for debugging
+        if (courseCodes != null && !courseCodes.isEmpty()) {
+            logger.debug("Courses being assigned to professor {}: {}", professorId, String.join(", ", courseCodes));
+        } else {
+            logger.debug("No courses provided to assign to professor {}", professorId);
         }
 
-        // Clear existing courses
-        professor.setCourseIds(new ArrayList<>());
+        // Call the repository method to perform the database operation
+        boolean result = userRepository.assignCoursesToProfessor(professorId, courseCodes);
 
-        // Add new courses
-        for (String courseCode : courseCodes) {
-            professor.addCourseId(courseCode);
+        // Log the result
+        if (result) {
+            logger.info("Successfully assigned courses to professor ID {}", professorId);
+        } else {
+            logger.error("Failed to assign courses to professor ID {}", professorId);
         }
 
-        // Update the professor
-        userRepository.update(professor);
+        return result;
     }
 }

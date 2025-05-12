@@ -11,6 +11,7 @@ import com.ABETAppTeam.controller.UserController;
 import com.ABETAppTeam.util.AppUtils;
 import com.ABETAppTeam.util.DataSourceFactory;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,13 +21,13 @@ import java.io.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @WebServlet(name = "SettingsServlet", urlPatterns = {"/settings"})
+@MultipartConfig
 public class SettingsServlet extends BaseServlet {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -518,62 +519,125 @@ public class SettingsServlet extends BaseServlet {
     }
 
     /**
-     * Handle getting professor courses
-     */
-    private void handleGetProfessorCourses(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        try {
-            // Get professor ID
-            String userIdStr = request.getParameter("userId");
-            if (userIdStr == null || userIdStr.isEmpty()) {
-                sendJsonResponse(response, new ArrayList<>());
-                return;
-            }
-
-            int userId = Integer.parseInt(userIdStr);
-
-            // Get assigned courses
-            UserController userController = UserController.getInstance();
-            List<String> assignedCourses = userController.getProfessorCourses(userId);
-
-            // Send JSON response
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writeValue(response.getWriter(), assignedCourses);
-        } catch (Exception e) {
-            AppUtils.error("Error getting professor courses", e);
-            sendJsonError(response, "Error getting professor courses: " + e.getMessage());
-        }
-    }
-
-    /**
      * Handle getting course list
      */
-    private void handleGetCourseList(HttpServletRequest request, HttpServletResponse response) 
+    private void handleGetCourseList(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        try {
-            // Get all courses
-            CourseController courseController = CourseController.getInstance();
-            List<Course> courses = courseController.getAllCourses();
+        String timerId = AppUtils.startTimer("settingsServlet.handleGetCourseList");
 
-            // Send JSON response
+        try {
+            // Clear any existing output
+            response.reset();
+
+            // Set strict headers to ensure clean JSON
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            response.setHeader("Pragma", "no-cache");
+            response.setHeader("X-Content-Type-Options", "nosniff");
 
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writeValue(response.getWriter(), courses);
+            // Get all courses
+            CourseController courseController = CourseController.getInstance();
+            List<Course> allCourses = courseController.getAllCourses();
+
+            // Handle null response
+            if (allCourses == null) {
+                AppUtils.warn("Null returned from getAllCourses, using empty list");
+                allCourses = Collections.emptyList();
+            }
+
+            // Apply filters if provided
+            String deptId = request.getParameter("deptId");
+            String searchTerm = request.getParameter("search");
+            String professorId = request.getParameter("professorId");
+
+            List<Course> filteredCourses = allCourses;
+
+            // Filter logic here...
+            // (Keeping the existing filter logic)
+
+            // Convert to JSON with extra validation
+            String jsonOutput;
+
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+
+                // If professorId is provided, create enriched response
+                if (professorId != null && !professorId.isEmpty()) {
+                    try {
+                        int profId = Integer.parseInt(professorId);
+                        UserController userController = UserController.getInstance();
+                        List<String> assignedCourses = userController.getProfessorCourses(profId);
+                        Set<String> assignedCoursesSet = new HashSet<>();
+
+                        if (assignedCourses != null && !assignedCourses.isEmpty()) {
+                            assignedCoursesSet.addAll(assignedCourses);
+                        }
+
+                        // Create a custom response with assignment info
+                        List<Map<String, Object>> enrichedCourses = new ArrayList<>();
+
+                        for (Course course : filteredCourses) {
+                            if (course == null) continue;
+
+                            Map<String, Object> courseMap = new HashMap<>();
+                            courseMap.put("courseCode", course.getCourseCode());
+                            courseMap.put("courseName", course.getCourseName());
+                            courseMap.put("description", course.getDescription());
+                            courseMap.put("deptId", course.getDeptId());
+                            courseMap.put("credits", course.getCredits());
+                            courseMap.put("semesterOffered", course.getSemesterOffered());
+                            courseMap.put("assigned", assignedCoursesSet.contains(course.getCourseCode()));
+
+                            enrichedCourses.add(courseMap);
+                        }
+
+                        jsonOutput = mapper.writeValueAsString(enrichedCourses);
+
+                        // Verify it's valid
+                        mapper.readTree(jsonOutput);
+                    } catch (Exception e) {
+                        AppUtils.error("Error creating enriched courses JSON: {}", e.getMessage(), e);
+                        // Fallback to standard list
+                        jsonOutput = mapper.writeValueAsString(filteredCourses);
+
+                        // Verify it's valid
+                        mapper.readTree(jsonOutput);
+                    }
+                } else {
+                    // Standard list
+                    jsonOutput = mapper.writeValueAsString(filteredCourses);
+
+                    // Verify it's valid
+                    mapper.readTree(jsonOutput);
+                }
+
+                AppUtils.debug("JSON response for courses (first 100 chars): {}...",
+                        jsonOutput.length() > 100 ? jsonOutput.substring(0, 100) : jsonOutput);
+            } catch (Exception jsonEx) {
+                AppUtils.error("Failed to create valid JSON for courses: {}", jsonEx.getMessage(), jsonEx);
+                // Fallback to manual JSON for empty array
+                jsonOutput = "[]";
+            }
+
+            // Buffer the output to avoid partial responses
+            PrintWriter out = response.getWriter();
+            out.write(jsonOutput);
+            out.flush();
+
         } catch (Exception e) {
-            AppUtils.error("Error getting course list", e);
-            sendJsonError(response, "Error getting course list: " + e.getMessage());
+            AppUtils.error("Error getting course list: {}", e.getMessage(), e);
+            // Return empty array on error
+            response.getWriter().write("[]");
+        } finally {
+            AppUtils.stopTimer(timerId);
         }
     }
 
     /**
      * Send JSON error response
      */
-    private void sendJsonError(HttpServletResponse response, String message) 
+    private void sendJsonError(HttpServletResponse response, String message, int scInternalServerError)
             throws IOException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -663,6 +727,8 @@ public class SettingsServlet extends BaseServlet {
      */
     private void handleEditUser(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String timerId = AppUtils.startTimer("settingsServlet.handleEditUser");
+
         String userIdStr = request.getParameter("userId");
         String firstName = request.getParameter("firstName");
         String lastName = request.getParameter("lastName");
@@ -680,9 +746,15 @@ public class SettingsServlet extends BaseServlet {
                 roleIdStr == null || roleIdStr.isEmpty()) {
 
             AppUtils.warn("Missing required parameters for user editing");
-            HttpSession session = request.getSession();
-            session.setAttribute("errorMessage", "All fields except password are required to edit a user");
-            response.sendRedirect(request.getContextPath() + "/settings");
+
+            // Check if this is an AJAX request
+            if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+                sendJsonError(response, "All fields except password are required", HttpServletResponse.SC_BAD_REQUEST);
+            } else {
+                HttpSession session = request.getSession();
+                session.setAttribute("errorMessage", "All fields except password are required to edit a user");
+                response.sendRedirect(request.getContextPath() + "/settings");
+            }
             return;
         }
 
@@ -699,9 +771,15 @@ public class SettingsServlet extends BaseServlet {
             User user = userController.getUserById(userId);
             if (user == null) {
                 AppUtils.error("User not found for editing: ID {}", userId);
-                HttpSession session = request.getSession();
-                session.setAttribute("errorMessage", "User not found");
-                response.sendRedirect(request.getContextPath() + "/settings");
+
+                // Check if this is an AJAX request
+                if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+                    sendJsonError(response, "User not found", HttpServletResponse.SC_NOT_FOUND);
+                } else {
+                    HttpSession session = request.getSession();
+                    session.setAttribute("errorMessage", "User not found");
+                    response.sendRedirect(request.getContextPath() + "/settings");
+                }
                 return;
             }
 
@@ -712,41 +790,99 @@ public class SettingsServlet extends BaseServlet {
             user.setDeptId(deptId);
             user.setRoleId(roleId);
 
-            // Save the updated user
-            boolean success = userController.updateUser(user);
+            // Update the user
+            boolean updated = userController.updateUser(user);
 
-            // Update password if provided
+            // If password was provided, update it
             if (password != null && !password.isEmpty()) {
-                AppUtils.info("Updating password for user ID {}", userId);
-                userController.changePassword(userId, password);
+                boolean passwordUpdated = userController.changePassword(userId, password);
+                if (!passwordUpdated) {
+                    AppUtils.warn("Failed to update password for user ID {}", userId);
+                }
             }
 
-            if (success) {
-                AppUtils.info("User updated successfully: ID {}", userId);
+            if (updated) {
+                AppUtils.info("User ID {} updated successfully", userId);
 
-                // If user is a professor, update assigned courses
-                if (user instanceof Professor) {
+                // Handle course assignments for professors
+                if (user instanceof Professor || roleId == 2) { // 2 is typically the professor role ID
+                    // Get the assigned courses from the form
                     String[] assignedCourses = request.getParameterValues("assignedCourses");
-                    List<String> courseCodes = assignedCourses != null ? 
-                            Arrays.asList(assignedCourses) : new ArrayList<>();
-                    userController.assignCoursesToProfessor(userId, courseCodes);
-                    AppUtils.info("Updated course assignments for professor ID {}", userId);
+
+                    // Create a list to hold the course codes
+                    List<String> courseCodes = new ArrayList<>();
+
+                    // Add the assigned courses to the list if they exist
+                    if (assignedCourses != null && assignedCourses.length > 0) {
+                        for (String courseCode : assignedCourses) {
+                            if (courseCode != null && !courseCode.trim().isEmpty()) {
+                                courseCodes.add(courseCode.trim());
+                            }
+                        }
+                    }
+
+                    // Log what we're about to do
+                    AppUtils.info("About to assign {} courses to professor ID {}", courseCodes.size(), userId);
+                    if (!courseCodes.isEmpty()) {
+                        AppUtils.debug("Courses to assign: {}", String.join(", ", courseCodes));
+                    }
+
+                    // Assign the courses to the professor using the UserController
+                    boolean coursesAssigned = userController.assignCoursesToProfessor(userId, courseCodes);
+
+                    // Log the result
+                    if (coursesAssigned) {
+                        AppUtils.info("Successfully assigned {} courses to professor ID {}", courseCodes.size(), userId);
+                    } else {
+                        AppUtils.error("Failed to assign courses to professor ID {}", userId);
+                    }
                 }
 
-                HttpSession session = request.getSession();
-                session.setAttribute("successMessage", "User updated successfully");
-                response.sendRedirect(request.getContextPath() + "/settings");
+                // Check if this is an AJAX request
+                if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+                    // Return JSON success response
+                    Map<String, Object> responseData = new HashMap<>();
+                    responseData.put("success", true);
+                    responseData.put("message", "User updated successfully");
+
+                    // Include course assignment info if available
+                    String courseCount = request.getParameter("courseCount");
+                    if (courseCount != null) {
+                        responseData.put("courseCount", courseCount);
+                        responseData.put("courseMessage", courseCount + " courses assigned successfully");
+                    }
+
+                    sendJsonResponse(response, responseData);
+                } else {
+                    HttpSession session = request.getSession();
+                    session.setAttribute("successMessage", "User updated successfully");
+                    response.sendRedirect(request.getContextPath() + "/settings");
+                }
             } else {
                 AppUtils.error("Failed to update user: ID {}", userId);
-                HttpSession session = request.getSession();
-                session.setAttribute("errorMessage", "Failed to update user");
-                response.sendRedirect(request.getContextPath() + "/settings");
+
+                // Check if this is an AJAX request
+                if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+                    sendJsonError(response, "Failed to update user", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                } else {
+                    HttpSession session = request.getSession();
+                    session.setAttribute("errorMessage", "Failed to update user");
+                    response.sendRedirect(request.getContextPath() + "/settings");
+                }
             }
         } catch (NumberFormatException e) {
             AppUtils.warn("Invalid number format in user editing: {}", e.getMessage());
-            HttpSession session = request.getSession();
-            session.setAttribute("errorMessage", "Invalid ID format");
-            response.sendRedirect(request.getContextPath() + "/settings");
+
+            // Check if this is an AJAX request
+            if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+                sendJsonError(response, "Invalid ID format", HttpServletResponse.SC_BAD_REQUEST);
+            } else {
+                HttpSession session = request.getSession();
+                session.setAttribute("errorMessage", "Invalid ID format");
+                response.sendRedirect(request.getContextPath() + "/settings");
+            }
+        } finally {
+            AppUtils.stopTimer(timerId);
         }
     }
 

@@ -1,8 +1,8 @@
 package com.ABETAppTeam;
 
-import com.ABETAppTeam.model.FCAR;
-import com.ABETAppTeam.model.User;
-import com.ABETAppTeam.model.Admin;
+import com.ABETAppTeam.controller.CourseController;
+import com.ABETAppTeam.controller.UserController;
+import com.ABETAppTeam.model.*;
 import com.ABETAppTeam.util.AppUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -12,10 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +25,7 @@ import java.util.Map;
 @WebServlet("/ImportFCARServlet")
 @MultipartConfig
 public class ImportFCARServlet extends BaseServlet {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -128,16 +126,143 @@ public class ImportFCARServlet extends BaseServlet {
     }
 
     /**
+    * Processes the CSV file and creates FCAR objects
+    * Enhanced version with better error handling and additional validation
+    *
+    * @param line The uploaded file part
+    * @return Array of FCAR objects created from the CSV data
+    */
+    private String[] parseCSVLine(String line) {
+        List<String> result = new ArrayList<>();
+        StringBuilder currentValue = new StringBuilder();
+        boolean inQuotes = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+
+            if (c == '"') {
+                // Handle quotes
+                if (inQuotes) {
+                    // Check for escaped quotes (double quotes)
+                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                        currentValue.append('"');
+                        i++; // Skip the next quote
+                    } else {
+                        inQuotes = false;
+                    }
+                } else {
+                    inQuotes = true;
+                }
+            } else if (c == ',' && !inQuotes) {
+                // End of current value
+                result.add(currentValue.toString().trim());
+                currentValue.setLength(0); // Clear the buffer
+            } else {
+                // Regular character
+                currentValue.append(c);
+            }
+        }
+
+        // Add the last value
+        result.add(currentValue.toString().trim());
+
+        return result.toArray(new String[0]);
+    }
+
+    /**
+     * Helper method to check if a semester value is valid
+     */
+    private boolean isValidSemester(String semester) {
+        if (semester == null) return false;
+
+        // Case-insensitive check for valid semesters
+        String semesterLower = semester.toLowerCase();
+        return semesterLower.equals("fall") ||
+                semesterLower.equals("spring") ||
+                semesterLower.equals("summer");
+    }
+
+    /**
+     * Helper method to check if an instructor exists in the system
+     */
+    private boolean isValidInstructor(int instructorId) {
+        try {
+            User user = UserController.getInstance().getUserById(instructorId);
+            return user instanceof Professor;
+        } catch (Exception e) {
+            AppUtils.error("Error checking instructor validity: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Helper method to check if a course exists in the system
+     */
+    private boolean isValidCourse(String courseCode) {
+        try {
+            CourseController controller = CourseController.getInstance();
+            Course course = controller.getCourse(courseCode);
+            return course != null;
+        } catch (Exception e) {
+            AppUtils.error("Error checking course validity: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Helper method to check if a course is assigned to an instructor
+     */
+    private boolean isCourseAssignedToInstructor(String courseCode, int instructorId) {
+        try {
+            UserController controller = UserController.getInstance();
+            List<String> assignedCourses = controller.getProfessorCourses(instructorId);
+            return assignedCourses != null && assignedCourses.contains(courseCode);
+        } catch (Exception e) {
+            AppUtils.error("Error checking course assignment: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Helper method to assign a course to an instructor
+     */
+    private void assignCourseToInstructor(String courseCode, int instructorId) {
+        try {
+            UserController controller = UserController.getInstance();
+
+            // Get current assigned courses
+            List<String> currentCourses = controller.getProfessorCourses(instructorId);
+            if (currentCourses == null) {
+                currentCourses = new ArrayList<>();
+            }
+
+            // Add the new course
+            if (!currentCourses.contains(courseCode)) {
+                currentCourses.add(courseCode);
+
+                // Update assignments
+                controller.assignCoursesToProfessor(instructorId, currentCourses);
+            }
+        } catch (Exception e) {
+            AppUtils.error("Error assigning course to instructor: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
      * Processes the CSV file and creates FCAR objects
-     * 
-     * @param filePart The uploaded file part
+     * Enhanced version with better error handling and additional validation
+     *
+     * @param filePart     The uploaded file part
      * @param hasHeaderRow Whether the CSV file has a header row
-     * @param currentUser The current user
+     * @param currentUser  The current user
      * @return List of FCAR objects created from the CSV data
      */
     private List<FCAR> processCSVFile(Part filePart, boolean hasHeaderRow, User currentUser) throws IOException {
         List<FCAR> fcars = new ArrayList<>();
         Map<String, Integer> columnMap = new HashMap<>();
+        StringBuilder errorLog = new StringBuilder();
+        int successCount = 0;
+        int errorCount = 0;
 
         try (InputStream inputStream = filePart.getInputStream();
              BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
@@ -155,141 +280,229 @@ public class ImportFCARServlet extends BaseServlet {
 
                 // Process header row if present
                 if (lineNumber == 1 && hasHeaderRow) {
-                    String[] headers = line.split(",");
+                    // Handle quoted CSV properly
+                    String[] headers = parseCSVLine(line);
                     for (int i = 0; i < headers.length; i++) {
                         columnMap.put(headers[i].trim().toLowerCase(), i);
                     }
                     continue;
                 }
 
-                // Process data row
-                String[] values = line.split(",");
-
-                // If no header row, create default column mapping
-                if (columnMap.isEmpty()) {
-                    for (int i = 0; i < values.length; i++) {
-                        switch (i) {
-                            case 0: columnMap.put("coursecode", i); break;
-                            case 1: columnMap.put("instructorid", i); break;
-                            case 2: columnMap.put("semester", i); break;
-                            case 3: columnMap.put("year", i); break;
-                            case 4: columnMap.put("outcomeid", i); break;
-                            case 5: columnMap.put("indicatorid", i); break;
-                            case 6: columnMap.put("workused", i); break;
-                            case 7: columnMap.put("assessmentdescription", i); break;
-                            case 8: columnMap.put("level1", i); break;
-                            case 9: columnMap.put("level2", i); break;
-                            case 10: columnMap.put("level3", i); break;
-                            case 11: columnMap.put("targetgoal", i); break;
-                            case 12: columnMap.put("summary", i); break;
-                            case 13: columnMap.put("improvementactions", i); break;
-                            default: columnMap.put("column" + i, i);
-                        }
-                    }
-                }
-
-                // Extract required fields
-                String courseCode = getValueFromRow(values, columnMap, "coursecode");
-                String instructorIdStr = getValueFromRow(values, columnMap, "instructorid");
-                String semester = getValueFromRow(values, columnMap, "semester");
-                String yearStr = getValueFromRow(values, columnMap, "year");
-
-                // Validate required fields
-                if (courseCode == null || courseCode.isEmpty() ||
-                    instructorIdStr == null || instructorIdStr.isEmpty() ||
-                    semester == null || semester.isEmpty() ||
-                    yearStr == null || yearStr.isEmpty()) {
-                    AppUtils.warn("Skipping row {} due to missing required fields", lineNumber);
-                    continue;
-                }
-
                 try {
-                    int instructorId = Integer.parseInt(instructorIdStr);
-                    int year = Integer.parseInt(yearStr);
+                    // Process data row with proper CSV parsing
+                    String[] values = parseCSVLine(line);
 
-                    // Create FCAR object
-                    FCAR fcar = new FCAR(0, courseCode, instructorId, semester, year);
-
-                    // Set optional fields
-                    String outcomeIdStr = getValueFromRow(values, columnMap, "outcomeid");
-                    if (outcomeIdStr != null && !outcomeIdStr.isEmpty()) {
-                        try {
-                            int outcomeId = Integer.parseInt(outcomeIdStr);
-                            fcar.setOutcomeId(outcomeId);
-                        } catch (NumberFormatException e) {
-                            AppUtils.warn("Invalid outcomeId format in row {}: {}", lineNumber, outcomeIdStr);
+                    // If no header row, create default column mapping
+                    if (columnMap.isEmpty()) {
+                        for (int i = 0; i < values.length; i++) {
+                            switch (i) {
+                                case 0:
+                                    columnMap.put("coursecode", i);
+                                    break;
+                                case 1:
+                                    columnMap.put("instructorid", i);
+                                    break;
+                                case 2:
+                                    columnMap.put("semester", i);
+                                    break;
+                                case 3:
+                                    columnMap.put("year", i);
+                                    break;
+                                case 4:
+                                    columnMap.put("outcomeid", i);
+                                    break;
+                                case 5:
+                                    columnMap.put("indicatorid", i);
+                                    break;
+                                case 6:
+                                    columnMap.put("workused", i);
+                                    break;
+                                case 7:
+                                    columnMap.put("assessmentdescription", i);
+                                    break;
+                                case 8:
+                                    columnMap.put("level1", i);
+                                    break;
+                                case 9:
+                                    columnMap.put("level2", i);
+                                    break;
+                                case 10:
+                                    columnMap.put("level3", i);
+                                    break;
+                                case 11:
+                                    columnMap.put("targetgoal", i);
+                                    break;
+                                case 12:
+                                    columnMap.put("summary", i);
+                                    break;
+                                case 13:
+                                    columnMap.put("improvementactions", i);
+                                    break;
+                                default:
+                                    columnMap.put("column" + i, i);
+                            }
                         }
                     }
 
-                    String indicatorIdStr = getValueFromRow(values, columnMap, "indicatorid");
-                    if (indicatorIdStr != null && !indicatorIdStr.isEmpty()) {
-                        try {
-                            int indicatorId = Integer.parseInt(indicatorIdStr);
-                            fcar.setIndicatorId(indicatorId);
-                        } catch (NumberFormatException e) {
-                            AppUtils.warn("Invalid indicatorId format in row {}: {}", lineNumber, indicatorIdStr);
+                    // Extract required fields
+                    String courseCode = getValueFromRow(values, columnMap, "coursecode");
+                    String instructorIdStr = getValueFromRow(values, columnMap, "instructorid");
+                    String semester = getValueFromRow(values, columnMap, "semester");
+                    String yearStr = getValueFromRow(values, columnMap, "year");
+
+                    // Validate required fields
+                    boolean hasErrors = false;
+                    if (courseCode == null || courseCode.isEmpty()) {
+                        errorLog.append("Row ").append(lineNumber).append(": Missing course code\n");
+                        hasErrors = true;
+                    }
+
+                    if (instructorIdStr == null || instructorIdStr.isEmpty()) {
+                        errorLog.append("Row ").append(lineNumber).append(": Missing instructor ID\n");
+                        hasErrors = true;
+                    }
+
+                    if (semester == null || semester.isEmpty()) {
+                        errorLog.append("Row ").append(lineNumber).append(": Missing semester\n");
+                        hasErrors = true;
+                    } else if (!isValidSemester(semester)) {
+                        errorLog.append("Row ").append(lineNumber).append(": Invalid semester '").append(semester).append("' (must be Fall, Spring, or Summer)\n");
+                        hasErrors = true;
+                    }
+
+                    if (yearStr == null || yearStr.isEmpty()) {
+                        errorLog.append("Row ").append(lineNumber).append(": Missing year\n");
+                        hasErrors = true;
+                    }
+
+                    if (hasErrors) {
+                        errorCount++;
+                        continue;
+                    }
+
+                    try {
+                        // Parse numeric fields
+                        int instructorId = Integer.parseInt(instructorIdStr);
+                        int year = Integer.parseInt(yearStr);
+
+                        // Validate instructor exists in the system
+                        if (!isValidInstructor(instructorId)) {
+                            errorLog.append("Row ").append(lineNumber).append(": Instructor ID ").append(instructorId).append(" not found in the system\n");
+                            errorCount++;
+                            continue;
                         }
+
+                        // Validate course exists in the system
+                        if (!isValidCourse(courseCode)) {
+                            errorLog.append("Row ").append(lineNumber).append(": Course code ").append(courseCode).append(" not found in the system\n");
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Check if course is assigned to instructor
+                        if (!isCourseAssignedToInstructor(courseCode, instructorId)) {
+                            // Assign the course to the instructor
+                            assignCourseToInstructor(courseCode, instructorId);
+                            AppUtils.info("Automatically assigned course {} to instructor {}", courseCode, instructorId);
+                        }
+
+                        // Create FCAR object
+                        FCAR fcar = new FCAR(0, courseCode, instructorId, semester, year);
+
+                        // Set optional fields
+                        String outcomeIdStr = getValueFromRow(values, columnMap, "outcomeid");
+                        if (outcomeIdStr != null && !outcomeIdStr.isEmpty()) {
+                            try {
+                                int outcomeId = Integer.parseInt(outcomeIdStr);
+                                fcar.setOutcomeId(outcomeId);
+                            } catch (NumberFormatException e) {
+                                AppUtils.warn("Invalid outcomeId format in row {}: {}", lineNumber, outcomeIdStr);
+                            }
+                        }
+
+                        String indicatorIdStr = getValueFromRow(values, columnMap, "indicatorid");
+                        if (indicatorIdStr != null && !indicatorIdStr.isEmpty()) {
+                            try {
+                                int indicatorId = Integer.parseInt(indicatorIdStr);
+                                fcar.setIndicatorId(indicatorId);
+                            } catch (NumberFormatException e) {
+                                AppUtils.warn("Invalid indicatorId format in row {}: {}", lineNumber, indicatorIdStr);
+                            }
+                        }
+
+                        // Set assessment methods
+                        Map<String, String> assessmentMethods = new HashMap<>();
+
+                        String workUsed = getValueFromRow(values, columnMap, "workused");
+                        if (workUsed != null && !workUsed.isEmpty()) {
+                            assessmentMethods.put("workUsed", workUsed);
+                        }
+
+                        String assessmentDescription = getValueFromRow(values, columnMap, "assessmentdescription");
+                        if (assessmentDescription != null && !assessmentDescription.isEmpty()) {
+                            assessmentMethods.put("assessmentDescription", assessmentDescription);
+                        }
+
+                        String level1Str = getValueFromRow(values, columnMap, "level1");
+                        if (level1Str != null && !level1Str.isEmpty()) {
+                            assessmentMethods.put("level1", level1Str);
+                        }
+
+                        String level2Str = getValueFromRow(values, columnMap, "level2");
+                        if (level2Str != null && !level2Str.isEmpty()) {
+                            assessmentMethods.put("level2", level2Str);
+                        }
+
+                        String level3Str = getValueFromRow(values, columnMap, "level3");
+                        if (level3Str != null && !level3Str.isEmpty()) {
+                            assessmentMethods.put("level3", level3Str);
+                        }
+
+                        String targetGoalStr = getValueFromRow(values, columnMap, "targetgoal");
+                        if (targetGoalStr != null && !targetGoalStr.isEmpty()) {
+                            assessmentMethods.put("targetGoal", targetGoalStr);
+                        }
+
+                        fcar.setAssessmentMethods(assessmentMethods);
+
+                        // Set improvement actions
+                        Map<String, String> improvementActions = new HashMap<>();
+
+                        String summary = getValueFromRow(values, columnMap, "summary");
+                        if (summary != null && !summary.isEmpty()) {
+                            improvementActions.put("summary", summary);
+                        }
+
+                        String actions = getValueFromRow(values, columnMap, "improvementactions");
+                        if (actions != null && !actions.isEmpty()) {
+                            improvementActions.put("actions", actions);
+                        }
+
+                        fcar.setImprovementActions(improvementActions);
+
+                        // Set status to Draft
+                        fcar.setStatus("Draft");
+
+                        // Add to list
+                        fcars.add(fcar);
+                        successCount++;
+
+                    } catch (NumberFormatException e) {
+                        errorLog.append("Row ").append(lineNumber).append(": Invalid number format: ").append(e.getMessage()).append("\n");
+                        errorCount++;
+                        AppUtils.warn("Skipping row {} due to invalid number format: {}", lineNumber, e.getMessage());
                     }
-
-                    // Set assessment methods
-                    Map<String, String> assessmentMethods = new HashMap<>();
-
-                    String workUsed = getValueFromRow(values, columnMap, "workused");
-                    if (workUsed != null && !workUsed.isEmpty()) {
-                        assessmentMethods.put("workUsed", workUsed);
-                    }
-
-                    String assessmentDescription = getValueFromRow(values, columnMap, "assessmentdescription");
-                    if (assessmentDescription != null && !assessmentDescription.isEmpty()) {
-                        assessmentMethods.put("assessmentDescription", assessmentDescription);
-                    }
-
-                    String level1Str = getValueFromRow(values, columnMap, "level1");
-                    if (level1Str != null && !level1Str.isEmpty()) {
-                        assessmentMethods.put("level1", level1Str);
-                    }
-
-                    String level2Str = getValueFromRow(values, columnMap, "level2");
-                    if (level2Str != null && !level2Str.isEmpty()) {
-                        assessmentMethods.put("level2", level2Str);
-                    }
-
-                    String level3Str = getValueFromRow(values, columnMap, "level3");
-                    if (level3Str != null && !level3Str.isEmpty()) {
-                        assessmentMethods.put("level3", level3Str);
-                    }
-
-                    String targetGoalStr = getValueFromRow(values, columnMap, "targetgoal");
-                    if (targetGoalStr != null && !targetGoalStr.isEmpty()) {
-                        assessmentMethods.put("targetGoal", targetGoalStr);
-                    }
-
-                    fcar.setAssessmentMethods(assessmentMethods);
-
-                    // Set improvement actions
-                    Map<String, String> improvementActions = new HashMap<>();
-
-                    String summary = getValueFromRow(values, columnMap, "summary");
-                    if (summary != null && !summary.isEmpty()) {
-                        improvementActions.put("summary", summary);
-                    }
-
-                    String actions = getValueFromRow(values, columnMap, "improvementactions");
-                    if (actions != null && !actions.isEmpty()) {
-                        improvementActions.put("actions", actions);
-                    }
-
-                    fcar.setImprovementActions(improvementActions);
-
-                    // Set status to Draft
-                    fcar.setStatus("Draft");
-
-                    // Add to list
-                    fcars.add(fcar);
-
-                } catch (NumberFormatException e) {
-                    AppUtils.warn("Skipping row {} due to invalid number format: {}", lineNumber, e.getMessage());
+                } catch (Exception e) {
+                    errorLog.append("Row ").append(lineNumber).append(": Unexpected error: ").append(e.getMessage()).append("\n");
+                    errorCount++;
+                    AppUtils.error("Error processing row {}: {}", lineNumber, e.getMessage(), e);
                 }
+            }
+
+            // Log summary of import
+            AppUtils.info("CSV import completed: {} successes, {} errors", successCount, errorCount);
+            if (errorCount > 0) {
+                AppUtils.warn("CSV import errors:\n{}", errorLog.toString());
             }
         }
 
@@ -298,27 +511,26 @@ public class ImportFCARServlet extends BaseServlet {
 
     /**
      * Gets a value from a row based on the column name
-     * 
+     *
      * @param values The row values
      * @param columnMap The column mapping
      * @param columnName The column name
      * @return The value from the row, or null if not found
      */
-    private String getValueFromRow(String[] values, Map<String, Integer> columnMap, String columnName) {
+    private String getValueFromRow (String[]values, Map < String, Integer > columnMap, String columnName){
         Integer index = columnMap.get(columnName.toLowerCase());
         if (index != null && index < values.length) {
             return values[index].trim();
         }
         return null;
     }
-
     /**
      * Extracts the file name from a Part
-     * 
+     *
      * @param part The Part containing the file
      * @return The file name
      */
-    private String getFileName(Part part) {
+    private String getFileName (Part part){
         String contentDisposition = part.getHeader("content-disposition");
         String[] elements = contentDisposition.split(";");
 

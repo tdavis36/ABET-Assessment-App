@@ -15,7 +15,6 @@
 </head>
 <body>
 <jsp:include page="/WEB-INF/navbar.jsp" />
-
 <div class="dashboard" id="settingsDashboard">
     <div class="header-container">
         <h1>Application Settings</h1>
@@ -81,52 +80,49 @@
     </div>
 
     <!-- Import FCAR Section -->
-    <div class="section">
+    <div class="settings-section">
         <h2>Import FCARs</h2>
-        <div class="form-section">
-            <p>Upload a CSV file to import multiple FCARs at once. The CSV file should have the following columns:</p>
+        <p>Upload a CSV file to import multiple FCARs at once. This is useful for bulk creating course assessments for instructors.</p>
+
+        <div class="import-help">
+            <h4>CSV Format Guidelines</h4>
             <ul>
-                <li>courseCode - Course code (e.g., CS101)</li>
-                <li>instructorId - Professor ID</li>
-                <li>semester - Semester (Spring, Summer, Fall)</li>
-                <li>year - Year (e.g., 2025)</li>
-                <li>outcomeId - Outcome ID (optional)</li>
-                <li>indicatorId - Indicator ID (optional)</li>
-                <li>workUsed - Work used for assessment (optional)</li>
-                <li>assessmentDescription - Description of assessment method (optional)</li>
-                <li>level1 - Number of students below expectations (optional)</li>
-                <li>level2 - Number of students meeting expectations (optional)</li>
-                <li>level3 - Number of students exceeding expectations (optional)</li>
-                <li>targetGoal - Target goal percentage (optional)</li>
-                <li>summary - Summary of results (optional)</li>
-                <li>improvementActions - Proposed actions for improvement (optional)</li>
+                <li><strong>Required columns:</strong> <code>courseCode</code>, <code>instructorId</code>, <code>semester</code>, <code>year</code></li>
+                <li><strong>Optional columns:</strong> <code>outcomeId</code>, <code>indicatorId</code>, <code>workUsed</code>, <code>assessmentDescription</code>, <code>level1</code>, <code>level2</code>, <code>level3</code>, <code>targetGoal</code>, <code>summary</code>, <code>improvementActions</code></li>
             </ul>
+        </div>
 
-            <form action="${pageContext.request.contextPath}/ImportFCARServlet" method="post" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="fcarFile">Select CSV File:</label>
-                    <input type="file" id="fcarFile" name="fcarFile" accept=".csv" required>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="headerRow" name="headerRow" checked>
-                        File contains header row
-                    </label>
-                </div>
-                <div class="form-group">
-                    <button type="submit" class="btn btn-submit">Import FCARs</button>
-                </div>
-            </form>
-
-            <div id="importPreview" class="import-preview" style="display: none;">
-                <h3>Import Preview</h3>
-                <div id="previewContent"></div>
+        <form action="${pageContext.request.contextPath}/ImportFCARServlet" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="fcarFile">Select CSV File:</label>
+                <input type="file" id="fcarFile" name="fcarFile" accept=".csv" required>
             </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="headerRow" name="headerRow" checked>
+                    File contains header row
+                </label>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Import FCARs</button>
+            </div>
+        </form>
+
+        <div id="importPreview" class="import-preview" style="display: none;">
+            <h3>Import Preview</h3>
+            <div id="previewContent"></div>
+        </div>
+
+        <div class="import-help">
+            <h4>Example CSV format</h4>
+            <pre><code>courseCode,instructorId,semester,year,outcomeId,indicatorId,workUsed,assessmentDescription,level1,level2,level3,targetGoal,summary,improvementActions
+CS101,12,Fall,2025,1,2,"Final Exam","Questions 3-5 on the final exam",2,15,8,70,"Most students met expectations","Will provide more practice problems"
+CS220,14,Spring,2025,2,4,"Project 2","Database implementation project",3,12,5,75,"Good results but room for improvement","Add more examples of normalization"</code></pre>
         </div>
     </div>
 
-    <!-- User Management Section -->
-    <div class="section">
+    <%-- Enhanced User Management Section --%>
+    <div class="settings-section">
         <h2>Manage Users</h2>
         <div class="form-section">
             <h3>Create New Professor Account</h3>
@@ -166,16 +162,25 @@
                 <div class="form-group">
                     <label>Assign Courses:</label>
                     <div class="course-checkboxes">
-                        <c:forEach items="${courses}" var="course">
-                            <div>
-                                <input type="checkbox" id="course_${course.courseCode}" name="assignedCourses" value="${course.courseCode}" />
-                                <label for="course_${course.courseCode}">${course.courseCode}: ${course.courseName}</label>
+                        <div class="course-search">
+                            <input type="text" id="courseSearchInputCreate" placeholder="Search courses..." />
+                            <div class="course-actions">
+                                <button type="button" class="btn" id="selectAllCoursesCreate">Select All</button>
+                                <button type="button" class="btn" id="clearAllCoursesCreate">Clear All</button>
                             </div>
-                        </c:forEach>
+                        </div>
+                        <div class="course-list">
+                            <c:forEach items="${courses}" var="course">
+                                <div class="course-item">
+                                    <input type="checkbox" id="course_${course.courseCode}" name="assignedCourses" value="${course.courseCode}" />
+                                    <label for="course_${course.courseCode}">${course.courseCode}: ${course.courseName}</label>
+                                </div>
+                            </c:forEach>
+                        </div>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-submit">Create Professor Account</button>
+                <button type="submit" class="btn-submit">Create Professor Account</button>
             </form>
         </div>
 
@@ -214,13 +219,13 @@
                                         <c:otherwise>Inactive</c:otherwise>
                                     </c:choose>
                                 </td>
-                                <td class="fcar-actions">
+                                <td>
                                     <button type="button" class="btn" onclick="openEditUserModal(${professor.userId}, '${professor.firstName}', '${professor.lastName}', '${professor.email}', ${professor.deptId}, ${professor.roleId})">Edit</button>
                                     <button type="button" class="btn
-                                        <c:choose>
-                                            <c:when test="${isProfessorActive}">btn-danger</c:when>
-                                            <c:otherwise>btn-success</c:otherwise>
-                                        </c:choose>"
+                                    <c:choose>
+                                        <c:when test="${isProfessorActive}">btn-danger</c:when>
+                                        <c:otherwise>btn-success</c:otherwise>
+                                    </c:choose>"
                                             onclick="confirmToggleStatus(${professor.userId}, '${professor.firstName} ${professor.lastName}',
                                             <c:choose>
                                             <c:when test="${isProfessorActive}">true</c:when>
@@ -243,67 +248,67 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Edit User Modal -->
-<div id="editUserModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeEditUserModal()">&times;</span>
-        <h2>Edit Professor</h2>
-        <form action="${pageContext.request.contextPath}/settings" method="post" id="editUserForm">
-            <input type="hidden" name="action" value="editUser" />
-            <input type="hidden" name="userId" id="editUserId" />
+    <!-- Enhanced Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditUserModal()">&times;</span>
+            <h2>Edit Professor</h2>
+            <form id="editUserForm">
+                <input type="hidden" name="action" value="editUser" />
+                <input type="hidden" name="userId" id="editUserId" />
 
-            <div class="form-group">
-                <label for="editFirstName">First Name:</label>
-                <input type="text" id="editFirstName" name="firstName" required />
-            </div>
-
-            <div class="form-group">
-                <label for="editLastName">Last Name:</label>
-                <input type="text" id="editLastName" name="lastName" required />
-            </div>
-
-            <div class="form-group">
-                <label for="editEmail">Email:</label>
-                <input type="email" id="editEmail" name="email" required />
-            </div>
-
-            <div class="form-group">
-                <label for="editPassword">New Password (leave blank to keep current):</label>
-                <input type="password" id="editPassword" name="password" />
-            </div>
-
-            <div class="form-group">
-                <label for="editDepartment">Department:</label>
-                <select id="editDepartment" name="deptId" required>
-                    <option value="">Select a Department</option>
-                    <c:forEach items="${departments}" var="dept">
-                        <option value="${dept.id}">${dept.name}</option>
-                    </c:forEach>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="editRole">Role:</label>
-                <select id="editRole" name="roleId" required>
-                    <option value="1">Administrator</option>
-                    <option value="2">Professor</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Assign Courses:</label>
-                <div class="course-checkboxes" id="editCourseCheckboxes">
-                    <!-- Will be populated dynamically -->
+                <div class="form-group">
+                    <label for="editFirstName">First Name:</label>
+                    <input type="text" id="editFirstName" name="firstName" required />
                 </div>
-            </div>
 
-            <div class="button-container">
-                <button type="button" class="btn btn-cancel" onclick="closeEditUserModal()">Cancel</button>
-                <button type="submit" class="btn btn-submit">Save Changes</button>
-            </div>
-        </form>
+                <div class="form-group">
+                    <label for="editLastName">Last Name:</label>
+                    <input type="text" id="editLastName" name="lastName" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="editEmail">Email:</label>
+                    <input type="email" id="editEmail" name="email" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="editPassword">New Password (leave blank to keep current):</label>
+                    <input type="password" id="editPassword" name="password" />
+                </div>
+
+                <div class="form-group">
+                    <label for="editDepartment">Department:</label>
+                    <select id="editDepartment" name="deptId" required>
+                        <option value="">Select a Department</option>
+                        <c:forEach items="${departments}" var="dept">
+                            <option value="${dept.id}">${dept.name}</option>
+                        </c:forEach>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="editRole">Role:</label>
+                    <select id="editRole" name="roleId" required>
+                        <option value="1">Administrator</option>
+                        <option value="2">Professor</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Assign Courses:</label>
+                    <div class="course-checkboxes" id="editCourseCheckboxes">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="button-container">
+                    <button type="button" class="btn-cancel" onclick="closeEditUserModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">Save Changes</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -327,107 +332,69 @@
 </div>
 
 <script>
-    // Function to open the edit user modal
-    function openEditUserModal(userId, firstName, lastName, email, deptId, roleId) {
-        // Set form values
-        document.getElementById('editUserId').value = userId;
-        document.getElementById('editFirstName').value = firstName;
-        document.getElementById('editLastName').value = lastName;
-        document.getElementById('editEmail').value = email;
-        document.getElementById('editDepartment').value = deptId;
-        document.getElementById('editRole').value = roleId;
+    // Store context path for AJAX calls
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set global context path from the data attribute
+        window.contextPath = document.body.getAttribute('data-context-path') || '';
 
-        // Populate course checkboxes
-        populateEditCourseCheckboxes(userId);
-
-        // Show the modal
-        document.getElementById('editUserModal').style.display = 'block';
-    }
-
-    // Function to confirm toggling user status
-    function confirmToggleStatus(userId, userName, isActive) {
-        // Ensure isActive is a boolean
-        isActive = (isActive === true || isActive === "true");
-
-        // Set the user ID in the hidden form
-        document.getElementById('toggleUserId').value = userId;
-
-        // Set the confirmation message
-        const action = isActive ? "deactivate" : "activate";
-        document.getElementById('confirmationMessage').textContent =
-            `Are you sure you want to ${action} the user "${userName}"?`;
-
-        // Set the confirm button action
-        const confirmButton = document.getElementById('confirmButton');
-        confirmButton.onclick = function() {
-            document.getElementById('toggleStatusForm').submit();
-        };
-
-        // Show the confirmation modal
-        document.getElementById('confirmationModal').style.display = 'block';
-    }
-
-    // Function to close the confirmation modal
-    function closeConfirmationModal() {
-        document.getElementById('confirmationModal').style.display = 'none';
-    }
-
-    // Function to close the edit user modal
-    function closeEditUserModal() {
-        document.getElementById('editUserModal').style.display = 'none';
-    }
-
-    // Function to populate course checkboxes in the edit modal
-    function populateEditCourseCheckboxes(userId) {
-        const container = document.getElementById('editCourseCheckboxes');
-        container.innerHTML = '';
-
-        // Make an AJAX call to get assigned courses for this professor
-        fetch(`${pageContext.request.contextPath}/settings?action=getProfessorCourses&userId=${userId}`)
-            .then(response => response.json())
-            .then(assignedCourses => {
-                // Add all available courses with checkboxes
-                addCoursesToModal(container, assignedCourses);
-            })
-            .catch(error => {
-                console.error('Error fetching assigned courses:', error);
-                // Fallback: just show all courses unchecked
-                addCoursesToModal(container, []);
+        // Initialize the edit form submission
+        const editUserForm = document.getElementById('editUserForm');
+        if (editUserForm) {
+            editUserForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                submitEditUserForm();
             });
-    }
+        }
 
-    // Helper function to add courses to the modal
-    function addCoursesToModal(container, assignedCourses) {
-        // Get all available courses from the server
-        fetch(`${pageContext.request.contextPath}/SettingsServlet?action=getCourseList`)
-            .then(response => response.json())
-            .then(courses => {
-                courses.forEach(course => {
-                    const courseDiv = document.createElement('div');
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = `edit_course_${course.courseCode}`;
-                    checkbox.name = 'assignedCourses';
-                    checkbox.value = course.courseCode;
-                    checkbox.checked = assignedCourses.includes(course.courseCode);
+        // Initialize course search on the create user form too
+        initializeCreateFormCourseSearch();
+    });
 
-                    const label = document.createElement('label');
-                    label.htmlFor = `edit_course_${course.courseCode}`;
-                    label.textContent = `${course.courseCode}: ${course.courseName}`;
+    // Function to initialize course search on create form
+    function initializeCreateFormCourseSearch() {
+        const searchInput = document.getElementById('courseSearchInputCreate');
+        if (!searchInput) return;
 
-                    courseDiv.appendChild(checkbox);
-                    courseDiv.appendChild(document.createTextNode(' '));
-                    courseDiv.appendChild(label);
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const courseItems = document.querySelectorAll('input[id^="course_"]').forEach(item => {
+                const label = document.querySelector(`label[for="${item.id}"]`);
+                if (!label) return;
 
-                    container.appendChild(courseDiv);
+                const text = label.textContent.toLowerCase();
+                const container = item.closest('.course-item');
+                if (container) {
+                    container.style.display = text.includes(searchTerm) ? '' : 'none';
+                }
+            });
+        });
+
+        // Initialize select all/none buttons
+        const selectAllBtn = document.getElementById('selectAllCoursesCreate');
+        const clearAllBtn = document.getElementById('clearAllCoursesCreate');
+
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', function() {
+                document.querySelectorAll('input[name="assignedCourses"]').forEach(cb => {
+                    if (cb.closest('.course-item').style.display !== 'none') {
+                        cb.checked = true;
+                    }
                 });
-            })
-            .catch(error => {
-                console.error('Error fetching courses:', error);
             });
+        }
+
+        if (clearAllBtn) {
+            clearAllBtn.addEventListener('click', function() {
+                document.querySelectorAll('input[name="assignedCourses"]').forEach(cb => {
+                    if (cb.closest('.course-item').style.display !== 'none') {
+                        cb.checked = false;
+                    }
+                });
+            });
+        }
     }
 
-    // Function to test database connection
+    // Fix testConnection function to use context path
     function testConnection() {
         const host = document.getElementById('dbHost').value;
         const port = document.getElementById('dbPort').value;
@@ -444,8 +411,8 @@
         formData.append('dbUsername', username);
         formData.append('dbPassword', password);
 
-        // Send AJAX request
-        fetch('${pageContext.request.contextPath}/settings', {
+        // Send AJAX request with correct context path
+        fetch(window.contextPath + '/settings', {
             method: 'POST',
             body: formData
         })
@@ -462,11 +429,11 @@
             });
     }
 
-    // Function to restart connection pool
+    // Fix restartConnectionPool function to use context path
     function restartConnectionPool() {
         if (confirm('Are you sure you want to restart the database connection pool? This may temporarily interrupt database operations.')) {
-            // Send AJAX request
-            fetch('${pageContext.request.contextPath}/settings', {
+            // Send AJAX request with correct context path
+            fetch(window.contextPath + '/settings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -487,95 +454,178 @@
         }
     }
 
-    // File import preview functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const fileInput = document.getElementById('fcarFile');
-        if (fileInput) {
-            fileInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    // Show preview section
-                    document.getElementById('importPreview').style.display = 'block';
+    // Updated submitEditUserForm to use the correct context path
+    function submitEditUserForm() {
+        const form = document.getElementById('editUserForm');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
 
-                    // Read file contents
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const contents = e.target.result;
-                        const lines = contents.split('\n');
+        // Show progress
+        submitButton.textContent = 'Saving...';
+        submitButton.disabled = true;
 
-                        // Display preview of first 5 lines
-                        let previewHTML = '<table class="data-table"><thead><tr>';
+        // Collect form data
+        const formData = new FormData(form);
 
-                        // Parse header row
-                        const headerRow = document.getElementById('headerRow').checked;
-                        let headers = [];
+        // Count selected courses for feedback
+        const selectedCourses = document.querySelectorAll('input[name="assignedCourses"]:checked');
+        formData.append('courseCount', selectedCourses.length);
 
-                        if (headerRow && lines.length > 0) {
-                            headers = lines[0].split(',');
-                            for (let header of headers) {
-                                previewHTML += `<th>\${header ? header.trim() : ''}</th>`;
-                            }
-                            previewHTML += '</tr></thead><tbody>';
+        // Get the full URL with context path
+        const actionUrl = window.contextPath + '/settings';
 
-                            // Show up to 5 data rows
-                            const rowsToShow = Math.min(lines.length - 1, 5);
-                            for (let i = 1; i <= rowsToShow; i++) {
-                                if (lines[i] && lines[i].trim()) {
-                                    previewHTML += '<tr>';
-                                    const cells = lines[i].split(',');
-                                    for (let cell of cells) {
-                                        previewHTML += `<td>\${cell ? cell.trim() : ''}</td>`;
-                                    }
-                                    previewHTML += '</tr>';
-                                }
-                            }
-                        } else {
-                            // No header row, just show data
-                            const firstRow = lines[0].split(',');
-                            for (let i = 0; i < firstRow.length; i++) {
-                                previewHTML += `<th>Column \${i+1}</th>`;
-                            }
-                            previewHTML += '</tr></thead><tbody>';
-
-                            // Show up to 5 data rows
-                            const rowsToShow = Math.min(lines.length, 5);
-                            for (let i = 0; i < rowsToShow; i++) {
-                                if (lines[i] && lines[i].trim()) {
-                                    previewHTML += '<tr>';
-                                    const cells = lines[i].split(',');
-                                    for (let cell of cells) {
-                                        previewHTML += `<td>\${cell ? cell.trim() : ''}</td>`;
-                                    }
-                                    previewHTML += '</tr>';
-                                }
-                            }
-                        }
-
-                        previewHTML += '</tbody></table>';
-
-                        if (lines.length > 6) {
-                            previewHTML += `<p>...and ${lines.length - 6} more rows</p>`;
-                        }
-
-                        document.getElementById('previewContent').innerHTML = previewHTML;
-                    };
-                    reader.readAsText(file);
+        // Send AJAX request
+        fetch(actionUrl, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server returned an error: ${response.status}`);
                 }
+                // Try as JSON first, but fall back to text if needed
+                return response.json().catch(() => response.text());
+            })
+            .then(data => {
+                submitButton.textContent = 'Saved!';
+
+                // Handle success response - might be text or JSON
+                let message = 'User data saved successfully';
+                if (typeof data === 'object' && data.message) {
+                    message = data.message;
+                }
+
+                // Show success message or redirect
+                setTimeout(() => {
+                    alert(message);
+                    closeEditUserModal();
+                    // Reload the page to show updated data
+                    window.location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                console.error('Error saving user data:', error);
+                submitButton.textContent = 'Error!';
+                alert('Failed to save changes. Please try again.');
+
+                setTimeout(() => {
+                    submitButton.textContent = originalText;
+                    submitButton.disabled = false;
+                }, 2000);
             });
 
-            // Update preview when header checkbox changes
-            const headerCheckbox = document.getElementById('headerRow');
-            if (headerCheckbox) {
-                headerCheckbox.addEventListener('change', function() {
-                    if (fileInput.files.length > 0) {
-                        // Trigger the file input change event to refresh preview
-                        const event = new Event('change');
-                        fileInput.dispatchEvent(event);
-                    }
-                });
-            }
+        return false; // Prevent form submission
+    }
+
+    // Fix populateEditCourseCheckboxes to use the correct context path
+    function populateEditCourseCheckboxes(userId) {
+        const container = document.getElementById('editCourseCheckboxes');
+        container.innerHTML = '<p>Loading courses...</p>';
+
+        // Ensure userId is a value, not an element
+        if(typeof userId === 'object' && userId.value) {
+            userId = userId.value;
         }
-    });
+
+        // Update the URL path to match the servlet mapping with correct context path
+        fetch(`${window.contextPath}/settings?action=getProfessorCourses&userId=${userId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(assignedCourses => {
+                // Add all available courses with checkboxes
+                return addCoursesToModal(container, assignedCourses);
+            })
+            .catch(error => {
+                console.error('Error fetching assigned courses:', error);
+                // Fallback: just show all courses unchecked
+                container.innerHTML = '<p class="error-message">Error loading assigned courses. Please try again.</p>';
+                return addCoursesToModal(container, []);
+            });
+    }
+
+    // Updated addCoursesToModal to use correct context path
+    function addCoursesToModal(container, assignedCourses) {
+        // Convert assignedCourses to a Set for faster lookups
+        const assignedCoursesSet = new Set(assignedCourses);
+
+        // Get all available courses from the server with correct context path
+        return fetch(`${window.contextPath}/settings?action=getCourseList`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(courses => {
+                if (!courses || courses.length === 0) {
+                    container.innerHTML = '<p>No courses available in the system.</p>';
+                    return;
+                }
+
+                // Add search box for courses
+                const searchBox = document.createElement('div');
+                searchBox.className = 'course-search';
+                searchBox.innerHTML = `
+                <input type="text" id="courseSearchInput" placeholder="Search courses..." />
+                <div class="course-actions">
+                    <button type="button" class="btn" id="selectAllCourses">Select All</button>
+                    <button type="button" class="btn" id="clearAllCourses">Clear All</button>
+                </div>
+            `;
+                container.innerHTML = '';
+                container.appendChild(searchBox);
+
+                // Create course list container with scrollable area
+                const courseList = document.createElement('div');
+                courseList.className = 'course-list';
+                container.appendChild(courseList);
+
+                // Sort courses by code for better organization
+                courses.sort((a, b) => a.courseCode.localeCompare(b.courseCode));
+
+                // Add each course as a checkbox
+                courses.forEach(course => {
+                    const courseDiv = document.createElement('div');
+                    courseDiv.className = 'course-item';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `edit_course_${course.courseCode}`;
+                    checkbox.name = 'assignedCourses';
+                    checkbox.value = course.courseCode;
+
+                    // Check if this course is assigned to the professor
+                    if (course.assigned === true || assignedCoursesSet.has(course.courseCode)) {
+                        checkbox.checked = true;
+                    }
+
+                    const label = document.createElement('label');
+                    label.htmlFor = `edit_course_${course.courseCode}`;
+                    label.textContent = `${course.courseCode}: ${course.courseName}`;
+
+                    courseDiv.appendChild(checkbox);
+                    courseDiv.appendChild(document.createTextNode(' '));
+                    courseDiv.appendChild(label);
+
+                    courseList.appendChild(courseDiv);
+                });
+
+                // Initialize search functionality
+                initializeCourseSearch();
+
+                // Initialize select/clear all buttons
+                initializeCourseButtons();
+            })
+            .catch(error => {
+                console.error('Error fetching courses:', error);
+                container.innerHTML = '<p class="error-message">Error loading course list. Please try again.</p>';
+            });
+    }
 </script>
+<script src="${pageContext.request.contextPath}/js/course-assignment.js"></script>
 </body>
 </html>

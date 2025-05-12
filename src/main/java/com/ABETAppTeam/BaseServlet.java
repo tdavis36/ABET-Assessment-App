@@ -2,14 +2,12 @@ package com.ABETAppTeam;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.ABETAppTeam.controller.DisplaySystemController;
 import com.ABETAppTeam.controller.FCARController;
 import com.ABETAppTeam.controller.OutcomeController;
+import com.ABETAppTeam.controller.UserController;
 import com.ABETAppTeam.model.Admin;
 import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.model.Professor;
@@ -17,6 +15,7 @@ import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.service.FCARService;
 import com.ABETAppTeam.util.AppUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
@@ -425,6 +424,96 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
     }
+
+    /**
+     * Handle getting professor courses
+     */
+    public void handleGetProfessorCourses(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String timerId = AppUtils.startTimer("settingsServlet.handleGetProfessorCourses");
+
+        try {
+            // Clear any existing output
+            response.reset();
+
+            // Set strict headers to ensure clean JSON
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            response.setHeader("Pragma", "no-cache");
+            response.setHeader("X-Content-Type-Options", "nosniff");
+
+            // Get professor ID
+            String userIdStr = request.getParameter("userId");
+            if (userIdStr == null || userIdStr.isEmpty()) {
+                AppUtils.warn("Missing userId parameter in getProfessorCourses request");
+                // Return an empty array instead of error
+                response.getWriter().write("[]");
+                return;
+            }
+
+            try {
+                int userId = Integer.parseInt(userIdStr);
+                AppUtils.debug("Getting courses for professor ID: {}", userId);
+
+                // Get assigned courses
+                UserController userController = UserController.getInstance();
+                List<String> assignedCourses = userController.getProfessorCourses(userId);
+
+                // If null, return an empty array rather than null
+                if (assignedCourses == null) {
+                    AppUtils.debug("Null returned from getProfessorCourses for professor ID: {}, using empty list", userId);
+                    assignedCourses = Collections.emptyList();
+                }
+
+                // Convert to JSON with extra validation
+                String jsonOutput;
+
+                try {
+                    // Ensure our response is consistent JSON
+                    ObjectMapper mapper = new ObjectMapper();
+                    jsonOutput = mapper.writeValueAsString(assignedCourses);
+
+                    // Verify it's valid JSON
+                    mapper.readTree(jsonOutput);
+
+                    AppUtils.debug("JSON response for professor courses: {}", jsonOutput);
+                } catch (Exception jsonEx) {
+                    AppUtils.error("Failed to create valid JSON for professor courses: {}", jsonEx.getMessage(), jsonEx);
+                    // Fallback to manual JSON for empty array
+                    jsonOutput = "[]";
+                }
+
+                // Buffer the output to avoid partial responses
+                PrintWriter out = response.getWriter();
+                out.write(jsonOutput);
+                out.flush();
+
+                AppUtils.debug("Successfully returned {} assigned courses for professor ID: {}",
+                        assignedCourses.size(), userId);
+            } catch (NumberFormatException e) {
+                AppUtils.error("Invalid userId parameter: {}", request.getParameter("userId"), e);
+                // Return empty array for invalid ID
+                response.getWriter().write("[]");
+            } catch (Exception e) {
+                AppUtils.error("Error getting professor courses: {}", e.getMessage(), e);
+                // Return empty array for any error
+                response.getWriter().write("[]");
+            }
+        } catch (Exception e) {
+            AppUtils.error("Unhandled exception in handleGetProfessorCourses: {}", e.getMessage(), e);
+            try {
+                // Last resort error handling
+                response.getWriter().write("[]");
+            } catch (Exception ignored) {
+                // Nothing more we can do
+                AppUtils.error("Failed to write error response", ignored);
+            }
+        } finally {
+            AppUtils.stopTimer(timerId);
+        }
+    }
+
 
     /**
      * Checks if the request is an AJAX request

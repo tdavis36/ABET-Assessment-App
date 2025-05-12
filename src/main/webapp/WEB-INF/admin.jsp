@@ -1,4 +1,3 @@
-
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
@@ -10,6 +9,8 @@
 <%@ page import="com.ABETAppTeam.model.Outcome" %>
 <%@ page import="com.ABETAppTeam.model.Indicator" %>
 <%@ page import="java.util.HashMap" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -21,6 +22,7 @@
 </head>
 <body>
 <jsp:include page="/WEB-INF/navbar.jsp" />
+
 <div class="dashboard" id="adminDashboard">
     <div class="header-container">
         <h1>Admin Dashboard</h1>
@@ -124,7 +126,7 @@
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
                             <button type="submit" class="btn">View</button>
                         </form>
-                        <form method="get" action="${pageContext.request.contextPath}/admin" style="display:inline;">
+                        <form method="get" action="${pageContext.request.contextPath}/view" style="display:inline;">
                             <input type="hidden" name="action" value="editFCAR"/>
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
                             <button type="submit" class="btn">Edit</button>
@@ -155,44 +157,26 @@
     <div class="section">
         <h2>Create New FCAR</h2>
         <div class="form-section">
-            <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="createFcarForm">
+            <form action="${pageContext.request.contextPath}/admin" method="post" id="createFcarForm">
                 <input type="hidden" name="action" value="createFCAR" />
                 <input type="hidden" name="selectedOutcomes" id="selectedOutcomesInput" value="" />
 
                 <div class="form-group">
-                    <label for="courseId">Course:</label>
-                    <select id="courseId" name="courseId" required>
-                        <option value="">Select a Course</option>
-                        <%
-                            List<Course> courses = (List<Course>) request.getAttribute("courses");
-                            if (courses != null && !courses.isEmpty()) {
-                                for (Course course : courses) {
-                        %>
-                        <option value="<%= course.getCourseCode() %>"><%= course.getCourseCode() %>: <%= course.getCourseName() %></option>
-                        <%
-                                }
-                            }
-                        %>
+                    <label for="professorId">Select Instructor:</label>
+                    <select id="professorId" name="professorId" required>
+                        <option value="">Select an Instructor</option>
+                        <c:forEach items="${professors}" var="instructor">
+                            <option value="${instructor.userId}">${instructor.firstName} ${instructor.lastName}</option>
+                        </c:forEach>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="professorId">Assign to Professor:</label>
-                    <select id="professorId" name="professorId" required>
-                        <option value="">Select a Professor</option>
-                        <%
-                            List<User> professors = (List<User>) request.getAttribute("professors");
-                            if (professors != null && !professors.isEmpty()) {
-                                for (User professor : professors) {
-                                    if (professor instanceof Professor) {
-                        %>
-                        <option value="<%= professor.getUserId() %>"><%= professor.getFirstName() %> <%= professor.getLastName() %></option>
-                        <%
-                                    }
-                                }
-                            }
-                        %>
+                    <label for="courseId">Course:</label>
+                    <select id="courseId" name="courseId" required disabled>
+                        <option value="">Select an Instructor First</option>
                     </select>
+                    <small class="form-text text-muted">Only courses assigned to the selected instructor will be shown</small>
                 </div>
 
                 <div class="form-group">
@@ -213,13 +197,8 @@
                 <div class="form-group">
                     <label>Student Learning Outcomes and Indicators:</label>
                     <div id="outcomesContainer" class="outcomes-container">
-                        <div id="courseOutcomesPlaceholder">
-                            <p>Please select a course to see the associated outcomes and indicators.</p>
-                        </div>
-
-                        <!-- Dynamic Course Outcomes Container -->
-                        <div id="dynamicCourseOutcomes" style="display: none;">
-                            <!-- This will be populated dynamically by JavaScript -->
+                        <div id="dynamicCourseContainer">
+                            <p>Please select an instructor and course to see the associated outcomes and indicators.</p>
                         </div>
                     </div>
                 </div>
@@ -447,3 +426,4 @@
         // User management modal handling has been moved to the Settings page
     });
 </script>
+<script src="${pageContext.request.contextPath}/js/admin-utils.js"></script>

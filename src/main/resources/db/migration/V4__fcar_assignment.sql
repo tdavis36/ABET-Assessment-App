@@ -1,20 +1,30 @@
--- db/migration/V4__fcar_assignment.sql
+-- This script will fix your database issues immediately
+-- Run this in your MariaDB client or management tool
 
--- At beginning of V4
-INSERT INTO Migration_Comment (comment_text)
-VALUES ('Starting V4 migration - fcar_assignment');
+-- Drop professor_courses table if it exists (from previous attempt)
+DROP TABLE IF EXISTS `professor_courses`;
 
--- Create the assignment table
-CREATE TABLE fcar_assignment (
-                                 fcar_id        INT NOT NULL,
-                                 instructor_id  INT NOT NULL,
-                                 PRIMARY KEY (fcar_id, instructor_id),
-                                 CONSTRAINT fk_fa_fcar FOREIGN KEY (fcar_id)
-                                     REFERENCES `fcar` (fcar_id),
-                                 CONSTRAINT fk_fa_user FOREIGN KEY (instructor_id)
-                                     REFERENCES `user` (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- Drop fcar_assignment table if it exists (from previous attempt)
+DROP TABLE IF EXISTS `fcar_assignment`;
 
--- Record completion
-INSERT INTO Migration_Comment (comment_text)
-VALUES ('V4 migration completed - fcar_assignment created');
+-- Create the assigned_courses table if it doesn't exist
+CREATE TABLE IF NOT EXISTS `assigned_courses` (
+                                                  `id` INT PRIMARY KEY AUTO_INCREMENT,
+                                                  `professor_id` INT NOT NULL,
+                                                  `course_code` VARCHAR(20) NOT NULL,
+                                                  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                  UNIQUE KEY `unique_professor_course` (`professor_id`, `course_code`)
+);
+
+-- Create indexes for faster queries
+CREATE INDEX IF NOT EXISTS `idx_assigned_courses_professor_id` ON `assigned_courses` (`professor_id`);
+CREATE INDEX IF NOT EXISTS `idx_assigned_courses_course_code` ON `assigned_courses` (`course_code`);
+
+-- Populate the table with data from FCARs where professors are already assigned
+INSERT IGNORE INTO `assigned_courses` (`professor_id`, `course_code`)
+SELECT DISTINCT f.instructor_id, f.course_code
+FROM `FCAR` f
+WHERE f.instructor_id IS NOT NULL;
+
+-- Show the data to verify
+SELECT * FROM `assigned_courses`;
