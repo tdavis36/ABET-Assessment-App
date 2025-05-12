@@ -2,6 +2,8 @@
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.HashMap" %>
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.HashSet" %>
+<%@ page import="java.util.Set" %>
 <%@ page import="com.ABETAppTeam.model.FCAR" %>
 <%@ page import="com.ABETAppTeam.repository.FCARRepository" %>
 <%@ page import="com.ABETAppTeam.repository.OutcomeRepository" %>
@@ -21,6 +23,75 @@
     <meta charset="UTF-8">
     <title>FCAR View</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
+    <style>
+        /* Additional styles for filter controls */
+        .filter-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            margin-top: 10px;
+        }
+
+        .filter-toggle {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .filter-toggle:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .filter-count {
+            background-color: var(--results-bg);
+            border: 1px solid var(--results-border);
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .filter-form {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
 <jsp:include page="/WEB-INF/navbar.jsp" />
@@ -53,56 +124,192 @@
         <div><span class="status rejected"></span> Rejected</div>
     </div>
 
-    <div class="section">
-        <h2>Existing FCARs</h2>
-        <%
-            User user = (User) session.getAttribute("user");
-            String dashboardUrl;
-            if (user instanceof Admin) request.getContextPath();
-            else if (user instanceof Professor) {
+    <%
+
+        // Initialize repositories for outcomes and indicators
+        OutcomeRepository outcomeRepository = new OutcomeRepository();
+        IndicatorRepository indicatorRepository = new IndicatorRepository();
+
+        // Create a map to store outcome information
+        Map<Integer, Outcome> outcomeMap = new HashMap<>();
+        for (Outcome outcome : outcomeRepository.findAll()) {
+            outcomeMap.put(outcome.getId(), outcome);
+        }
+
+        // Create a map to store indicator information
+        Map<Integer, List<Indicator>> indicatorMap = new HashMap<>();
+        for (Indicator indicator : indicatorRepository.findAll()) {
+            int outcomeId = indicator.getOutcomeId();
+            if (!indicatorMap.containsKey(outcomeId)) {
+                indicatorMap.put(outcomeId, new ArrayList<>());
             }
+            indicatorMap.get(outcomeId).add(indicator);
+        }
 
-            // Initialize repositories for outcomes and indicators
-            OutcomeRepository outcomeRepository = new OutcomeRepository();
-            IndicatorRepository indicatorRepository = new IndicatorRepository();
+        // Set attributes for JSTL access
+        request.setAttribute("outcomeMap", outcomeMap);
+        request.setAttribute("indicatorMap", indicatorMap);
 
-            // Create a map to store outcome information
-            Map<Integer, Outcome> outcomeMap = new HashMap<>();
-            for (Outcome outcome : outcomeRepository.findAll()) {
-                outcomeMap.put(outcome.getId(), outcome);
-            }
+        // Initialize FCARRepository
+        FCARRepository repo = new FCARRepository();
 
-            // Create a map to store indicator information
-            Map<Integer, List<Indicator>> indicatorMap = new HashMap<>();
-            for (Indicator indicator : indicatorRepository.findAll()) {
-                int outcomeId = indicator.getOutcomeId();
-                if (!indicatorMap.containsKey(outcomeId)) {
-                    indicatorMap.put(outcomeId, new ArrayList<>());
-                }
-                indicatorMap.get(outcomeId).add(indicator);
-            }
+        // Check if we're viewing a specific FCAR
+        FCAR selectedFCAR = (FCAR) request.getAttribute("selectedFCAR");
 
-            // Set attributes for JSTL access
-            request.setAttribute("outcomeMap", outcomeMap);
-            request.setAttribute("indicatorMap", indicatorMap);
+        // Determine user role
+        User user = (User) session.getAttribute("user");
+        String dashboardUrl;
+        if (user instanceof Admin) {
+            dashboardUrl = request.getContextPath() + "/admin";
+        } else if (user instanceof Professor) {
+            dashboardUrl = request.getContextPath() + "/professor";
+        } else {
+            dashboardUrl = request.getContextPath() + "/";
+        }
 
-            // Check if we're viewing a specific FCAR
-            FCAR selectedFCAR = (FCAR) request.getAttribute("selectedFCAR");
+        // Always get all FCARs for filtering options, even when viewing a specific FCAR
+        List<FCAR> allFCARs;
+        if (request.getAttribute("allFCARs") != null) {
+            // Use the allFCARs that was already set
+            allFCARs = (List<FCAR>) request.getAttribute("allFCARs");
+        } else {
+            // Fetch all FCARs based on user role
+            allFCARs = (user instanceof Admin)
+                    ? repo.findAll()
+                    : repo.findByInstructorId(user.getUserId());
 
-            // If we're not viewing a specific FCAR and allFCARs is not set, fetch all FCARs
-            if (selectedFCAR == null && request.getAttribute("allFCARs") == null) {
-                FCARRepository repo = new FCARRepository();
-                List<FCAR> allFCARs = (user instanceof Admin)
-                        ? repo.findAll()
-                        : repo.findByInstructorId(user.getUserId());
+            // Set the attribute if we're not viewing a specific FCAR
+            if (selectedFCAR == null) {
                 request.setAttribute("allFCARs", allFCARs);
             }
+        }
 
-            // If we're viewing a specific FCAR, set the fcarId parameter for the Edit button
-            if (selectedFCAR != null) {
-                request.setAttribute("fcarId", selectedFCAR.getFcarId());
-            }
-        %>
+        // Always collect unique values for filters
+        Set<String> courseCodesSet = new HashSet<>();
+        Set<String> semestersSet = new HashSet<>();
+        Set<Integer> yearsSet = new HashSet<>();
+        Set<String> statusesSet = new HashSet<>();
+
+        for (FCAR fcar : allFCARs) {
+            courseCodesSet.add(fcar.getCourseCode());
+            semestersSet.add(fcar.getSemester());
+            yearsSet.add(fcar.getYear());
+            statusesSet.add(fcar.getStatus());
+        }
+
+        // Convert sets to lists for easier iteration in JSP
+        List<String> courseCodes = new ArrayList<>(courseCodesSet);
+        List<String> semesters = new ArrayList<>(semestersSet);
+        List<Integer> years = new ArrayList<>(yearsSet);
+        List<String> statuses = new ArrayList<>(statusesSet);
+
+        // Sort the lists for better display
+        java.util.Collections.sort(courseCodes);
+        java.util.Collections.sort(semesters);
+        java.util.Collections.sort(years);
+        java.util.Collections.sort(statuses);
+
+        // Set attributes for filter controls
+        request.setAttribute("courseCodes", courseCodes);
+        request.setAttribute("semesters", semesters);
+        request.setAttribute("years", years);
+        request.setAttribute("statuses", statuses);
+
+        // If we're viewing a specific FCAR, set the fcarId parameter for the Edit button
+        if (selectedFCAR != null) {
+            request.setAttribute("fcarId", selectedFCAR.getFcarId());
+        }
+    %>
+
+    <div class="section">
+        <button type="button" class="filter-toggle" id="toggleFilterBtn">Show Filter Options</button>
+
+        <div class="filter-container" id="filterContainer" style="display: none;">
+            <h3>Filter FCARs</h3>
+
+            <c:choose>
+                <c:when test="${not empty selectedFCAR}">
+                    <div class="filter-message">
+                        <p>You are currently viewing a specific FCAR. To apply filters:</p>
+                        <a href="${pageContext.request.contextPath}/view?action=viewAll" class="btn">View All FCARs</a>
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <%-- Normal filter form when viewing all FCARs --%>
+                    <form id="filterForm" class="filter-form">
+                        <div class="filter-group">
+                            <label for="filterCourse">Course:</label>
+                            <select id="filterCourse" name="course">
+                                <option value="">All Courses</option>
+                                <c:forEach var="course" items="${courseCodes}">
+                                    <option value="${course}">${course}</option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filterSemester">Semester:</label>
+                            <select id="filterSemester" name="semester">
+                                <option value="">All Semesters</option>
+                                <c:forEach var="semester" items="${semesters}">
+                                    <option value="${semester}">${semester}</option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filterYear">Year:</label>
+                            <select id="filterYear" name="year">
+                                <option value="">All Years</option>
+                                <c:forEach var="year" items="${years}">
+                                    <option value="${year}">${year}</option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filterStatus">Status:</label>
+                            <select id="filterStatus" name="status">
+                                <option value="">All Statuses</option>
+                                <c:forEach var="status" items="${statuses}">
+                                    <option value="${status}">${status}</option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="searchText">Search:</label>
+                            <input type="text" id="searchText" name="search" placeholder="Search in FCARs...">
+                        </div>
+
+                        <div class="filter-actions">
+                            <button type="button" class="btn" onclick="applyFilters()">Apply Filters</button>
+                            <button type="button" class="btn" onclick="resetFilters()">Reset</button>
+                        </div>
+                    </form>
+                </c:otherwise>
+            </c:choose>
+        </div>
+
+        <c:if test="${empty selectedFCAR && not empty allFCARs}">
+            <div id="filterCount" class="filter-count">
+                Showing all ${fn:length(allFCARs)} FCARs
+            </div>
+        </c:if>
+
+        <h2>
+            <c:choose>
+                <c:when test="${not empty selectedFCAR}">
+                    FCAR Details
+                </c:when>
+                <c:otherwise>
+                    Existing FCARs
+                </c:otherwise>
+            </c:choose>
+        </h2>
+
+        <h2>Existing FCARs</h2>
+
         <c:choose>
             <c:when test="${not empty selectedFCAR}">
                 <!-- Display a single FCAR when selectedFCAR is set -->
@@ -151,76 +358,6 @@
                                     </p>
                                 </c:if>
                             </div>
-                            <c:if test="${selectedFCAR != null && selectedFCAR.outcomeId > 0}">
-                                <div class="fcar-section">
-                                    <h4>Student Learning Outcomes</h4>
-                                    <c:set var="outcome" value="${outcomeMap[selectedFCAR.outcomeId]}" />
-                                    <p><strong>Outcome:</strong>
-                                        <c:choose>
-                                            <c:when test="${outcome != null}">
-                                                ${outcome.outcomeNum}: ${outcome.description}
-                                            </c:when>
-                                            <c:otherwise>
-                                                Outcome ID: ${selectedFCAR.outcomeId}
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </p>
-
-                                    <c:set var="indicators" value="${indicatorMap[selectedFCAR.outcomeId]}" />
-                                    <c:set var="indicatorFound" value="false" />
-                                    <c:if test="${indicators != null}">
-                                        <c:forEach var="indicator" items="${indicators}">
-                                            <c:if test="${indicator.indicatorId == selectedFCAR.indicatorId}">
-                                                <c:set var="indicatorFound" value="true" />
-                                            </c:if>
-                                        </c:forEach>
-                                    </c:if>
-
-                                    <c:if test="${indicators == null || empty indicators || indicatorFound == false}">
-                                        <p><strong>Indicator ID:</strong> ${selectedFCAR.indicatorId}</p>
-                                    </c:if>
-                                    <c:if test="${indicators != null}">
-                                        <c:forEach var="indicator" items="${indicators}">
-                                            <c:if test="${indicator.indicatorId == selectedFCAR.indicatorId}">
-                                                <p><strong>Indicator:</strong> ${selectedFCAR.outcomeId}.${indicator.number}: ${indicator.description}</p>
-                                            </c:if>
-                                        </c:forEach>
-                                    </c:if>
-                                </div>
-                            </c:if>
-                            <c:if test="${selectedFCAR.outcomeId != null && not empty selectedFCAR.outcomeId}">
-                                <div class="fcar-section">
-                                    <h4>Student Learning Outcomes</h4>
-                                    <c:set var="outcome" value="${outcomeMap[selectedFCAR.outcomeId]}" />
-                                    <p><strong>Outcome:</strong>
-                                        <c:choose>
-                                            <c:when test="${outcome != null && not empty outcome}">
-                                                ${outcome.outcomeNum}: ${outcome.description}
-                                            </c:when>
-                                            <c:otherwise>
-                                                Outcome ID: ${selectedFCAR.outcomeId}
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </p>
-
-                                    <c:set var="indicators" value="${indicatorMap[selectedFCAR.outcomeId]}" />
-                                    <c:set var="indicatorFound" value="false" />
-                                    <c:forEach var="indicator" items="${indicators}">
-                                        <c:if test="${indicator.indicatorId == selectedFCAR.indicatorId}">
-                                           <c:set var="indicatorFound" value="true" />
-                                        </c:if>
-                                    </c:forEach>
-
-                                    <c:if test="${indicators == null || empty indicators || not indicatorFound}">
-                                        <p><strong>Indicator ID:</strong> ${selectedFCAR.indicatorId}</p>
-                                    </c:if>
-                                    <c:forEach var="indicator" items="${indicators}">
-                                        <c:if test="${indicator.indicatorId == selectedFCAR.indicatorId}">
-                                            <p><strong>Indicator:</strong> ${selectedFCAR.outcomeId}.${indicator.number}: ${indicator.description}</p>
-                                        </c:if>
-                                    </c:forEach>
-                                </div>
-                            </c:if>
                             <c:if test="${(assessmentMethods != null && not empty assessmentMethods) || (selectedFCAR != null && selectedFCAR.assessmentMethods != null && not empty selectedFCAR.assessmentMethods)}">
                                 <div class="fcar-section">
                                     <h4>Assessment Methods</h4>
@@ -252,10 +389,10 @@
                                         </c:if>
                                     </div>
 
-                                        <%-- Display selected outcomes and indicators if available --%>
+                                        <%-- Display Student Learning Outcomes and Indicators --%>
                                     <c:if test="${methodsMap['selectedOutcomes'] != null}">
                                         <div class="form-group">
-                                            <strong>Selected Outcomes and Indicators:</strong>
+                                            <strong>Student Learning Outcomes and Indicators:</strong>
                                             <div class="content-box">
                                                 <c:set var="outcomeIds" value="${fn:split(methodsMap['selectedOutcomes'], ',')}" />
                                                 <table class="data-table">
@@ -436,9 +573,13 @@
             </c:when>
             <c:when test="${not empty allFCARs}">
                 <!-- Display all FCARs when allFCARs is set -->
-                <ul class="fcar-list">
+                <ul class="fcar-list" id="fcarList">
                     <c:forEach var="fcar" items="${allFCARs}" varStatus="status">
-                        <li class="fcar-item">
+                        <li class="fcar-item"
+                            data-course="${fcar.courseCode}"
+                            data-semester="${fcar.semester}"
+                            data-year="${fcar.year}"
+                            data-status="${fcar.status}">
                             <div class="fcar-header">
                                 <div>
                                     <h3>FCAR #${status.index + 1}: ${fcar.courseCode}</h3>
@@ -503,73 +644,6 @@
                                     <p><strong>Created:</strong> ${fcar.createdAt}</p>
                                     <c:if test="${fcar.updatedAt != null && not empty fcar.updatedAt}"><p><strong>Updated:</strong> ${fcar.updatedAt}</p></c:if>
                                 </div>
-                                <c:if test="${selectedFCAR != null && selectedFCAR.outcomeId > 0}">
-                                    <div class="fcar-section">
-                                        <h4>Student Learning Outcomes</h4>
-
-                                        <c:set var="outcome" value="${outcomeMap[selectedFCAR.outcomeId]}" />
-                                        <p><strong>Outcome:</strong>
-                                            <c:choose>
-                                                <c:when test="${outcome != null && not empty outcome}">
-                                                    ${outcome.outcomeNum}: ${outcome.description}
-                                                </c:when>
-                                                <c:otherwise>
-                                                    Outcome ID: ${selectedFCAR.outcomeId}
-                                                </c:otherwise>
-                                            </c:choose>
-                                        </p>
-
-                                        <c:set var="indicators" value="${indicatorMap[selectedFCAR.outcomeId]}" />
-                                        <c:set var="indicatorFound" value="false" />
-
-                                        <c:if test="${not empty indicators}">
-                                            <c:forEach var="indicator" items="${indicators}">
-                                                <c:if test="${indicator.indicatorId == selectedFCAR.indicatorId}">
-                                                    <c:set var="indicatorFound" value="true" />
-                                                    <p><strong>Indicator:</strong> ${selectedFCAR.outcomeId}.${indicator.number}: ${indicator.description}</p>
-                                                </c:if>
-                                            </c:forEach>
-                                        </c:if>
-
-                                        <c:if test="${not indicatorFound}">
-                                            <p><strong>Indicator ID:</strong> ${selectedFCAR.indicatorId}</p>
-                                        </c:if>
-                                    </div>
-                                </c:if>
-
-                                <c:if test="${fcar != null && fcar.outcomeId > 0}">
-                                    <div class="fcar-section">
-                                        <h4>Student Learning Outcomes</h4>
-
-                                        <c:set var="outcome" value="${outcomeMap[fcar.outcomeId]}" />
-                                        <p><strong>Outcome:</strong>
-                                            <c:choose>
-                                                <c:when test="${outcome != null && not empty outcome}">
-                                                    ${outcome.outcomeNum}: ${outcome.description}
-                                                </c:when>
-                                                <c:otherwise>
-                                                    Outcome ID: ${fcar.outcomeId}
-                                                </c:otherwise>
-                                            </c:choose>
-                                        </p>
-
-                                        <c:set var="indicators" value="${indicatorMap[fcar.outcomeId]}" />
-                                        <c:set var="indicatorFound" value="false" />
-
-                                        <c:if test="${not empty indicators}">
-                                            <c:forEach var="indicator" items="${indicators}">
-                                                <c:if test="${indicator.indicatorId == fcar.indicatorId}">
-                                                    <c:set var="indicatorFound" value="true" />
-                                                    <p><strong>Indicator:</strong> ${fcar.outcomeId}.${indicator.number}: ${indicator.description}</p>
-                                                </c:if>
-                                            </c:forEach>
-                                        </c:if>
-
-                                        <c:if test="${not indicatorFound}">
-                                            <p><strong>Indicator ID:</strong> ${fcar.indicatorId}</p>
-                                        </c:if>
-                                    </div>
-                                </c:if>
                                 <c:if test="${fcar != null && fcar.assessmentMethods != null && not empty fcar.assessmentMethods}">
                                     <div class="fcar-section">
                                         <h4>Assessment Methods</h4>
@@ -601,7 +675,7 @@
                                             <%-- Display selected outcomes and indicators if available --%>
                                         <c:if test="${fcar.assessmentMethods['selectedOutcomes'] != null}">
                                             <div class="form-group">
-                                                <strong>Selected Outcomes and Indicators:</strong>
+                                                <strong>Student Learning Outcomes and Indicators:</strong>
                                                 <div class="content-box">
                                                     <c:set var="outcomeIds" value="${fn:split(fcar.assessmentMethods['selectedOutcomes'], ',')}" />
                                                     <table class="data-table">
@@ -778,63 +852,175 @@
         </c:if>
     </div>
 
-    <!-- Import functionality has been moved to the Settings page -->
-
-    <!-- JavaScript for expanding/collapsing FCAR details -->
+    <!-- JavaScript for expanding/collapsing FCAR details and filtering -->
     <script>
-        function toggleDetails(id) {
-            const details = document.getElementById(id);
-            const button = event.currentTarget;
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleFilterBtn = document.getElementById('toggleFilterBtn');
+            const filterContainer = document.getElementById('filterContainer');
 
-            if (details.style.display === "none") {
-                details.style.display = "block";
-                button.textContent = "Hide Details";
-            } else {
-                details.style.display = "none";
-                button.textContent = "Show Details";
+            // Retrieve saved filter state from localStorage if available
+            const savedFilterState = localStorage.getItem('fcarFilterVisible');
+
+            if (toggleFilterBtn && filterContainer) {
+                // Initialize based on saved state if available
+                if (savedFilterState === 'true') {
+                    filterContainer.style.display = "block";
+                    toggleFilterBtn.textContent = "Hide Filter Options";
+                }
+
+                toggleFilterBtn.addEventListener('click', function() {
+                    if (filterContainer.style.display === "none") {
+                        filterContainer.style.display = "block";
+                        toggleFilterBtn.textContent = "Hide Filter Options";
+                        localStorage.setItem('fcarFilterVisible', 'true');
+                    } else {
+                        filterContainer.style.display = "none";
+                        toggleFilterBtn.textContent = "Show Filter Options";
+                        localStorage.setItem('fcarFilterVisible', 'false');
+                    }
+                });
+            }
+
+            // Keep filter settings when navigating between pages
+            if (window.location.href.includes('action=viewAll')) {
+                // If navigating from a specific FCAR to the list view,
+                // try to restore any previously applied filters
+                restoreFilterState();
+            }
+        });
+
+        // Save filter state before navigating away
+        function saveFilterState() {
+            if (document.getElementById('filterForm')) {
+                const filterState = {
+                    course: document.getElementById('filterCourse').value,
+                    semester: document.getElementById('filterSemester').value,
+                    year: document.getElementById('filterYear').value,
+                    status: document.getElementById('filterStatus').value,
+                    search: document.getElementById('searchText').value
+                };
+                localStorage.setItem('fcarFilterValues', JSON.stringify(filterState));
             }
         }
 
-        // Function to toggle indicators when an outcome is deselected
-        function toggleIndicators(outcomeId, checked) {
-            const indicatorsDiv = document.getElementById(`indicators_${outcomeId}`);
-            if (indicatorsDiv) {
-                indicatorsDiv.style.display = checked ? 'block' : 'none';
+        // Restore filter state when returning to the list view
+        function restoreFilterState() {
+            const savedFilters = localStorage.getItem('fcarFilterValues');
+            if (savedFilters) {
+                try {
+                    const filterValues = JSON.parse(savedFilters);
 
-                // If outcome is unchecked, uncheck all its indicators
-                if (!checked) {
-                    const indicators = document.querySelectorAll(`input[id^="indicator_${outcomeId}_"]`);
-                    indicators.forEach(indicator => {
-                        indicator.checked = false;
-                    });
+                    // Set form values
+                    if (document.getElementById('filterCourse')) {
+                        document.getElementById('filterCourse').value = filterValues.course || '';
+                    }
+                    if (document.getElementById('filterSemester')) {
+                        document.getElementById('filterSemester').value = filterValues.semester || '';
+                    }
+                    if (document.getElementById('filterYear')) {
+                        document.getElementById('filterYear').value = filterValues.year || '';
+                    }
+                    if (document.getElementById('filterStatus')) {
+                        document.getElementById('filterStatus').value = filterValues.status || '';
+                    }
+                    if (document.getElementById('searchText')) {
+                        document.getElementById('searchText').value = filterValues.search || '';
+                    }
+
+                    // Apply the filters immediately if any are set
+                    if (filterValues.course || filterValues.semester ||
+                        filterValues.year || filterValues.status || filterValues.search) {
+                        applyFilters();
+                    }
+                } catch (e) {
+                    console.error("Error restoring filter state:", e);
+                    localStorage.removeItem('fcarFilterValues');
                 }
             }
         }
 
-        // Add event listeners to outcome checkboxes
+        // Add hook to save filter state when clicking on FCAR links
         document.addEventListener('DOMContentLoaded', function() {
-            const outcomeCheckboxes = document.querySelectorAll('input[type="checkbox"][id^="outcome_"]');
-            outcomeCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    toggleIndicators(this.value, this.checked);
-                });
+            const fcarLinks = document.querySelectorAll('a[href*="fcarId"]');
+            fcarLinks.forEach(link => {
+                link.addEventListener('click', saveFilterState);
             });
         });
-    </script>
-</div>
 
-    <script>
-        function toggleDetails(id) {
-            const el = document.getElementById(id);
-            const btn = event.currentTarget;
-            if (el.style.display === 'none') {
-                el.style.display = 'block'; btn.textContent = 'Hide Details';
-            } else {
-                el.style.display = 'none'; btn.textContent = 'Show Details';
+        // Apply filters to FCAR list
+        function applyFilters() {
+            const course = document.getElementById('filterCourse').value;
+            const semester = document.getElementById('filterSemester').value;
+            const year = document.getElementById('filterYear').value;
+            const status = document.getElementById('filterStatus').value;
+            const searchText = document.getElementById('searchText').value.toLowerCase();
+
+            const fcarItems = document.querySelectorAll('#fcarList .fcar-item');
+            let visibleCount = 0;
+
+            fcarItems.forEach(function(item) {
+                const itemCourse = item.getAttribute('data-course');
+                const itemSemester = item.getAttribute('data-semester');
+                const itemYear = item.getAttribute('data-year');
+                const itemStatus = item.getAttribute('data-status');
+                const itemText = item.innerText.toLowerCase();
+
+                // Check if item matches all selected filters
+                const matchesCourse = !course || itemCourse === course;
+                const matchesSemester = !semester || itemSemester === semester;
+                const matchesYear = !year || itemYear === year;
+                const matchesStatus = !status || itemStatus === status;
+                const matchesSearch = !searchText || itemText.includes(searchText);
+
+                // Show or hide based on filter matches
+                if (matchesCourse && matchesSemester && matchesYear && matchesStatus && matchesSearch) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Update the filter count display
+            const filterCount = document.getElementById('filterCount');
+            if (filterCount) {
+                if (visibleCount === fcarItems.length) {
+                    filterCount.textContent = `Showing all ${visibleCount} FCARs`;
+                } else {
+                    filterCount.textContent = `Showing ${visibleCount} of ${fcarItems.length} FCARs`;
+                }
             }
+
+            // Save filter state
+            saveFilterState();
         }
 
-        // Import functionality has been moved to the Settings page
+        // Reset all filters
+        function resetFilters() {
+            // Reset all filter inputs
+            document.getElementById('filterCourse').value = '';
+            document.getElementById('filterSemester').value = '';
+            document.getElementById('filterYear').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('searchText').value = '';
+
+            // Show all FCAR items
+            const fcarItems = document.querySelectorAll('#fcarList .fcar-item');
+            fcarItems.forEach(function(item) {
+                item.style.display = '';
+            });
+
+            // Update the filter count display
+            const filterCount = document.getElementById('filterCount');
+            if (filterCount) {
+                filterCount.textContent = `Showing all ${fcarItems.length} FCARs`;
+            }
+
+            // Clear saved filter state
+            localStorage.removeItem('fcarFilterValues');
+        }
+
     </script>
+</div>
 </body>
 </html>

@@ -424,6 +424,208 @@
         }
 
         // User management modal handling has been moved to the Settings page
-    });
+        (function() {
+            // Wait for DOM to be fully loaded
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log("Course outcomes fix script loaded");
+
+                // Get key elements
+                const courseSelect = document.getElementById('courseId');
+                const dynamicCourseContainer = document.getElementById('dynamicCourseContainer');
+                const outcomesContainer = document.getElementById('outcomesContainer');
+
+                if (!courseSelect || !dynamicCourseContainer) {
+                    console.warn("Required elements not found for course outcomes fix");
+                    return;
+                }
+
+                // Override the existing updateOutcomes function with a fixed version
+                window.updateOutcomes = function() {
+                    console.log("Enhanced updateOutcomes called");
+
+                    // Clear the current outcome display
+                    dynamicCourseContainer.innerHTML = '';
+
+                    // Get the selected course
+                    const selectedCourse = courseSelect.value;
+                    console.log("Selected course:", selectedCourse);
+
+                    // If no course is selected, show a placeholder message
+                    if (!selectedCourse) {
+                        dynamicCourseContainer.innerHTML = '<p>Please select a course to see its associated outcomes.</p>';
+                        return;
+                    }
+
+                    // Check if we have outcome data for this course
+                    if (!window.courseOutcomes || !window.courseOutcomes[selectedCourse]) {
+                        dynamicCourseContainer.innerHTML = '<p>No outcome data found for this course. Please contact an administrator.</p>';
+                        console.warn(`No course outcomes found for ${selectedCourse}`);
+                        return;
+                    }
+
+                    // Get the outcomes for this course
+                    const courseSpecificOutcomes = window.courseOutcomes[selectedCourse];
+                    console.log(`Outcomes for ${selectedCourse}:`, courseSpecificOutcomes);
+
+                    if (!courseSpecificOutcomes || courseSpecificOutcomes.length === 0) {
+                        dynamicCourseContainer.innerHTML = '<p>No outcomes are assigned to this course.</p>';
+                        return;
+                    }
+
+                    // Create a dynamic outcomes section
+                    const dynamicOutcomesDiv = document.createElement('div');
+                    dynamicOutcomesDiv.id = 'dynamicCourseOutcomes';
+
+                    // Add header
+                    const header = document.createElement('h3');
+                    header.textContent = `Outcomes for ${selectedCourse}`;
+                    dynamicOutcomesDiv.appendChild(header);
+
+                    // Add description
+                    const description = document.createElement('p');
+                    description.textContent = 'The following outcomes are automatically assigned based on the course. You can select which indicators to include for each outcome.';
+                    dynamicOutcomesDiv.appendChild(description);
+
+                    // Array to store selected outcomes for the hidden input
+                    const selectedOutcomes = [];
+
+                    // For each outcome assigned to this course
+                    courseSpecificOutcomes.forEach(outcomeId => {
+                        selectedOutcomes.push(outcomeId);
+
+                        // Create outcome container
+                        const outcomeContainer = document.createElement('div');
+                        outcomeContainer.className = 'outcome-container';
+
+                        // Create checkbox container
+                        const checkboxContainer = document.createElement('div');
+                        checkboxContainer.className = 'outcome-checkbox-container';
+
+                        // Create checkbox
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `${selectedCourse}_outcome_${outcomeId}`;
+                        checkbox.name = `selectedOutcome_${outcomeId}`;
+                        checkbox.value = outcomeId;
+                        checkbox.className = 'outcome-checkbox';
+                        checkbox.checked = true; // Default to checked
+
+                        // Event listener for checkbox
+                        checkbox.addEventListener('change', function() {
+                            // Toggle indicators visibility
+                            const indicatorsDiv = document.getElementById(`${selectedCourse}_indicators_${outcomeId}`);
+                            if (indicatorsDiv) {
+                                indicatorsDiv.style.display = this.checked ? 'block' : 'none';
+                            }
+
+                            // Update selected outcomes
+                            updateSelectedOutcomesInput(selectedCourse);
+                        });
+
+                        // Create label with outcome description
+                        const label = document.createElement('label');
+                        label.htmlFor = checkbox.id;
+                        label.className = 'outcome-label';
+
+                        // Get outcome description from available sources
+                        let outcomeDescription = "Unknown Outcome";
+                        if (window.dynamicOutcomeDescriptions && window.dynamicOutcomeDescriptions[outcomeId]) {
+                            outcomeDescription = window.dynamicOutcomeDescriptions[outcomeId];
+                        } else if (window.outcomeDescriptions && window.outcomeDescriptions[outcomeId]) {
+                            outcomeDescription = window.outcomeDescriptions[outcomeId];
+                        }
+
+                        label.textContent = `Outcome ${outcomeId}: ${outcomeDescription}`;
+
+                        // Add checkbox and label to container
+                        checkboxContainer.appendChild(checkbox);
+                        checkboxContainer.appendChild(label);
+                        outcomeContainer.appendChild(checkboxContainer);
+
+                        // Add indicators label
+                        const indicatorsLabel = document.createElement('div');
+                        indicatorsLabel.className = 'indicators-label';
+                        indicatorsLabel.textContent = 'Select Indicators:';
+                        outcomeContainer.appendChild(indicatorsLabel);
+
+                        // Create indicators container
+                        const indicatorsDiv = document.createElement('div');
+                        indicatorsDiv.id = `${selectedCourse}_indicators_${outcomeId}`;
+                        indicatorsDiv.className = 'indicators-container';
+                        indicatorsDiv.style.display = 'block'; // Initially visible
+
+                        // Add indicators for this outcome
+                        if (window.indicators && window.indicators[outcomeId]) {
+                            window.indicators[outcomeId].forEach((indicator, index) => {
+                                // Parse indicator number and description
+                                const indicatorParts = indicator.split(' ');
+                                const indicatorNumber = indicatorParts[0];
+                                const indicatorDescription = indicatorParts.slice(1).join(' ');
+
+                                // Create indicator container
+                                const indicatorContainer = document.createElement('div');
+                                indicatorContainer.className = 'indicator-container';
+
+                                // Create checkbox
+                                const indicatorCheckbox = document.createElement('input');
+                                indicatorCheckbox.type = 'checkbox';
+                                indicatorCheckbox.id = `${selectedCourse}_indicator_${indicatorNumber.replace('.', '_')}`;
+                                indicatorCheckbox.name = `indicator_${indicatorNumber.replace('.', '_')}`;
+                                indicatorCheckbox.value = indicatorNumber;
+                                indicatorCheckbox.checked = true; // Default to checked
+
+                                // Create label
+                                const indicatorLabel = document.createElement('label');
+                                indicatorLabel.htmlFor = indicatorCheckbox.id;
+                                indicatorLabel.textContent = indicator;
+
+                                // Add checkbox and label to container
+                                indicatorContainer.appendChild(indicatorCheckbox);
+                                indicatorContainer.appendChild(document.createTextNode(' '));
+                                indicatorContainer.appendChild(indicatorLabel);
+
+                                // Add to indicators container
+                                indicatorsDiv.appendChild(indicatorContainer);
+                            });
+                        } else {
+                            // No indicators available
+                            const noIndicatorsMsg = document.createElement('p');
+                            noIndicatorsMsg.textContent = 'No indicators available for this outcome.';
+                            indicatorsDiv.appendChild(noIndicatorsMsg);
+                        }
+
+                        // Add indicators container to outcome container
+                        outcomeContainer.appendChild(indicatorsDiv);
+
+                        // Add outcome container to dynamic outcomes div
+                        dynamicOutcomesDiv.appendChild(outcomeContainer);
+                    });
+
+                    // Add the dynamic outcomes to the container
+                    dynamicCourseContainer.appendChild(dynamicOutcomesDiv);
+
+                    // Update the hidden input with selected outcomes
+                    document.getElementById('selectedOutcomesInput').value = selectedOutcomes.join(',');
+                };
+
+                // Helper function to update selected outcomes input
+                function updateSelectedOutcomesInput(courseCode) {
+                    const selectedOutcomes = [];
+                    const checkboxes = document.querySelectorAll(`input[type="checkbox"][id^="${courseCode}_outcome_"]:checked`);
+
+                    checkboxes.forEach(checkbox => {
+                        selectedOutcomes.push(checkbox.value);
+                    });
+
+                    document.getElementById('selectedOutcomesInput').value = selectedOutcomes.join(',');
+                }
+
+                // Re-attach the course select change event handler
+                courseSelect.addEventListener('change', updateOutcomes);
+
+                console.log("Course outcomes fix applied");
+            });
+        })();
+    })
 </script>
 <script src="${pageContext.request.contextPath}/js/admin-utils.js"></script>
