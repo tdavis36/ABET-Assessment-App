@@ -1,7 +1,10 @@
 package com.ABETAppTeam;
 
+import com.ABETAppTeam.model.FCAR;
+import com.ABETAppTeam.repository.FCARAssignmentRepository;
 import com.ABETAppTeam.repository.IFCARRepository;
 import com.ABETAppTeam.repository.FCARRepository;
+import com.ABETAppTeam.util.AppUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,12 +17,32 @@ import java.util.List;
 public abstract class FCARFactory {
     // Reference the repository (could also be injected?)
     private static final IFCARRepository repository = new FCARRepository();
+    private static final FCARAssignmentRepository assignmentRepository = new FCARAssignmentRepository();
+
+    // Helper method to get assignment repository
+    protected static FCARAssignmentRepository getAssignmentRepository() {
+        return assignmentRepository;
+    }
 
     // Create & save a new FCAR
     public static FCAR createFCAR(String courseId, int professorId, String semester, int year) {
         // fcarId is null => the repository will assign an auto-generated ID
         FCAR fcar = new FCAR(0, courseId, professorId, semester, year);
-        return repository.save(fcar);
+        FCAR savedFCAR = getAssignmentRepository().save(fcar);
+
+        if (savedFCAR != null) {
+            // Create entry in FCAR_Assignment table linking FCAR and professor
+            boolean assignmentCreated = getAssignmentRepository()
+                    .createAssignment(savedFCAR.getId(), professorId);
+
+            if (!assignmentCreated) {
+                // Log error if assignment creation failed
+                AppUtils.error("Failed to create FCAR assignment for FCAR ID: {} and professor ID: {}", 
+                        savedFCAR.getId(), professorId);
+            }
+        }
+
+        return savedFCAR;
     }
 
     // "Save" can either insert or update, depending on whether FCAR has an ID

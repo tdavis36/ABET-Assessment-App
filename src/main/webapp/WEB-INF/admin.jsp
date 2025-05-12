@@ -1,11 +1,16 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="com.ABETAppTeam.FCAR" %>
-<%@ page import="com.ABETAppTeam.Course" %>
-<%@ page import="com.ABETAppTeam.User" %>
-<%@ page import="com.ABETAppTeam.Professor" %>
+<%@ page import="com.ABETAppTeam.model.FCAR" %>
+<%@ page import="com.ABETAppTeam.model.Course" %>
+<%@ page import="com.ABETAppTeam.model.User" %>
+<%@ page import="com.ABETAppTeam.model.Professor" %>
+<%@ page import="com.ABETAppTeam.model.Department" %>
+<%@ page import="com.ABETAppTeam.model.Outcome" %>
+<%@ page import="com.ABETAppTeam.model.Indicator" %>
 <%@ page import="java.util.HashMap" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -16,10 +21,11 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
 </head>
 <body>
+<jsp:include page="/WEB-INF/navbar.jsp" />
+
 <div class="dashboard" id="adminDashboard">
     <div class="header-container">
         <h1>Admin Dashboard</h1>
-        <a href="${pageContext.request.contextPath}/" class="btn">Logout</a>
     </div>
 
     <!-- Status Key -->
@@ -32,7 +38,6 @@
 
     <!-- Statistics Section -->
     <div class="section">
-        <h2>Dashboard Statistics</h2>
         <div class="stat-container">
             <%
                 List<FCAR> allFCARs = (List<FCAR>) request.getAttribute("allFCARs");
@@ -72,7 +77,7 @@
 
     <!-- Action Buttons -->
     <div class="action-buttons">
-        <form action="${pageContext.request.contextPath}/ViewFCARServlet" method="get">
+        <form action="${pageContext.request.contextPath}/view" method="get">
             <input type="hidden" name="action" value="viewAll"/>
             <button type="submit" class="btn">View All FCARs</button>
         </form>
@@ -97,30 +102,45 @@
                     <div>
                         <span class="status <%= status %>"></span>
                         <strong>Course:</strong> <%= fcar.getCourseId() %> -
-                        <strong>Professor:</strong> <%= fcar.getProfessorId() %> -
+                        <strong>Instructor:</strong> <% 
+                            // Look up the professor's last name using their ID
+                            int professorId = fcar.getProfessorId();
+                            String professorLastName = "";
+                            List<User> professors = (List<User>) request.getAttribute("professors");
+                            if (professors != null) {
+                                for (User prof : professors) {
+                                    if (prof.getUserId() == professorId) {
+                                        professorLastName = prof.getLastName();
+                                        break;
+                                    }
+                                }
+                            }
+                            // Display the professor's last name if found, otherwise display the ID
+                            out.print(professorLastName.isEmpty() ? professorId : professorLastName);
+                        %> -
                         <strong>Semester:</strong> <%= fcar.getSemester() %> <%= fcar.getYear() %> -
                         <strong>Status:</strong> <%= fcar.getStatus() %>
                     </div>
                     <div class="fcar-actions">
-                        <form method="get" action="${pageContext.request.contextPath}/ViewFCARServlet" style="display:inline;">
+                        <form method="get" action="${pageContext.request.contextPath}/view" style="display:inline;">
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
                             <button type="submit" class="btn">View</button>
                         </form>
-                        <form method="get" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
+                        <form method="get" action="${pageContext.request.contextPath}/view" style="display:inline;">
                             <input type="hidden" name="action" value="editFCAR"/>
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
                             <button type="submit" class="btn">Edit</button>
                         </form>
                         <% if ("submitted".equals(status)) { %>
-                        <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
+                        <form method="post" action="${pageContext.request.contextPath}/admin" style="display:inline;">
                             <input type="hidden" name="action" value="approveFCAR"/>
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
-                            <button type="submit" class="btn" style="background-color: #28a745;">Approve</button>
+                            <button type="submit" class="btn" style="background-color: var(--success);">Approve</button>
                         </form>
-                        <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
+                        <form method="post" action="${pageContext.request.contextPath}/admin" style="display:inline;">
                             <input type="hidden" name="action" value="rejectFCAR"/>
                             <input type="hidden" name="fcarId" value="<%= fcar.getFcarId() %>"/>
-                            <button type="submit" class="btn" style="background-color: #dc3545;">Reject</button>
+                            <button type="submit" class="btn" style="background-color: var(--danger);">Reject</button>
                         </form>
                         <% } %>
                     </div>
@@ -137,53 +157,26 @@
     <div class="section">
         <h2>Create New FCAR</h2>
         <div class="form-section">
-            <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="createFcarForm">
+            <form action="${pageContext.request.contextPath}/admin" method="post" id="createFcarForm">
                 <input type="hidden" name="action" value="createFCAR" />
                 <input type="hidden" name="selectedOutcomes" id="selectedOutcomesInput" value="" />
 
                 <div class="form-group">
-                    <label for="courseId">Course:</label>
-                    <select id="courseId" name="courseId" required>
-                        <option value="">Select a Course</option>
-                        <%
-                            List<Course> courses = (List<Course>) request.getAttribute("courses");
-                            if (courses != null && !courses.isEmpty()) {
-                                for (Course course : courses) {
-                        %>
-                        <option value="<%= course.getCourseCode() %>"><%= course.getCourseCode() %>: <%= course.getCourseName() %></option>
-                        <%
-                                }
-                            } else {
-                        %>
-                        <option value="CS101">CS101 - Fundamentals of Computer Science I</option>
-                        <option value="CS201">CS201 - Fundamentals of Computer Science II</option>
-                        <option value="CS320">CS320 - Software Engineering Design</option>
-                        <option value="CS330">CS330 - Network/App Protocols</option>
-                        <option value="CS335">CS335 - Cybersecurity Analysis & Application</option>
-                        <% } %>
+                    <label for="professorId">Select Instructor:</label>
+                    <select id="professorId" name="professorId" required>
+                        <option value="">Select an Instructor</option>
+                        <c:forEach items="${professors}" var="instructor">
+                            <option value="${instructor.userId}">${instructor.firstName} ${instructor.lastName}</option>
+                        </c:forEach>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="professorId">Assign to Professor:</label>
-                    <select id="professorId" name="professorId" required>
-                        <option value="">Select a Professor</option>
-                        <%
-                            List<User> professors = (List<User>) request.getAttribute("professors");
-                            if (professors != null && !professors.isEmpty()) {
-                                for (User user : professors) {
-                                    if (user instanceof Professor) {
-                        %>
-                        <option value="<%= user.getUserId() %>"><%= user.getFirstName() %> <%= user.getLastName() %></option>
-                        <%
-                                    }
-                                }
-                            } else {
-                        %>
-                        <option value="1">Dr. Smith</option>
-                        <option value="2">Dr. Johnson</option>
-                        <% } %>
+                    <label for="courseId">Course:</label>
+                    <select id="courseId" name="courseId" required disabled>
+                        <option value="">Select an Instructor First</option>
                     </select>
+                    <small class="form-text text-muted">Only courses assigned to the selected instructor will be shown</small>
                 </div>
 
                 <div class="form-group">
@@ -204,13 +197,8 @@
                 <div class="form-group">
                     <label>Student Learning Outcomes and Indicators:</label>
                     <div id="outcomesContainer" class="outcomes-container">
-                        <div id="courseOutcomesPlaceholder">
-                            <p>Please select a course to see the associated outcomes and indicators.</p>
-                        </div>
-
-                        <!-- Dynamic Course Outcomes Container -->
-                        <div id="dynamicCourseOutcomes" style="display: none;">
-                            <!-- This will be populated dynamically by JavaScript -->
+                        <div id="dynamicCourseContainer">
+                            <p>Please select an instructor and course to see the associated outcomes and indicators.</p>
                         </div>
                     </div>
                 </div>
@@ -224,197 +212,46 @@
             </form>
         </div>
     </div>
-    
-    <!-- 'Manage Users' section moved to the bottom -->
-    <div class="section">
-        <h2>Manage Users</h2>
-        <div class="form-section">
-            <h3>Create New Professor Account</h3>
-            <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="createUserForm">
-                <input type="hidden" name="action" value="createUser" />
-                
-                <div class="form-group">
-                    <label for="firstName">First Name:</label>
-                    <input type="text" id="firstName" name="firstName" required />
-                </div>
-                
-                <div class="form-group">
-                    <label for="lastName">Last Name:</label>
-                    <input type="text" id="lastName" name="lastName" required />
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" required />
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required />
-                </div>
-                
-                <div class="form-group">
-                    <label for="department">Department:</label>
-                    <select id="department" name="deptId" required>
-                        <option value="">Select a Department</option>
-                        <option value="1">Computer Science</option>
-                        <option value="2">Mathematics</option>
-                        <option value="3">Engineering</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Assign Courses:</label>
-                    <div class="course-checkboxes">
-                        <%
-                            if (courses != null && !courses.isEmpty()) {
-                                for (Course course : courses) {
-                        %>
-                        <div>
-                            <input type="checkbox" id="course_<%= course.getCourseCode() %>" name="assignedCourses" value="<%= course.getCourseCode() %>" />
-                            <label for="course_<%= course.getCourseCode() %>"><%= course.getCourseCode() %>: <%= course.getCourseName() %></label>
-                        </div>
-                        <%
-                                }
-                            } else {
-                        %>
-                        <div>
-                            <input type="checkbox" id="course_CS101" name="assignedCourses" value="CS101" />
-                            <label for="course_CS101">CS101: Fundamentals of Computer Science I</label>
-                        </div>
-                        <div>
-                            <input type="checkbox" id="course_CS201" name="assignedCourses" value="CS201" />
-                            <label for="course_CS201">CS201: Fundamentals of Computer Science II</label>
-                        </div>
-                        <div>
-                            <input type="checkbox" id="course_CS320" name="assignedCourses" value="CS320" />
-                            <label for="course_CS320">CS320: Software Engineering Design</label>
-                        </div>
-                        <% } %>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn-submit">Create Professor Account</button>
-            </form>
-        </div>
-        
-        <!-- Existing Professors List -->
-        <div class="form-section">
-            <h3>Existing Professors</h3>
-            <div class="user-list">
-                <%
-                    if (professors != null && !professors.isEmpty()) {
-                %>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Department</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <%
-                            for (User user : professors) {
-                                if (user instanceof Professor) {
-                                    Professor professor = (Professor) user;
-                        %>
-                        <tr>
-                            <td><%= professor.getUserId() %></td>
-                            <td><%= professor.getFirstName() %> <%= professor.getLastName() %></td>
-                            <td><%= professor.getEmail() %></td>
-                            <td><%= professor.getDeptName() %></td>
-                            <td><%= professor.isActive() ? "Active" : "Inactive" %></td>
-                            <td>
-                                <button type="button" class="btn" onclick="openEditUserModal(<%= professor.getUserId() %>, '<%= professor.getFirstName() %>', '<%= professor.getLastName() %>', '<%= professor.getEmail() %>', <%= professor.getDeptId() %>)">Edit</button>
-                                <form method="post" action="${pageContext.request.contextPath}/AdminServlet" class="inline">
-                                    <input type="hidden" name="action" value="toggleUserStatus" />
-                                    <input type="hidden" name="userId" value="<%= professor.getUserId() %>" />
-                                    <button type="submit" class="btn <%= professor.isActive() ? "btn-danger" : "btn-success" %>">
-                                        <%= professor.isActive() ? "Deactivate" : "Activate" %>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        <%
-                                }
-                            }
-                        %>
-                    </tbody>
-                </table>
-                <% } else { %>
-                <p>No professors found.</p>
-                <% } %>
-            </div>
-        </div>
-    </div>
+
+    <!-- User management has been moved to the Settings page -->
 </div>
 
-<!-- Edit User Modal -->
-<div id="editUserModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeEditUserModal()">&times;</span>
-        <h2>Edit Professor</h2>
-        <form action="${pageContext.request.contextPath}/AdminServlet" method="post" id="editUserForm">
-            <input type="hidden" name="action" value="editUser" />
-            <input type="hidden" name="userId" id="editUserId" />
-
-            <div class="form-group">
-                <label for="editFirstName">First Name:</label>
-                <input type="text" id="editFirstName" name="firstName" required />
-            </div>
-
-            <div class="form-group">
-                <label for="editLastName">Last Name:</label>
-                <input type="text" id="editLastName" name="lastName" required />
-            </div>
-
-            <div class="form-group">
-                <label for="editEmail">Email:</label>
-                <input type="email" id="editEmail" name="email" required />
-            </div>
-
-            <div class="form-group">
-                <label for="editPassword">New Password (leave blank to keep current):</label>
-                <input type="password" id="editPassword" name="password" />
-            </div>
-
-            <div class="form-group">
-                <label for="editDepartment">Department:</label>
-                <select id="editDepartment" name="deptId" required>
-                    <option value="">Select a Department</option>
-                    <option value="1">Computer Science</option>
-                    <option value="2">Mathematics</option>
-                    <option value="3">Engineering</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Assign Courses:</label>
-                <div class="course-checkboxes" id="editCourseCheckboxes">
-                    <!-- Will be populated dynamically -->
-                </div>
-            </div>
-
-            <div class="button-container">
-                <button type="button" class="btn-cancel" onclick="closeEditUserModal()">Cancel</button>
-                <button type="submit" class="btn-submit">Save Changes</button>
-            </div>
-        </form>
-    </div>
-</div>
+<!-- User management modals have been moved to the Settings page -->
 
 <script>
+    // Get outcomeData from the controller
     <% 
-    // Check if outcomeData is available from the controller
     String outcomeData = (String) request.getAttribute("outcomeData");
     if (outcomeData != null && !outcomeData.isEmpty()) {
-        // Output the data from the controller
         out.println(outcomeData);
-    }%>
+    } 
+
+    // Get outcomes from request attributes for dynamic access
+    List<Outcome> outcomes = (List<Outcome>) request.getAttribute("outcomes");
+    Map<Integer, String> dynamicOutcomeDescriptions = new HashMap<>();
+    if (outcomes != null) {
+        for (Outcome outcome : outcomes) {
+            dynamicOutcomeDescriptions.put(outcome.getId(), outcome.getDescription());
+        }
+    }
+
+    // Convert dynamicOutcomeDescriptions to JSON for JavaScript
+    StringBuilder dynamicOutcomeDescriptionsJson = new StringBuilder();
+    dynamicOutcomeDescriptionsJson.append("const dynamicOutcomeDescriptions = {");
+    for (Map.Entry<Integer, String> entry : dynamicOutcomeDescriptions.entrySet()) {
+        dynamicOutcomeDescriptionsJson.append(entry.getKey())
+                .append(": \"")
+                .append(entry.getValue().replace("\"", "\\\""))
+                .append("\", ");
+    }
+    if (!dynamicOutcomeDescriptions.isEmpty()) {
+        dynamicOutcomeDescriptionsJson.delete(dynamicOutcomeDescriptionsJson.length() - 2, dynamicOutcomeDescriptionsJson.length());
+    }
+    dynamicOutcomeDescriptionsJson.append("};");
+
+    // Output the dynamic outcome descriptions
+    out.println(dynamicOutcomeDescriptionsJson.toString());
+    %>
 
     // Function to show the outcomes for the selected course
     function updateOutcomes() {
@@ -454,11 +291,11 @@
             const outcomeContainer = document.createElement('div');
             outcomeContainer.className = 'outcome-container';
 
-            // Create outcome checkbox container
+            // Create an outcome checkbox container
             const outcomeCheckboxContainer = document.createElement('div');
             outcomeCheckboxContainer.className = 'outcome-checkbox-container';
 
-            // Create outcome checkbox
+            // Create an outcome checkbox
             const outcomeCheckbox = document.createElement('input');
             outcomeCheckbox.type = 'checkbox';
             outcomeCheckbox.id = `${selectedCourse}_outcome_${outcomeId}`;
@@ -485,7 +322,8 @@
             const outcomeLabel = document.createElement('label');
             outcomeLabel.htmlFor = outcomeCheckbox.id;
             outcomeLabel.className = 'outcome-label';
-            outcomeLabel.textContent = `Outcome ${outcomeId}: ${outcomeDescriptions[outcomeId]}`;
+            // Use dynamic outcome descriptions if available, fall back to static if not
+            outcomeLabel.textContent = `Outcome ${outcomeId}: ${dynamicOutcomeDescriptions[outcomeId] || outcomeDescriptions[outcomeId]}`;
 
             // Add checkbox and label to container
             outcomeCheckboxContainer.appendChild(outcomeCheckbox);
@@ -542,6 +380,8 @@
             outcomeContainer.appendChild(indicatorsDiv);
 
             // Add outcome container to dynamic outcomes div
+
+            // Add outcome container to dynamic outcomes div
             dynamicOutcomesDiv.appendChild(outcomeContainer);
         });
     }
@@ -564,80 +404,7 @@
         document.getElementById('selectedOutcomesInput').value = selectedOutcomes.join(',');
     }
 
-    // Function to open the edit user modal
-    function openEditUserModal(userId, firstName, lastName, email, deptId) {
-        // Set form values
-        document.getElementById('editUserId').value = userId;
-        document.getElementById('editFirstName').value = firstName;
-        document.getElementById('editLastName').value = lastName;
-        document.getElementById('editEmail').value = email;
-        document.getElementById('editDepartment').value = deptId;
-        
-        // Populate course checkboxes
-        populateEditCourseCheckboxes(userId);
-        
-        // Show the modal
-        document.getElementById('editUserModal').style.display = 'block';
-    }
-    
-    // Function to close the edit user modal
-    function closeEditUserModal() {
-        document.getElementById('editUserModal').style.display = 'none';
-    }
-    
-    // Function to populate course checkboxes in the edit modal
-    function populateEditCourseCheckboxes(userId) {
-        const container = document.getElementById('editCourseCheckboxes');
-        container.innerHTML = '';
-        
-        // Add course checkboxes
-        <% if (courses != null && !courses.isEmpty()) { %>
-            <% for (Course course : courses) { %>
-                const courseDiv = document.createElement('div');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = 'edit_course_<%= course.getCourseCode() %>';
-                checkbox.name = 'assignedCourses';
-                checkbox.value = '<%= course.getCourseCode() %>';
-                
-                const label = document.createElement('label');
-                label.htmlFor = 'edit_course_<%= course.getCourseCode() %>';
-                label.textContent = '<%= course.getCourseCode() %>: <%= course.getCourseName() %>';
-                
-                courseDiv.appendChild(checkbox);
-                courseDiv.appendChild(document.createTextNode(' '));
-                courseDiv.appendChild(label);
-                
-                container.appendChild(courseDiv);
-            <% } %>
-        <% } else { %>
-            // Fallback to hardcoded courses
-            const courses = [
-                { code: 'CS101', name: 'Fundamentals of Computer Science I' },
-                { code: 'CS201', name: 'Fundamentals of Computer Science II' },
-                { code: 'CS320', name: 'Software Engineering Design' }
-            ];
-            
-            courses.forEach(course => {
-                const courseDiv = document.createElement('div');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `edit_course_${course.code}`;
-                checkbox.name = 'assignedCourses';
-                checkbox.value = course.code;
-                
-                const label = document.createElement('label');
-                label.htmlFor = `edit_course_${course.code}`;
-                label.textContent = `${course.code}: ${course.name}`;
-                
-                courseDiv.appendChild(checkbox);
-                courseDiv.appendChild(document.createTextNode(' '));
-                courseDiv.appendChild(label);
-                
-                container.appendChild(courseDiv);
-            });
-        <% } %>
-    }
+    // User management functions have been moved to the Settings page
 
     // Add event listeners
     document.addEventListener('DOMContentLoaded', function() {
@@ -655,13 +422,210 @@
                 updateSelectedOutcomesInput();
             });
         }
-        
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            const modal = document.getElementById('editUserModal');
-            if (event.target === modal) {
-                closeEditUserModal();
-            }
-        };
-    });
+
+        // User management modal handling has been moved to the Settings page
+        (function() {
+            // Wait for DOM to be fully loaded
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log("Course outcomes fix script loaded");
+
+                // Get key elements
+                const courseSelect = document.getElementById('courseId');
+                const dynamicCourseContainer = document.getElementById('dynamicCourseContainer');
+                const outcomesContainer = document.getElementById('outcomesContainer');
+
+                if (!courseSelect || !dynamicCourseContainer) {
+                    console.warn("Required elements not found for course outcomes fix");
+                    return;
+                }
+
+                // Override the existing updateOutcomes function with a fixed version
+                window.updateOutcomes = function() {
+                    console.log("Enhanced updateOutcomes called");
+
+                    // Clear the current outcome display
+                    dynamicCourseContainer.innerHTML = '';
+
+                    // Get the selected course
+                    const selectedCourse = courseSelect.value;
+                    console.log("Selected course:", selectedCourse);
+
+                    // If no course is selected, show a placeholder message
+                    if (!selectedCourse) {
+                        dynamicCourseContainer.innerHTML = '<p>Please select a course to see its associated outcomes.</p>';
+                        return;
+                    }
+
+                    // Check if we have outcome data for this course
+                    if (!window.courseOutcomes || !window.courseOutcomes[selectedCourse]) {
+                        dynamicCourseContainer.innerHTML = '<p>No outcome data found for this course. Please contact an administrator.</p>';
+                        console.warn(`No course outcomes found for ${selectedCourse}`);
+                        return;
+                    }
+
+                    // Get the outcomes for this course
+                    const courseSpecificOutcomes = window.courseOutcomes[selectedCourse];
+                    console.log(`Outcomes for ${selectedCourse}:`, courseSpecificOutcomes);
+
+                    if (!courseSpecificOutcomes || courseSpecificOutcomes.length === 0) {
+                        dynamicCourseContainer.innerHTML = '<p>No outcomes are assigned to this course.</p>';
+                        return;
+                    }
+
+                    // Create a dynamic outcomes section
+                    const dynamicOutcomesDiv = document.createElement('div');
+                    dynamicOutcomesDiv.id = 'dynamicCourseOutcomes';
+
+                    // Add header
+                    const header = document.createElement('h3');
+                    header.textContent = `Outcomes for ${selectedCourse}`;
+                    dynamicOutcomesDiv.appendChild(header);
+
+                    // Add description
+                    const description = document.createElement('p');
+                    description.textContent = 'The following outcomes are automatically assigned based on the course. You can select which indicators to include for each outcome.';
+                    dynamicOutcomesDiv.appendChild(description);
+
+                    // Array to store selected outcomes for the hidden input
+                    const selectedOutcomes = [];
+
+                    // For each outcome assigned to this course
+                    courseSpecificOutcomes.forEach(outcomeId => {
+                        selectedOutcomes.push(outcomeId);
+
+                        // Create outcome container
+                        const outcomeContainer = document.createElement('div');
+                        outcomeContainer.className = 'outcome-container';
+
+                        // Create checkbox container
+                        const checkboxContainer = document.createElement('div');
+                        checkboxContainer.className = 'outcome-checkbox-container';
+
+                        // Create checkbox
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `${selectedCourse}_outcome_${outcomeId}`;
+                        checkbox.name = `selectedOutcome_${outcomeId}`;
+                        checkbox.value = outcomeId;
+                        checkbox.className = 'outcome-checkbox';
+                        checkbox.checked = true; // Default to checked
+
+                        // Event listener for checkbox
+                        checkbox.addEventListener('change', function() {
+                            // Toggle indicators visibility
+                            const indicatorsDiv = document.getElementById(`${selectedCourse}_indicators_${outcomeId}`);
+                            if (indicatorsDiv) {
+                                indicatorsDiv.style.display = this.checked ? 'block' : 'none';
+                            }
+
+                            // Update selected outcomes
+                            updateSelectedOutcomesInput(selectedCourse);
+                        });
+
+                        // Create label with outcome description
+                        const label = document.createElement('label');
+                        label.htmlFor = checkbox.id;
+                        label.className = 'outcome-label';
+
+                        // Get outcome description from available sources
+                        let outcomeDescription = "Unknown Outcome";
+                        if (window.dynamicOutcomeDescriptions && window.dynamicOutcomeDescriptions[outcomeId]) {
+                            outcomeDescription = window.dynamicOutcomeDescriptions[outcomeId];
+                        } else if (window.outcomeDescriptions && window.outcomeDescriptions[outcomeId]) {
+                            outcomeDescription = window.outcomeDescriptions[outcomeId];
+                        }
+
+                        label.textContent = `Outcome ${outcomeId}: ${outcomeDescription}`;
+
+                        // Add checkbox and label to container
+                        checkboxContainer.appendChild(checkbox);
+                        checkboxContainer.appendChild(label);
+                        outcomeContainer.appendChild(checkboxContainer);
+
+                        // Add indicators label
+                        const indicatorsLabel = document.createElement('div');
+                        indicatorsLabel.className = 'indicators-label';
+                        indicatorsLabel.textContent = 'Select Indicators:';
+                        outcomeContainer.appendChild(indicatorsLabel);
+
+                        // Create indicators container
+                        const indicatorsDiv = document.createElement('div');
+                        indicatorsDiv.id = `${selectedCourse}_indicators_${outcomeId}`;
+                        indicatorsDiv.className = 'indicators-container';
+                        indicatorsDiv.style.display = 'block'; // Initially visible
+
+                        // Add indicators for this outcome
+                        if (window.indicators && window.indicators[outcomeId]) {
+                            window.indicators[outcomeId].forEach((indicator, index) => {
+                                // Parse indicator number and description
+                                const indicatorParts = indicator.split(' ');
+                                const indicatorNumber = indicatorParts[0];
+                                const indicatorDescription = indicatorParts.slice(1).join(' ');
+
+                                // Create indicator container
+                                const indicatorContainer = document.createElement('div');
+                                indicatorContainer.className = 'indicator-container';
+
+                                // Create checkbox
+                                const indicatorCheckbox = document.createElement('input');
+                                indicatorCheckbox.type = 'checkbox';
+                                indicatorCheckbox.id = `${selectedCourse}_indicator_${indicatorNumber.replace('.', '_')}`;
+                                indicatorCheckbox.name = `indicator_${indicatorNumber.replace('.', '_')}`;
+                                indicatorCheckbox.value = indicatorNumber;
+                                indicatorCheckbox.checked = true; // Default to checked
+
+                                // Create label
+                                const indicatorLabel = document.createElement('label');
+                                indicatorLabel.htmlFor = indicatorCheckbox.id;
+                                indicatorLabel.textContent = indicator;
+
+                                // Add checkbox and label to container
+                                indicatorContainer.appendChild(indicatorCheckbox);
+                                indicatorContainer.appendChild(document.createTextNode(' '));
+                                indicatorContainer.appendChild(indicatorLabel);
+
+                                // Add to indicators container
+                                indicatorsDiv.appendChild(indicatorContainer);
+                            });
+                        } else {
+                            // No indicators available
+                            const noIndicatorsMsg = document.createElement('p');
+                            noIndicatorsMsg.textContent = 'No indicators available for this outcome.';
+                            indicatorsDiv.appendChild(noIndicatorsMsg);
+                        }
+
+                        // Add indicators container to outcome container
+                        outcomeContainer.appendChild(indicatorsDiv);
+
+                        // Add outcome container to dynamic outcomes div
+                        dynamicOutcomesDiv.appendChild(outcomeContainer);
+                    });
+
+                    // Add the dynamic outcomes to the container
+                    dynamicCourseContainer.appendChild(dynamicOutcomesDiv);
+
+                    // Update the hidden input with selected outcomes
+                    document.getElementById('selectedOutcomesInput').value = selectedOutcomes.join(',');
+                };
+
+                // Helper function to update selected outcomes input
+                function updateSelectedOutcomesInput(courseCode) {
+                    const selectedOutcomes = [];
+                    const checkboxes = document.querySelectorAll(`input[type="checkbox"][id^="${courseCode}_outcome_"]:checked`);
+
+                    checkboxes.forEach(checkbox => {
+                        selectedOutcomes.push(checkbox.value);
+                    });
+
+                    document.getElementById('selectedOutcomesInput').value = selectedOutcomes.join(',');
+                }
+
+                // Re-attach the course select change event handler
+                courseSelect.addEventListener('change', updateOutcomes);
+
+                console.log("Course outcomes fix applied");
+            });
+        })();
+    })
 </script>
+<script src="${pageContext.request.contextPath}/js/admin-utils.js"></script>

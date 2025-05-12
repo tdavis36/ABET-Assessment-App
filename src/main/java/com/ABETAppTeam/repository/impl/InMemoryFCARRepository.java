@@ -1,6 +1,6 @@
 package com.ABETAppTeam.repository.impl;
 
-import com.ABETAppTeam.FCAR;
+import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.repository.IFCARRepository;
 
 import java.util.*;

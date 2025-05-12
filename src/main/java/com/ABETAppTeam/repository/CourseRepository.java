@@ -1,6 +1,6 @@
 package com.ABETAppTeam.repository;
 
-import com.ABETAppTeam.Course;
+import com.ABETAppTeam.model.Course;
 import com.ABETAppTeam.service.LoggingService;
 import com.ABETAppTeam.util.DataSourceFactory;
 import com.zaxxer.hikari.HikariDataSource;

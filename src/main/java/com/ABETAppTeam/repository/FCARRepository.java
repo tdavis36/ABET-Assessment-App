@@ -1,6 +1,6 @@
 package com.ABETAppTeam.repository;
 
-import com.ABETAppTeam.FCAR;
+import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.util.DataSourceFactory;
 import com.ABETAppTeam.service.LoggingService;
 import com.zaxxer.hikari.HikariDataSource;
@@ -211,6 +211,8 @@ public class FCARRepository implements IFCARRepository {
 
         return fcars;
     }
+
+    // In FCARRepository.java
 
     @Override
     public List<FCAR> findBySemesterAndYear(String semester, int year) {

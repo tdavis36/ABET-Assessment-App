@@ -1,6 +1,6 @@
 package com.ABETAppTeam.accesscontrol;
 
-import com.ABETAppTeam.User;
+import com.ABETAppTeam.model.User;
 
 /**
  * Interface that defines the access control policy for FCAR fields.

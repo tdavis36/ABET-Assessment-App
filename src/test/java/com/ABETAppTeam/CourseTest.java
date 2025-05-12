@@ -1,5 +1,6 @@
 package com.ABETAppTeam;
 
+import com.ABETAppTeam.model.Course;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

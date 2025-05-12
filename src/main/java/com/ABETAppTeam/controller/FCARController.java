@@ -1,9 +1,11 @@
 package com.ABETAppTeam.controller;
 
-import com.ABETAppTeam.FCAR;
+import com.ABETAppTeam.model.FCAR;
 import com.ABETAppTeam.service.FCARService;
 
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for FCAR operations
@@ -16,10 +18,11 @@ public class FCARController {
     // Service for business logic
     private final FCARService fcarService;
 
+    private static final Logger logger = LoggerFactory.getLogger(FCARController.class);
     /**
      * Private constructor for a singleton pattern
      */
-    private FCARController() {
+    FCARController() {
         this.fcarService = new FCARService();
     }
 
@@ -70,10 +73,6 @@ public class FCARController {
      * @param professorId The professor ID
      * @return List of FCARs for the professor
      */
-    public List<FCAR> getFCARsByProfessor(int professorId) {
-        return fcarService.getFCARsByProfessor(professorId);
-    }
-
     /**
      * Get FCARs for a specific semester and year
      *
@@ -222,5 +221,9 @@ public class FCARController {
      */
     public boolean addImprovementAction(int fcarId, String actionId, String description) {
         return fcarService.addImprovementAction(fcarId, actionId, description);
+    }
+
+    public List<FCAR> getFCARsByProfessor(int userId) {
+        return fcarService.getFCARsByProfessor(userId);
     }
 }

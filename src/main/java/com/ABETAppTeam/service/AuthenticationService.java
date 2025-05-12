@@ -1,8 +1,8 @@
 package com.ABETAppTeam.service;
 
-import com.ABETAppTeam.Admin;
-import com.ABETAppTeam.Professor;
-import com.ABETAppTeam.User;
+import com.ABETAppTeam.model.Admin;
+import com.ABETAppTeam.model.Professor;
+import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.repository.UserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;

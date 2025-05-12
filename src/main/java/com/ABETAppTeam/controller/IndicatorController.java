@@ -1,10 +1,11 @@
 package com.ABETAppTeam.controller;
 
 import com.ABETAppTeam.model.Indicator;
+import com.ABETAppTeam.util.AppUtils;
 
 import java.util.HashMap;
 import java.util.Map;
- 
+
 /**
  * IndicatorController class for the ABET Assessment Application.
  * This class serves as a controller for Indicator operations.
@@ -14,16 +15,16 @@ import java.util.Map;
 public class IndicatorController {
     // Singleton instance
     private static IndicatorController instance;
-    
+
     // In-memory storage for Indicators (in a real application, this might be a database)
     private final Map<Integer, Indicator> indicatorMap;
-    
+
     // Cache for recently accessed Indicators
     private final Map<Integer, Indicator> indicatorCache;
-    
+
     // Counter for generating unique indicator IDs
     private int indicatorCounter = 1;
-    
+
     /**
      * Private constructor for the singleton pattern.
      */
@@ -31,7 +32,7 @@ public class IndicatorController {
         this.indicatorMap = new HashMap<>();
         this.indicatorCache = new HashMap<>();
     }
-    
+
     /**
      * Get the singleton instance of the IndicatorController.
      *
@@ -43,7 +44,7 @@ public class IndicatorController {
         }
         return instance;
     }
-    
+
     /**
      * Create a new Indicator.
      *
@@ -55,23 +56,23 @@ public class IndicatorController {
         try {
             // Generate a unique ID
             int indicatorId = indicatorCounter++;
-            
+
             // Create a new Indicator object
             Indicator indicator = new Indicator(indicatorId, description, targetGoal);
-            
+
             // Store the Indicator in the main map
             this.indicatorMap.put(indicatorId, indicator);
-            
+
             // Also store in the cache
             this.indicatorCache.put(indicatorId, indicator);
-            
+
             return indicatorId;
         } catch (Exception e) {
-            System.err.println("Error creating Indicator: " + e.getMessage());
+            AppUtils.error("Error creating Indicator: {}", e.getMessage());
             return -1;
         }
     }
-    
+
     /**
      * Retrieve an Indicator by its ID.
      *
@@ -83,18 +84,18 @@ public class IndicatorController {
         if (this.indicatorCache.containsKey(indicatorId)) {
             return this.indicatorCache.get(indicatorId);
         }
-        
+
         // If not in cache, retrieve from the main storage
         Indicator indicator = this.indicatorMap.get(indicatorId);
-        
+
         // If found, add it to the cache
         if (indicator != null) {
             this.indicatorCache.put(indicatorId, indicator);
         }
-        
+
         return indicator;
     }
-    
+
     /**
      * Update an existing Indicator.
      *
@@ -105,7 +106,7 @@ public class IndicatorController {
         if (indicator == null || !this.indicatorMap.containsKey(indicator.getIndicatorId())) {
             return false;
         }
-        
+
         // Update the Indicator in both the main map and the cache
         this.indicatorMap.put(indicator.getIndicatorId(), indicator);
         this.indicatorCache.put(indicator.getIndicatorId(), indicator);

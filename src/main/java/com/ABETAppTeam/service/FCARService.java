@@ -1,15 +1,18 @@
 package com.ABETAppTeam.service;
 
-import com.ABETAppTeam.FCAR;
-import com.ABETAppTeam.Professor;
-import com.ABETAppTeam.User;
+import com.ABETAppTeam.model.FCAR;
+import com.ABETAppTeam.model.Professor;
+import com.ABETAppTeam.model.User;
 import com.ABETAppTeam.repository.FCARRepository;
 import com.ABETAppTeam.repository.IFCARRepository;
 import com.ABETAppTeam.repository.UserRepository;
 
+import java.sql.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Service class for handling FCAR business logic
@@ -20,6 +23,8 @@ public class FCARService {
 
     private final IFCARRepository fcarRepository;
     private final UserRepository userRepository;
+    private static final Logger logger = LoggerFactory.getLogger(FCARService.class);
+
 
     /**
      * Constructor

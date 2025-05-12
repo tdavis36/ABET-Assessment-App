@@ -1,4 +1,4 @@
-package com.ABETAppTeam;
+package com.ABETAppTeam.model;
 
 /**
  * Base User class for the ABET Assessment Application

@@ -1,4 +1,4 @@
-package com.ABETAppTeam;
+package com.ABETAppTeam.model;
 
 import com.ABETAppTeam.accesscontrol.FCARAccessControlImpl;
 import com.ABETAppTeam.accesscontrol.FCARFieldAccessControl;
@@ -339,5 +339,13 @@ public class FCAR {
 
         // Update the "updatedAt" timestamp
         this.updatedAt = new Date();
+    }
+
+    public int getId() {
+        return fcarId;
+    }
+
+    public void setId(int anInt) {
+        this.fcarId = anInt;
     }
 }

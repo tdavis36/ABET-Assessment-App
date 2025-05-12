@@ -1,6 +1,6 @@
 package com.ABETAppTeam.accesscontrol;
 
-import com.ABETAppTeam.User;
+import com.ABETAppTeam.model.User;
 import java.util.Set;
 
 /**
@@ -11,23 +11,24 @@ public class FCARAccessControlImpl implements FCARFieldAccessControl {
     
     // Fields that only admins can edit
     private static final Set<String> ADMIN_ONLY_FIELDS = Set.of(
-        "courseCode", 
-        "semester", 
-        "year",
-        "outcomeId",
-        "indicatorId",
-        "goalId",
-        "studentExpectId"
+
     );
     
     // Fields that both admins and professors can edit
     private static final Set<String> SHARED_FIELDS = Set.of(
-        "methodDesc",
-        "summaryDesc",
-        "status",
-        "studentOutcomes",
-        "assessmentMethods",
-        "improvementActions"
+            "courseCode",
+            "semester",
+            "year",
+            "outcomeId",
+            "indicatorId",
+            "goalId",
+            "studentExpectId",
+            "methodDesc",
+            "summaryDesc",
+            "status",
+            "studentOutcomes",
+            "assessmentMethods",
+            "improvementActions"
     );
     
     /**

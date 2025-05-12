@@ -2,7 +2,7 @@
 
 /* CSS Color Variables */
 :root {
-    /* ABET Green - Primary Color */
+    /* YCP Green - Primary Color */
     --primary: #008350;          /* PANTONE 2245 C */
     --primary-dark: #006b41;     /* Darker green for hover states */
     --primary-light: #5eb18a;    /* Light green for highlights */
@@ -35,8 +35,8 @@
     --shadow: rgba(0, 0, 0, 0.1); /* Shadow color */
 
     /* Results Colors */
-    --results-bg: #e6f4ee;       /* Light green results background */
-    --results-border: #aad9c5;   /* Light green results border */
+    --results-bg: #181313;       /* Light green results background */
+    --results-border: #1e201f;   /* Light green results border */
 
     /* Form Colors */
     --form-bg: #f9f9f9;          /* Form background */
@@ -195,22 +195,6 @@ body {
     font-size: 12px;
     font-weight: bold;
     color: white;
-}
-
-.status-draft {
-    background-color: var(--status-draft);
-}
-
-.status-submitted {
-    background-color: var(--status-submitted);
-}
-
-.status-approved {
-    background-color: var(--status-approved);
-}
-
-.status-rejected {
-    background-color: var(--status-rejected);
 }
 
 /* Statistics */
@@ -623,6 +607,102 @@ textarea {
     .data-table tr:nth-child(even) {
         background-color: #2a2a2a;
     }
+
+    .results-section {
+        background-color: #2a2a2a;
+        border-color: #444444;
+    }
+
+    #calculatedResults {
+        background-color: #333333;
+        color: var(--text-dark);
+        padding: 15px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+    }
+
+    #calculatedResults p {
+        color: var(--text-dark);
+    }
+    .navbar-container {
+        background-color: #1a1a1a;
+    }
+
+    .navbar-link:hover, .navbar-link.active {
+        background-color: var(--accent-hover);
+    }
+
+    .logout-link {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .results-section {
+        background-color: #2a2a2a;
+        border-color: #444444;
+    }
+
+    #calculatedResults {
+        background-color: #333333;
+        color: var(--text-dark);
+        padding: 15px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+    }
+
+    #calculatedResults p {
+        color: var(--text-dark);
+    }
+
+    /* Report charts in dark mode */
+    canvas {
+        background-color: #2a2a2a;
+        border-radius: 4px;
+        padding: 10px;
+        border: 1px solid var(--border);
+    }
+
+    /* Report cards in dark mode */
+    .card {
+        background-color: #1e1e1e;
+        border-color: #444444;
+    }
+
+    .card-header {
+        background-color: #2a2a2a;
+        border-color: #444444;
+        color: var(--text-dark);
+    }
+
+    .card-body {
+        background-color: #1e1e1e;
+        color: var(--text-dark);
+    }
+
+    /* Tables in dark mode */
+    .table {
+        color: var(--text-dark);
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: #2a2a2a;
+    }
+
+    .table th, .table td {
+        border-color: #444444;
+    }
+
+    /* Form elements in dark mode */
+    .form-control {
+        background-color: #333333;
+        border-color: #444444;
+        color: var(--text-dark);
+    }
+
+    .form-control:focus {
+        background-color: #333333;
+        border-color: var(--primary);
+        color: var(--text-dark);
+    }
 }
 
 /* Print styles */
@@ -745,32 +825,35 @@ input[readonly], textarea[readonly] {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.4);
+    overflow-y: auto; /* Enable vertical scrolling */
+    background-color: rgba(0, 0, 0, 0.5);
 }
 
 .modal-content {
-    background-color: var(--card-bg);
-    margin: 10% auto;
+    background-color: #ffffff;
+    margin: 5% auto;
     padding: 20px;
-    border: 1px solid var(--border);
-    width: 80%;
-    max-width: 600px;
+    border: 1px solid #ddd;
     border-radius: 5px;
-    box-shadow: 0 2px 8px var(--shadow);
+    width: 80%;
+    max-width: 800px;
+    max-height: 90vh; /* Limit height to 90% of viewport */
+    overflow-y: auto; /* Enable scrolling within the modal content */
+    color: #333;
 }
 
 .close {
-    color: var(--text-muted);
+    color: #6c757d;
     float: right;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
-    transition: color var(--transition-speed);
+    transition: color 0.3s;
 }
 
 .close:hover,
 .close:focus {
-    color: var(--text-dark);
+    color: #343a40;
     text-decoration: none;
 }
 
@@ -888,25 +971,6 @@ form.inline {
     }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --text-dark: #e0e0e0;
-        --text-light: #b0b0b0;
-        --text-muted: #808080;
-        --background: #121212;
-        --card-bg: #1e1e1e;
-        --form-bg: #262626;
-        --input-bg: #333333;
-        --border: #444444;
-        --shadow: rgba(0, 0, 0, 0.3);
-    }
-
-    /* Override specific colors for dark mode */
-    .btn {
-        background-color: var(--primary);
-    }
-
     input, select, textarea {
         color: var(--text-dark);
         background-color: var(--input-bg);
@@ -982,7 +1046,7 @@ form.inline {
     .fcar-item {
         border-color: var(--border);
     }
-}
+
 /* Button color variations */
 .btn-success {
     background-color: var(--success);
@@ -998,4 +1062,323 @@ form.inline {
 
 .btn-danger:hover {
     background-color: #bd2130;
+}
+
+/* Navbar styles */
+.navbar-container {
+    width: 100%;
+    background-color: var(--primary-dark);
+    color: white;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.navbar-brand {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.navbar-brand a {
+    color: white;
+    text-decoration: none;
+}
+
+.navbar-menu {
+    flex-grow: 1;
+    margin-left: 30px;
+}
+
+.navbar-items {
+    list-style: none;
+    display: flex;
+    padding: 0;
+    margin: 0;
+}
+
+.navbar-item {
+    margin: 0 10px;
+}
+
+.navbar-link {
+    color: white;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color var(--transition-speed);
+    display: inline-block;
+}
+
+.navbar-link:hover, .navbar-link.active {
+    background-color: var(--primary);
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+}
+
+.user-greeting {
+    margin-right: 15px;
+    color: white;
+}
+
+.logout-link {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive navbar */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .navbar-brand {
+        margin-bottom: 10px;
+    }
+
+    .navbar-menu {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .navbar-items {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .navbar-item {
+        margin: 5px 0;
+    }
+
+    .navbar-right {
+        margin-top: 10px;
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+/* Import Preview Styling */
+.import-preview {
+    margin-top: 15px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 15px;
+    background-color: var(--form-bg);
+}
+
+/* Settings specific styles */
+#settingsDashboard .form-section {
+    margin-bottom: 20px;
+}
+
+#settingsDashboard .action-buttons {
+    margin-top: 20px;
+}
+
+#settingsDashboard ul {
+    margin-left: 20px;
+    margin-bottom: 15px;
+}
+
+#settingsDashboard .import-preview h3 {
+    margin-top: 0;
+    color: var(--primary);
+    margin-bottom: 15px;
+}
+
+/* Make modals more responsive */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+}
+
+/* Enhanced styling for course assignment functionality */
+
+/* Modal loading state */
+.modal.loading .modal-content {
+    opacity: 0.7;
+}
+
+.modal.loading::after {
+    content: "Loading...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    z-index: 1001;
+}
+
+/* Course selection area */
+.course-checkboxes {
+    margin-top: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    padding: 15px;
+    border-radius: 4px;
+    background-color: var(--input-bg);
+}
+
+.course-search {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.course-search input {
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.course-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.course-actions button {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.course-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.course-item {
+    padding: 5px;
+    transition: background-color 0.2s;
+    border-radius: 3px;
+}
+
+.course-item:hover {
+    background-color: var(--form-bg);
+}
+
+.course-item label {
+    cursor: pointer;
+    display: inline;
+    margin-left: 5px;
+}
+
+/* Error messages */
+.error-message {
+    color: var(--danger);
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+/* Import FCAR section enhancements */
+.import-preview {
+    margin-top: 15px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 15px;
+    background-color: var(--form-bg);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.data-table th, .data-table td {
+    border: 1px solid var(--border);
+    padding: 8px;
+    text-align: left;
+}
+
+.data-table th {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.import-help {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: rgba(0, 131, 80, 0.1);
+    border-left: 3px solid var(--primary);
+    border-radius: 3px;
+}
+
+.import-help h4 {
+    margin-top: 0;
+    color: var(--primary);
+}
+
+.import-help code {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.import-help ul {
+    margin-bottom: 0;
+}
+
+/* Form improvements */
+.form-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background-color: var(--form-bg);
+}
+
+.form-section h3 {
+    margin-top: 0;
+    color: var(--primary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.button-container {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    .course-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .import-help {
+        background-color: rgba(0, 131, 80, 0.2);
+    }
+
+    .import-help code {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #ddd;
+    }
+
+    .course-checkboxes {
+        background-color: #333;
+        border-color: #444;
+    }
 }

@@ -9,6 +9,7 @@ import com.ABETAppTeam.model.Indicator;
 import com.ABETAppTeam.model.Outcome;
 import com.ABETAppTeam.repository.IndicatorRepository;
 import com.ABETAppTeam.repository.OutcomeRepository;
+import com.ABETAppTeam.util.AppUtils;
 
 /**
  * Controller for managing outcomes and indicators
@@ -22,7 +23,7 @@ public class OutcomeController {
     /**
      * Private constructor (singleton pattern)
      */
-    private OutcomeController() {
+    OutcomeController() {
         this.outcomeRepository = new OutcomeRepository();
         this.indicatorRepository = new IndicatorRepository();
     }
@@ -231,7 +232,7 @@ public class OutcomeController {
             result.put("indicatorsByOutcome", indicatorsByOutcome);
         } catch (Exception e) {
             // Log the error
-            System.err.println("Error fetching outcomes and indicators: " + e.getMessage());
+            AppUtils.error("Error fetching outcomes and indicators: {}", e.getMessage());
         }
 
         return result;

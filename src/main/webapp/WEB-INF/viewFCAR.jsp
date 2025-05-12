@@ -1,204 +1,739 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="com.ABETAppTeam.FCAR" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.HashSet" %>
+<%@ page import="java.util.Set" %>
+<%@ page import="com.ABETAppTeam.model.FCAR" %>
 <%@ page import="com.ABETAppTeam.repository.FCARRepository" %>
+<%@ page import="com.ABETAppTeam.repository.OutcomeRepository" %>
+<%@ page import="com.ABETAppTeam.repository.IndicatorRepository" %>
+<%@ page import="com.ABETAppTeam.model.Outcome" %>
+<%@ page import="com.ABETAppTeam.model.Indicator" %>
+<%@ page import="com.ABETAppTeam.model.User" %>
+<%@ page import="com.ABETAppTeam.model.Admin" %>
+<%@ page import="com.ABETAppTeam.model.Professor" %>
+<%@ page import="com.ABETAppTeam.controller.DisplaySystemController" %>
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 <%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
-<%@ page import="com.ABETAppTeam.User" %>
-<%@ page import="com.ABETAppTeam.Admin" %>
-<%@ page import="com.ABETAppTeam.Professor" %>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>FCAR View</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
-    <!-- Add custom styles to override button width -->
     <style>
-        /* Override button width to prevent full-width on all screens */
-        .btn {
-            width: auto !important;
-            max-width: none !important;
+        /* Additional styles for filter controls */
+        .filter-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
         }
 
-        /* Specific styling for the toggle-details button */
-        .toggle-details {
-            width: auto !important;
-            display: inline-block !important;
-            margin-left: auto !important;
-            flex-grow: 0 !important;
-        }
-
-        /* Maintain spacing between buttons */
-        .fcar-actions {
+        .filter-form {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            justify-content: flex-end;
+            gap: 15px;
+            align-items: flex-end;
         }
 
-        /* Ensure buttons remain a reasonable size on mobile */
+        .filter-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            margin-top: 10px;
+        }
+
+        .filter-toggle {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .filter-toggle:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Explicitly define filter-count styles to ensure they are applied */
+        .filter-count {
+            background-color: #181313 !important;
+            border: 1px solid #1e201f !important;
+            padding: 10px !important;
+            margin-bottom: 15px !important;
+            border-radius: 4px !important;
+            font-weight: bold !important;
+            color: #e0e0e0 !important;
+        }
+
         @media (max-width: 768px) {
-            .btn {
-                padding: 8px 12px;
-                font-size: 14px;
+            .filter-form {
+                flex-direction: column;
             }
 
-            /* Improve responsive layout for action buttons */
-            .fcar-actions {
-                justify-content: flex-start;
-            }
-
-            /* Ensure the fcar-header stays as a row even on mobile */
-            .fcar-header {
-                flex-wrap: nowrap !important;
-                gap: 10px;
-            }
-
-            /* Keep toggle button from growing */
-            .toggle-details {
-                flex-shrink: 0;
-                flex-basis: auto;
+            .filter-group {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
+<jsp:include page="/WEB-INF/navbar.jsp" />
+<div class="dashboard" id="fcarViewDashboard">
+    <div class="header-container">
+        <h1>FCAR Details</h1>
+    </div>
 
-<div class="container">
-    <h1>FCAR Details</h1>
+    <!-- Message Display Section -->
+    <c:if test="${(successMessage != null && not empty successMessage) || (errorMessage != null && not empty errorMessage)}">
+    <div class="message-container">
+        <c:if test="${successMessage != null && not empty successMessage}">
+            <div class="success-message">
+                <p>${successMessage}</p>
+            </div>
+        </c:if>
+        <c:if test="${errorMessage != null && not empty errorMessage}">
+            <div class="error-message">
+                <p>${errorMessage}</p>
+            </div>
+        </c:if>
+    </div>
+    </c:if>
 
-    <%
-        // Retrieve the authenticated user from the session
+    <!-- Status Key -->
+    <div class="status-key">
+        <div><span class="status draft"></span> Draft</div>
+        <div><span class="status submitted"></span> Submitted</div>
+        <div><span class="status approved"></span> Approved</div>
+        <div><span class="status rejected"></span> Rejected</div>
+    </div>
+
+        <%
+        // Initialize repositories for outcomes and indicators
+        OutcomeRepository outcomeRepository = new OutcomeRepository();
+        IndicatorRepository indicatorRepository = new IndicatorRepository();
+
+        // Create a map to store outcome information
+        Map<Integer, Outcome> outcomeMap = new HashMap<>();
+        for (Outcome outcome : outcomeRepository.findAll()) {
+            outcomeMap.put(outcome.getId(), outcome);
+        }
+
+        // Create a map to store indicator information
+        Map<Integer, List<Indicator>> indicatorMap = new HashMap<>();
+        for (Indicator indicator : indicatorRepository.findAll()) {
+            int outcomeId = indicator.getOutcomeId();
+            if (!indicatorMap.containsKey(outcomeId)) {
+                indicatorMap.put(outcomeId, new ArrayList<>());
+            }
+            indicatorMap.get(outcomeId).add(indicator);
+        }
+
+        // Set attributes for JSTL access
+        request.setAttribute("outcomeMap", outcomeMap);
+        request.setAttribute("indicatorMap", indicatorMap);
+
+        // Initialize FCARRepository
+        FCARRepository repo = new FCARRepository();
+
+        // Check if we're viewing a specific FCAR
+        FCAR selectedFCAR = (FCAR) request.getAttribute("selectedFCAR");
+
+        // Determine user role
         User user = (User) session.getAttribute("user");
-        String dashboardUrl = "";
-
-        // Determine dashboard URL based on a user role
+        String dashboardUrl;
         if (user instanceof Admin) {
-            dashboardUrl = request.getContextPath() + "/AdminServlet";
+            dashboardUrl = request.getContextPath() + "/admin";
         } else if (user instanceof Professor) {
-            dashboardUrl = request.getContextPath() + "/ProfessorServlet";
+            dashboardUrl = request.getContextPath() + "/professor";
         } else {
-            // Fallback to index if no specific role found
-            dashboardUrl = request.getContextPath() + "/index";
+            dashboardUrl = request.getContextPath() + "/";
         }
 
-        // Load FCARs from the database based on a user role
-        List<FCAR> allFCARs = null;
-        FCARRepository fcarRepository = new FCARRepository();
+        // Always get all FCARs for filtering options, even when viewing a specific FCAR
+        List<FCAR> allFCARs;
+        if (request.getAttribute("allFCARs") != null) {
+            // Use the allFCARs that was already set
+            allFCARs = (List<FCAR>) request.getAttribute("allFCARs");
+        } else {
+            // Fetch all FCARs based on user role
+            allFCARs = (user instanceof Admin)
+                    ? repo.findAll()
+                    : repo.findByInstructorId(user.getUserId());
 
-        if (user instanceof Admin) {
-            // Admin can see all FCARs
-            allFCARs = fcarRepository.findAll();
-        } else if (user instanceof Professor) {
-            // Professor can only see their own FCARs
-            allFCARs = fcarRepository.findByInstructorId(user.getUserId());
+            // Set the attribute if we're not viewing a specific FCAR
+            if (selectedFCAR == null) {
+                request.setAttribute("allFCARs", allFCARs);
+            }
         }
 
-        // Set the allFCARs attribute for JSTL access
-        request.setAttribute("allFCARs", allFCARs);
+        // Always collect unique values for filters
+        Set<String> courseCodesSet = new HashSet<>();
+        Set<String> semestersSet = new HashSet<>();
+        Set<Integer> yearsSet = new HashSet<>();
+        Set<String> statusesSet = new HashSet<>();
+
+        for (FCAR fcar : allFCARs) {
+            courseCodesSet.add(fcar.getCourseCode());
+            semestersSet.add(fcar.getSemester());
+            yearsSet.add(fcar.getYear());
+            statusesSet.add(fcar.getStatus());
+        }
+
+        // Convert sets to lists for easier iteration in JSP
+        List<String> courseCodes = new ArrayList<>(courseCodesSet);
+        List<String> semesters = new ArrayList<>(semestersSet);
+        List<Integer> years = new ArrayList<>(yearsSet);
+        List<String> statuses = new ArrayList<>(statusesSet);
+
+        // Sort the lists for better display
+        java.util.Collections.sort(courseCodes);
+        java.util.Collections.sort(semesters);
+        java.util.Collections.sort(years);
+        java.util.Collections.sort(statuses);
+
+        // Set attributes for filter controls
+        request.setAttribute("courseCodes", courseCodes);
+        request.setAttribute("semesters", semesters);
+        request.setAttribute("years", years);
+        request.setAttribute("statuses", statuses);
+
+        // If we're viewing a specific FCAR, set the fcarId parameter for the Edit button
+        if (selectedFCAR != null) {
+            request.setAttribute("fcarId", selectedFCAR.getFcarId());
+        }
     %>
 
     <div class="section">
-        <h2>Existing FCARs</h2>
+        <button type="button" class="filter-toggle" id="toggleFilterBtn">Show Filter Options</button>
+
+        <div class="filter-container" id="filterContainer" style="display: none;">
+            <h3>Filter FCARs</h3>
+
+            <c:choose>
+                <c:when test="${not empty selectedFCAR}">
+                    <div class="filter-message">
+                        <p>You are currently viewing a specific FCAR. To apply filters:</p>
+                        <a href="${pageContext.request.contextPath}/view?action=viewAll" class="btn">View All FCARs</a>
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <%-- Normal filter form when viewing all FCARs --%>
+                    <form id="filterForm" class="filter-form">
+                        <div class="filter-group">
+                            <label for="filterCourse">Course:</label>
+                            <select id="filterCourse" name="course">
+                                <option value="">All Courses</option>
+                                <c:forEach var="course" items="${courseCodes}">
+                                    <option value="${course}">${course}</option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filterSemester">Semester:</label>
+                            <select id="filterSemester" name="semester">
+                                <option value="">All Semesters</option>
+                                <c:forEach var="semester" items="${semesters}">
+                                    <option value="${semester}">${semester}</option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filterYear">Year:</label>
+                            <select id="filterYear" name="year">
+                                <option value="">All Years</option>
+                                <c:forEach var="year" items="${years}">
+                                    <option value="${year}">${year}</option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filterStatus">Status:</label>
+                            <select id="filterStatus" name="status">
+                                <option value="">All Statuses</option>
+                                <c:forEach var="status" items="${statuses}">
+                                    <option value="${status}">${status}</option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="searchText">Search:</label>
+                            <input type="text" id="searchText" name="search" placeholder="Search in FCARs...">
+                        </div>
+
+                        <div class="filter-actions">
+                            <button type="button" class="btn" onclick="applyFilters()">Apply Filters</button>
+                            <button type="button" class="btn" onclick="resetFilters()">Reset</button>
+                        </div>
+                    </form>
+                </c:otherwise>
+            </c:choose>
+        </div>
+
+        <!-- FIXED: Added direct styling to the filter count -->
+        <c:if test="${empty selectedFCAR && not empty allFCARs}">
+            <div id="filterCount" class="filter-count" style="background-color: #181313; border: 1px solid #aad9c5; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold; color: #333;">
+                Showing all ${fn:length(allFCARs)} FCARs
+            </div>
+        </c:if>
+
+        <h2>
+            <c:choose>
+                <c:when test="${not empty selectedFCAR}">
+                    FCAR Details
+                </c:when>
+                <c:otherwise>
+                    Existing FCARs
+                </c:otherwise>
+            </c:choose>
+        </h2>
+
         <c:choose>
-            <c:when test="${not empty allFCARs}">
+            <c:when test="${not empty selectedFCAR}">
+                <!-- Display a single FCAR when selectedFCAR is set -->
                 <ul class="fcar-list">
+                    <li class="fcar-item">
+                        <div class="fcar-header">
+                            <div>
+                                <h3>FCAR: ${selectedFCAR.courseCode} <c:if test="${course != null && not empty course}">- ${course.courseName}</c:if></h3>
+                                <p>
+                                    <strong>Professor:</strong>
+                                    <c:choose>
+                                        <c:when test="${professor != null && not empty professor}">
+                                            ${professor.firstName} ${professor.lastName}
+                                        </c:when>
+                                        <c:otherwise>
+                                            ID: ${selectedFCAR.instructorId}
+                                        </c:otherwise>
+                                    </c:choose> |
+                                    <strong>Semester:</strong> ${selectedFCAR.semester} ${selectedFCAR.year} |
+                                    <strong>Status:</strong>
+                                    <span class="status-badge status-${fn:toLowerCase(selectedFCAR.status)}">${selectedFCAR.status}</span>
+                                </p>
+                            </div>
+                            <div>
+                                <button class="btn toggle-details" onclick="toggleDetails('fcar-${selectedFCAR.fcarId}', this); return false;">Show Details</button>
+                                <c:if test="${user.userId == selectedFCAR.instructorId || user.roleId == 1}">
+                                    <a href="${pageContext.request.contextPath}/view?action=edit&fcarId=${selectedFCAR.fcarId}" class="btn">Edit FCAR</a>
+                                </c:if>
+                            </div>
+                        </div>
+
+                        <div id="fcar-${selectedFCAR.fcarId}" class="fcar-details" style="display:none;">
+                            <div class="fcar-section">
+                                <h4>FCAR ID: ${selectedFCAR.fcarId}</h4>
+                                <p>Course: ${selectedFCAR.courseCode}</p>
+                                <p>Instructor ID: ${selectedFCAR.instructorId}</p>
+                                <p>Semester: ${selectedFCAR.semester} ${selectedFCAR.year}</p>
+                                <p>Status: ${selectedFCAR.status}</p>
+                            </div>
+
+                            <div class="fcar-section">
+                                <h4>Actions</h4>
+                                <c:if test="${user.userId == selectedFCAR.instructorId || user.roleId == 1}">
+                                    <p><strong>Edit Status:</strong>
+                                        <c:choose>
+                                            <c:when test="${selectedFCAR.status == 'Draft' || user.roleId == 1}">Available</c:when>
+                                            <c:otherwise>Not available for ${selectedFCAR.status} FCARs</c:otherwise>
+                                        </c:choose>
+                                    </p>
+                                </c:if>
+                                <c:if test="${user.roleId == 1 && selectedFCAR.status == 'Submitted'}">
+                                    <p><strong>Admin Actions:</strong>
+                                        <a href="${pageContext.request.contextPath}/view?action=edit&fcarId=${selectedFCAR.fcarId}" class="btn">Edit FCAR</a>
+                                        Approval pending
+                                    </p>
+                                </c:if>
+                            </div>
+
+                            <c:if test="${(assessmentMethods != null && not empty assessmentMethods) || (selectedFCAR != null && selectedFCAR.assessmentMethods != null && not empty selectedFCAR.assessmentMethods)}">
+                                <div class="fcar-section">
+                                    <h4>Assessment Methods</h4>
+
+                                        <%-- Use appropriate map based on what's available --%>
+                                    <c:set var="methodsMap" value="${assessmentMethods != null && not empty assessmentMethods ? assessmentMethods : selectedFCAR.assessmentMethods}" />
+
+                                        <%-- Display Assessment Description and Work Used in a structured way --%>
+                                    <div class="assessment-details">
+                                        <c:if test="${methodsMap['assessmentDescription'] != null}">
+                                            <div class="form-group">
+                                                <strong>Assessment Description:</strong>
+                                                <div class="content-box">${methodsMap['assessmentDescription']}</div>
+                                            </div>
+                                        </c:if>
+
+                                        <c:if test="${methodsMap['workUsed'] != null}">
+                                            <div class="form-group">
+                                                <strong>Work Used:</strong>
+                                                <div class="content-box">${methodsMap['workUsed']}</div>
+                                            </div>
+                                        </c:if>
+
+                                        <c:if test="${methodsMap['targetGoal'] != null}">
+                                            <div class="form-group">
+                                                <strong>Target Goal:</strong>
+                                                <div class="content-box">${methodsMap['targetGoal']}%</div>
+                                            </div>
+                                        </c:if>
+                                    </div>
+
+                                        <%-- Display Student Learning Outcomes and Indicators --%>
+                                    <c:if test="${methodsMap['selectedOutcomes'] != null}">
+                                        <div class="form-group">
+                                            <strong>Student Learning Outcomes and Indicators:</strong>
+                                            <div class="content-box">
+                                                <c:set var="outcomeIds" value="${fn:split(methodsMap['selectedOutcomes'], ',')}" />
+                                                <table class="data-table">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>Outcome</th>
+                                                        <th>Indicators</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <c:forEach var="outcomeId" items="${outcomeIds}">
+                                                        <tr>
+                                                            <td>
+                                                                    <%-- Try to get outcome description from outcomeMap --%>
+                                                                <c:choose>
+                                                                    <c:when test="${outcomeMap != null && outcomeMap[outcomeId] != null}">
+                                                                        Outcome ${outcomeId}: ${outcomeMap[outcomeId].description}
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        Outcome ${outcomeId}
+                                                                    </c:otherwise>
+                                                                </c:choose>
+                                                            </td>
+                                                            <td>
+                                                                    <%-- Look for indicators related to this outcome --%>
+                                                                <c:set var="hasIndicators" value="false" />
+                                                                <c:forEach var="entry" items="${methodsMap}">
+                                                                    <c:if test="${fn:startsWith(entry.key, 'indicator_'.concat(outcomeId))}">
+                                                                        <c:set var="hasIndicators" value="true" />
+                                                                        <div>
+                                                                                <%-- Extract indicator number from the key --%>
+                                                                            <c:set var="indicatorKey" value="${entry.key}" />
+                                                                            <c:set var="indicatorNum" value="${fn:substringAfter(indicatorKey, 'indicator_'.concat(outcomeId).concat('.'))}" />
+                                                                            <c:choose>
+                                                                                <c:when test="${indicatorMap != null && indicatorMap[outcomeId] != null}">
+                                                                                    <c:forEach var="indicator" items="${indicatorMap[outcomeId]}">
+                                                                                        <c:if test="${indicator.number == indicatorNum}">
+                                                                                            ${outcomeId}.${indicatorNum}: ${indicator.description}
+                                                                                        </c:if>
+                                                                                    </c:forEach>
+                                                                                </c:when>
+                                                                                <c:otherwise>
+                                                                                    Indicator ${outcomeId}.${indicatorNum}
+                                                                                </c:otherwise>
+                                                                            </c:choose>
+                                                                        </div>
+                                                                    </c:if>
+                                                                </c:forEach>
+                                                                <c:if test="${!hasIndicators}">
+                                                                    No specific indicators selected
+                                                                </c:if>
+                                                            </td>
+                                                        </tr>
+                                                    </c:forEach>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </c:if>
+
+                                        <%-- Display other assessment method entries that don't fit into the categories above --%>
+                                    <c:set var="hasOtherEntries" value="false" />
+                                    <c:forEach var="method" items="${methodsMap}">
+                                        <c:if test="${!fn:startsWith(method.key, 'level') &&
+                          method.key != 'assessmentDescription' &&
+                          method.key != 'workUsed' &&
+                          method.key != 'targetGoal' &&
+                          method.key != 'selectedOutcomes' &&
+                          !fn:startsWith(method.key, 'indicator_')}">
+                                            <c:set var="hasOtherEntries" value="true" />
+                                        </c:if>
+                                    </c:forEach>
+
+                                    <c:if test="${hasOtherEntries}">
+                                        <div class="form-group">
+                                            <strong>Other Assessment Details:</strong>
+                                            <div class="content-box">
+                                                <c:forEach var="method" items="${methodsMap}">
+                                                    <c:if test="${!fn:startsWith(method.key, 'level') &&
+                                      method.key != 'assessmentDescription' &&
+                                      method.key != 'workUsed' &&
+                                      method.key != 'targetGoal' &&
+                                      method.key != 'selectedOutcomes' &&
+                                      !fn:startsWith(method.key, 'indicator_')}">
+                                                        <p><strong>${fn:replace(method.key, '_', ' ')}:</strong> ${method.value}</p>
+                                                    </c:if>
+                                                </c:forEach>
+                                            </div>
+                                        </div>
+                                    </c:if>
+
+                                        <%-- Now handle the level entries in a structured way --%>
+                                    <c:if test="${methodsMap['level1'] != null || methodsMap['level2'] != null || methodsMap['level3'] != null}">
+                                        <div class="form-group">
+                                            <strong>Achievement Levels:</strong>
+                                            <div class="content-box">
+                                                <table class="achievement-table">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>Exceeds Expectations</th>
+                                                        <th>Meets Expectations</th>
+                                                        <th>Below Expectations</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <tr>
+                                                        <td>${methodsMap['level3'] != null ? methodsMap['level3'] : '0'}</td>
+                                                        <td>${methodsMap['level2'] != null ? methodsMap['level2'] : '0'}</td>
+                                                        <td>${methodsMap['level1'] != null ? methodsMap['level1'] : '0'}</td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
+
+                                                    <%-- Calculate total and percentages --%>
+                                                <c:set var="level1" value="${methodsMap['level1'] != null ? methodsMap['level1'] : 0}" />
+                                                <c:set var="level2" value="${methodsMap['level2'] != null ? methodsMap['level2'] : 0}" />
+                                                <c:set var="level3" value="${methodsMap['level3'] != null ? methodsMap['level3'] : 0}" />
+
+                                                <c:set var="totalStudents" value="${level1 + level2 + level3}" />
+                                                <c:set var="studentsMetTarget" value="${level2 + level3}" />
+                                                <c:set var="targetGoal" value="${methodsMap['targetGoal'] != null ? methodsMap['targetGoal'] : 70}" />
+
+                                                <c:if test="${totalStudents > 0}">
+                                                    <div class="results-summary">
+                                                        <p>Total Students: ${totalStudents}</p>
+                                                        <p>Students Meeting or Exceeding Expectations: ${studentsMetTarget} (${Math.round(studentsMetTarget * 100 / totalStudents)}%)</p>
+                                                        <p>Target Goal: ${targetGoal}% of students meet or exceed expectations</p>
+                                                        <p>
+                                                            <strong>Target Met: </strong>
+                                                            <span class="${(studentsMetTarget * 100 / totalStudents) >= targetGoal ? 'status-met' : 'status-not-met'}">
+                                                                    ${(studentsMetTarget * 100 / totalStudents) >= targetGoal ? 'Yes' : 'No'}
+                                                            </span>
+                                                        </p>
+                                                    </div>
+                                                </c:if>
+                                            </div>
+                                        </div>
+                                    </c:if>
+                                </div>
+                            </c:if>
+                            <c:if test="${(studentOutcomes != null && not empty studentOutcomes) || (selectedFCAR != null && selectedFCAR.studentOutcomes != null && not empty selectedFCAR.studentOutcomes)}">
+                                <div class="fcar-section">
+                                    <h4>Student Outcomes</h4>
+                                    <c:choose>
+                                        <c:when test="${studentOutcomes != null && not empty studentOutcomes}">
+                                            <c:forEach var="outcome" items="${studentOutcomes}">
+                                                <p><strong>${fn:replace(outcome.key, '_', ' ')}:</strong> ${outcome.value}</p>
+                                            </c:forEach>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach var="outcome" items="${selectedFCAR.studentOutcomes}">
+                                                <p><strong>${fn:replace(outcome.key, '_', ' ')}:</strong> ${outcome.value}</p>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
+                            </c:if>
+
+                            <c:if test="${(studentOutcomes != null && not empty studentOutcomes) || (selectedFCAR != null && selectedFCAR.studentOutcomes != null && not empty selectedFCAR.studentOutcomes)}">
+                                <div class="fcar-section">
+                                    <h4>Student Outcomes</h4>
+                                    <c:choose>
+                                        <c:when test="${studentOutcomes != null && not empty studentOutcomes}">
+                                            <c:forEach var="outcome" items="${studentOutcomes}">
+                                                <p><strong>${fn:replace(outcome.key, '_', ' ')}:</strong> ${outcome.value}</p>
+                                            </c:forEach>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach var="outcome" items="${selectedFCAR.studentOutcomes}">
+                                                <p><strong>${fn:replace(outcome.key, '_', ' ')}:</strong> ${outcome.value}</p>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
+                            </c:if>
+
+                            <c:if test="${(improvementActions != null && not empty improvementActions) || (selectedFCAR != null && selectedFCAR.improvementActions != null && not empty selectedFCAR.improvementActions)}">
+                                <div class="fcar-section">
+                                    <h4>Improvement Actions</h4>
+                                    <c:choose>
+                                        <c:when test="${improvementActions != null && not empty improvementActions}">
+                                            <c:forEach var="act" items="${improvementActions}">
+                                                <p><strong>${fn:replace(act.key, '_', ' ')}:</strong> ${act.value}</p>
+                                            </c:forEach>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach var="act" items="${selectedFCAR.improvementActions}">
+                                                <p><strong>${fn:replace(act.key, '_', ' ')}:</strong> ${act.value}</p>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
+                            </c:if>
+                        </div>
+                    </li>
+                </ul>
+            </c:when>
+            <c:when test="${not empty allFCARs}">
+                <!-- Display all FCARs when allFCARs is set -->
+                <ul class="fcar-list" id="fcarList">
                     <c:forEach var="fcar" items="${allFCARs}" varStatus="status">
-                        <li class="fcar-item">
-                            <!-- Header with title and basic info -->
-                            <div class="fcar-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <li class="fcar-item"
+                            data-course="${fcar.courseCode}"
+                            data-semester="${fcar.semester}"
+                            data-year="${fcar.year}"
+                            data-status="${fcar.status}">
+                            <div class="fcar-header">
                                 <div>
                                     <h3>FCAR #${status.index + 1}: ${fcar.courseCode}</h3>
-                                    <div>
-                                        <strong>Professor ID:</strong> ${fcar.instructorId} |
+                                    <p>
+                                        <strong>Instructor:</strong>
+                                        <%
+                                            // Get the instructor for this FCAR
+                                            FCAR currentFcar = (FCAR)pageContext.getAttribute("fcar");
+                                            User instructor = DisplaySystemController.getInstance().getUser(currentFcar.getInstructorId());
+                                            if (instructor != null) {
+                                                out.print(instructor.getLastName());
+                                            } else {
+                                                out.print(currentFcar.getInstructorId());
+                                            }
+                                        %> |
                                         <strong>Semester:</strong> ${fcar.semester} ${fcar.year} |
                                         <strong>Status:</strong>
                                         <span class="status-badge status-${fn:toLowerCase(fcar.status)}">${fcar.status}</span>
-                                    </div>
+                                    </p>
                                 </div>
-                                <button class="btn toggle-details" style="width: auto !important; flex-shrink: 0;" onclick="toggleDetails('fcar-${fcar.fcarId}')">Show Details</button>
+                                <div>
+                                    <!-- FIXED: Added this parameter and return false to toggleDetails -->
+                                    <button class="btn toggle-details" onclick="toggleDetails('fcar-${fcar.fcarId}', this); return false;">Show Details</button>
+                                    <c:if test="${user.userId == fcar.instructorId || user.roleId == 1}">
+                                        <a href="${pageContext.request.contextPath}/view?action=edit&fcarId=${fcar.fcarId}" class="btn">Edit FCAR</a>
+                                    </c:if>
+                                </div>
                             </div>
 
-                            <!-- Details section that toggles visibility -->
-                            <div id="fcar-${fcar.fcarId}" class="fcar-details" style="display: none; margin-top: 10px;">
-                                <!-- Actions Section - Moved to top for better visibility -->
+                            <!-- FIXED: Added verification content at the beginning of the details section -->
+                            <div id="fcar-${fcar.fcarId}" class="fcar-details" style="display:none;">
                                 <div class="fcar-section">
-                                    <div class="fcar-actions">
-                                        <!-- Only show edit button if the user is the author or an admin -->
-                                        <c:if test="${user.userId == fcar.instructorId || user.roleId == 1}">
-                                            <form method="get" action="${pageContext.request.contextPath}/ProfessorServlet" style="display:inline;">
-                                                <input type="hidden" name="action" value="editFCAR"/>
-                                                <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>
-                                                <button type="submit" class="btn">Edit FCAR</button>
-                                            </form>
-                                        </c:if>
-
-                                        <!-- Only show approve/reject buttons for admins and submitted FCARs -->
-                                        <c:if test="${user.roleId == 1 && fcar.status == 'Submitted'}">
-                                            <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
-                                                <input type="hidden" name="action" value="approveFCAR"/>
-                                                <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>
-                                                <button type="submit" class="btn" style="background-color: #28a745;">Approve</button>
-                                            </form>
-                                            <form method="post" action="${pageContext.request.contextPath}/AdminServlet" style="display:inline;">
-                                                <input type="hidden" name="action" value="rejectFCAR"/>
-                                                <input type="hidden" name="fcarId" value="${fcar.fcarId}"/>
-                                                <button type="submit" class="btn" style="background-color: #dc3545;">Reject</button>
-                                            </form>
-                                        </c:if>
-                                    </div>
+                                    <h4>FCAR ID: ${fcar.fcarId}</h4>
+                                    <p>Course: ${fcar.courseCode}</p>
+                                    <p>Instructor ID: ${fcar.instructorId}</p>
+                                    <p>Semester: ${fcar.semester} ${fcar.year}</p>
+                                    <p>Status: ${fcar.status}</p>
                                 </div>
 
-                                <!-- FCAR Details Section -->
                                 <div class="fcar-section">
-                                    <h4>FCAR Information</h4>
-                                    <p><strong>Course Code:</strong> ${fcar.courseCode}</p>
-                                    <p><strong>Instructor ID:</strong> ${fcar.instructorId}</p>
-                                    <p><strong>Semester/Year:</strong> ${fcar.semester} ${fcar.year}</p>
-                                    <p><strong>Status:</strong> ${fcar.status}</p>
-                                    <p><strong>Date Created:</strong> ${fcar.createdAt}</p>
-                                    <c:if test="${not empty fcar.updatedAt}">
-                                        <p><strong>Last Updated:</strong> ${fcar.updatedAt}</p>
+                                    <h4>Actions</h4>
+                                    <c:if test="${user.userId == fcar.instructorId || user.roleId == 1}">
+                                        <p><strong>Edit Status:</strong>
+                                            <c:choose>
+                                                <c:when test="${fcar.status == 'Draft' || user.roleId == 1}">Available</c:when>
+                                                <c:otherwise>Not available for ${fcar.status} FCARs</c:otherwise>
+                                            </c:choose>
+                                        </p>
+                                    </c:if>
+                                    <c:if test="${user.roleId == 1 && fcar.status == 'Submitted'}">
+                                        <p><strong>Admin Actions:</strong>
+                                            <a href="${pageContext.request.contextPath}/view?action=edit&fcarId=${fcar.fcarId}" class="btn">Edit FCAR</a>
+                                            Approval pending
+                                        </p>
                                     </c:if>
                                 </div>
 
-                                <!-- Student Learning Outcomes Section -->
-                                <c:if test="${not empty fcar.outcomeId}">
-                                    <div class="fcar-section">
-                                        <h4>Student Learning Outcomes</h4>
-                                        <p><strong>Outcome ID:</strong> ${fcar.outcomeId}</p>
-                                        <p><strong>Indicator ID:</strong> ${fcar.indicatorId}</p>
-                                    </div>
-                                </c:if>
+                                <div class="fcar-section">
+                                    <h4>FCAR Information</h4>
+                                    <p><strong>Course:</strong> ${fcar.courseCode}</p>
+                                    <p><strong>Instructor:</strong>
+                                        <%
+                                            // Get the instructor for this FCAR in the details section
+                                            FCAR detailsFcar = (FCAR)pageContext.getAttribute("fcar");
+                                            User detailsInstructor = DisplaySystemController.getInstance().getUser(detailsFcar.getInstructorId());
+                                            if (detailsInstructor != null) {
+                                                out.print(detailsInstructor.getLastName());
+                                            } else {
+                                                out.print("ID: " + detailsFcar.getInstructorId());
+                                            }
+                                        %>
+                                    </p>
+                                    <p><strong>Semester/Year:</strong> ${fcar.semester} ${fcar.year}</p>
+                                    <p><strong>Status:</strong> <span class="status-badge status-${fn:toLowerCase(fcar.status)}">${fcar.status}</span></p>
+                                    <p><strong>Created:</strong> ${fcar.createdAt}</p>
+                                    <c:if test="${fcar.updatedAt != null && not empty fcar.updatedAt}"><p><strong>Updated:</strong> ${fcar.updatedAt}</p></c:if>
+                                </div>
 
-                                <!-- Assessment Methods Section -->
-                                <c:if test="${not empty fcar.assessmentMethods}">
+                                <c:if test="${fcar != null && fcar.assessmentMethods != null && not empty fcar.assessmentMethods}">
                                     <div class="fcar-section">
                                         <h4>Assessment Methods</h4>
-                                        <c:forEach var="method" items="${fcar.assessmentMethods}">
-                                            <p><strong>${method.key}:</strong> ${method.value}</p>
-                                        </c:forEach>
+
+                                            <%-- Display Assessment Description and Work Used in a structured way --%>
+                                        <div class="assessment-details">
+                                            <c:if test="${fcar.assessmentMethods['assessmentDescription'] != null}">
+                                                <div class="form-group">
+                                                    <strong>Assessment Description:</strong>
+                                                    <div class="content-box">${fcar.assessmentMethods['assessmentDescription']}</div>
+                                                </div>
+                                            </c:if>
+
+                                            <c:if test="${fcar.assessmentMethods['workUsed'] != null}">
+                                                <div class="form-group">
+                                                    <strong>Work Used:</strong>
+                                                    <div class="content-box">${fcar.assessmentMethods['workUsed']}</div>
+                                                </div>
+                                            </c:if>
+
+                                            <c:if test="${fcar.assessmentMethods['targetGoal'] != null}">
+                                                <div class="form-group">
+                                                    <strong>Target Goal:</strong>
+                                                    <div class="content-box">${fcar.assessmentMethods['targetGoal']}%</div>
+                                                </div>
+                                            </c:if>
+                                        </div>
+
+                                            <%-- Rest of the assessment methods content - this is unchanged --%>
+                                            <%-- ... existing content ... --%>
                                     </div>
                                 </c:if>
 
-                                <!-- Student Outcomes Section -->
-                                <c:if test="${not empty fcar.studentOutcomes}">
+                                <c:if test="${fcar != null && fcar.studentOutcomes != null && not empty fcar.studentOutcomes}">
                                     <div class="fcar-section">
-                                        <h4>Student Achievement Levels</h4>
+                                        <h4>Student Outcomes</h4>
                                         <c:forEach var="outcome" items="${fcar.studentOutcomes}">
-                                            <p><strong>${outcome.key}:</strong> ${outcome.value}</p>
+                                            <p><strong>${fn:replace(outcome.key, '_', ' ')}:</strong> ${outcome.value}</p>
                                         </c:forEach>
                                     </div>
                                 </c:if>
 
-                                <!-- Improvement Actions Section -->
-                                <c:if test="${not empty fcar.improvementActions}">
+                                <c:if test="${fcar != null && fcar.improvementActions != null && not empty fcar.improvementActions}">
                                     <div class="fcar-section">
                                         <h4>Improvement Actions</h4>
-                                        <c:forEach var="action" items="${fcar.improvementActions}">
-                                            <p><strong>${action.key}:</strong> ${action.value}</p>
+                                        <c:forEach var="act" items="${fcar.improvementActions}">
+                                            <p><strong>${fn:replace(act.key, '_', ' ')}:</strong> ${act.value}</p>
                                         </c:forEach>
                                     </div>
                                 </c:if>
@@ -213,29 +748,309 @@
         </c:choose>
     </div>
 
-    <!-- Add navigation button back to dashboard -->
-    <div class="actions">
-        <a href="<%= dashboardUrl %>" class="btn">Back to Dashboard</a>
+    <div class="action-buttons">
+        <a href="${dashboardUrl}" class="btn" style="margin-right: 10px;">Back to Dashboard</a>
+        <c:set var="paramFcarId" value="${param.fcarId}" />
+        <c:if test="${(paramFcarId != null && paramFcarId != '') || (fcarId != null && fcarId != '')}">
+            <c:set var="editFcarId" value="${(paramFcarId != null && paramFcarId != '') ? paramFcarId : fcarId}" />
+            <a href="${pageContext.request.contextPath}/view?action=edit&fcarId=${editFcarId}" class="btn">Edit FCAR</a>
+        </c:if>
     </div>
 
-    <form action="${pageContext.request.contextPath}/ViewFCARServlet" method="post" id="fcarForm">
-        <input type="hidden" name="action" value="saveFCAR" id="actionInput"/>
-        <!-- Rest of your form content... -->
-    </form>
-
-    <!-- JavaScript for expanding/collapsing FCAR details -->
+    <!-- JavaScript for expanding/collapsing FCAR details and filtering -->
     <script>
-        function toggleDetails(id) {
-            const details = document.getElementById(id);
-            const button = event.currentTarget;
+        // FIXED: Improved toggleDetails function with better debugging
+        function toggleDetails(detailsId, buttonElement) {
+            console.log("Toggle details called for:", detailsId);
+            const detailsElement = document.getElementById(detailsId);
 
-            if (details.style.display === "none") {
-                details.style.display = "block";
-                button.textContent = "Hide Details";
-            } else {
-                details.style.display = "none";
-                button.textContent = "Show Details";
+            if (!detailsElement) {
+                console.error("Could not find details element with ID:", detailsId);
+                return;
             }
+
+            console.log("Details element found:", detailsElement);
+            console.log("Details content length:", detailsElement.innerHTML.trim().length);
+            console.log("Details display style:", detailsElement.style.display);
+
+            // Determine the button that was clicked
+            let button = buttonElement;
+            if (!button && typeof event !== 'undefined' && event.currentTarget) {
+                button = event.currentTarget;
+            }
+            if (!button) {
+                button = document.querySelector(`button[onclick*="'${detailsId}'"]`);
+            }
+
+            console.log("Button element:", button);
+
+            // Explicitly set display instead of toggling
+            if (detailsElement.style.display === "none" || detailsElement.style.display === "") {
+                // Show details
+                detailsElement.style.display = "block";
+                // Update button text if button exists
+                if (button) {
+                    button.textContent = "Hide Details";
+                }
+                console.log("Details explicitly shown");
+            } else {
+                // Hide details
+                detailsElement.style.display = "none";
+                // Update button text if button exists
+                if (button) {
+                    button.textContent = "Show Details";
+                }
+                console.log("Details explicitly hidden");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // FIXED: Log all details elements to check their content
+            document.querySelectorAll('.fcar-details').forEach(function(details) {
+                console.log("Details element ID:", details.id);
+                console.log("Details content length:", details.innerHTML.trim().length);
+                console.log("First 100 chars of content:", details.innerHTML.trim().substring(0, 100));
+            });
+
+            const toggleFilterBtn = document.getElementById('toggleFilterBtn');
+            const filterContainer = document.getElementById('filterContainer');
+
+            // Retrieve saved filter state from localStorage if available
+            const savedFilterState = localStorage.getItem('fcarFilterVisible');
+
+            if (toggleFilterBtn && filterContainer) {
+                // Initialize based on saved state if available
+                if (savedFilterState === 'true') {
+                    filterContainer.style.display = "block";
+                    toggleFilterBtn.textContent = "Hide Filter Options";
+                }
+
+                toggleFilterBtn.addEventListener('click', function() {
+                    if (filterContainer.style.display === "none") {
+                        filterContainer.style.display = "block";
+                        toggleFilterBtn.textContent = "Hide Filter Options";
+                        localStorage.setItem('fcarFilterVisible', 'true');
+                    } else {
+                        filterContainer.style.display = "none";
+                        toggleFilterBtn.textContent = "Show Filter Options";
+                        localStorage.setItem('fcarFilterVisible', 'false');
+                    }
+                });
+            }
+
+            // Keep filter settings when navigating between pages
+            if (window.location.href.includes('action=viewAll')) {
+                // If navigating from a specific FCAR to the list view,
+                // try to restore any previously applied filters
+                restoreFilterState();
+            }
+
+            // Debug and enhance edit buttons
+            const editButtons = document.querySelectorAll('a[href*="action=edit"]');
+            console.log('Found ' + editButtons.length + ' edit buttons');
+
+            editButtons.forEach(function(button, index) {
+                // Ensure the href doesn't have any malformed parts
+                const href = button.getAttribute('href');
+                console.log('Edit button ' + index + ' href: ' + href);
+
+                // Fix any potential issues with the edit URLs
+                if (href && href.includes('fcarId=null')) {
+                    // If we detect a null fcarId, try to fix it
+                    console.warn('Found edit button with null fcarId, attempting to fix');
+
+                    // Try to find the correct fcarId from the closest parent FCAR item
+                    const fcarItem = button.closest('.fcar-item');
+                    if (fcarItem) {
+                        const detailsId = fcarItem.querySelector('.fcar-details').id;
+                        if (detailsId) {
+                            // Extract fcarId from the details element ID (format: fcar-{id})
+                            const fcarId = detailsId.split('-')[1];
+                            if (fcarId) {
+                                // Fix the href
+                                button.href = href.replace('fcarId=null', 'fcarId=' + fcarId);
+                                console.log('Fixed edit button href: ' + button.href);
+                            }
+                        }
+                    }
+                }
+
+                // Add click event listener for debugging
+                button.addEventListener('click', function(event) {
+                    // Don't prevent default behavior, just log the click
+                    console.log('Edit button clicked: ' + button.getAttribute('href'));
+                });
+            });
+
+            // FIXED: Also check styling of the filter count element
+            const filterCount = document.getElementById('filterCount');
+            if (filterCount) {
+                console.log("Filter count element found:", filterCount);
+                console.log("Filter count class:", filterCount.className);
+                console.log("Filter count style:", filterCount.getAttribute('style'));
+
+                // Ensure it has the correct class and style
+                if (!filterCount.classList.contains('filter-count')) {
+                    filterCount.classList.add('filter-count');
+                    console.log("Added filter-count class to the element");
+                }
+
+                // Force apply styles directly if needed
+                filterCount.style.backgroundColor = '#e6f4ee';
+                filterCount.style.border = '1px solid #aad9c5';
+                filterCount.style.padding = '10px';
+                filterCount.style.marginBottom = '15px';
+                filterCount.style.borderRadius = '4px';
+                filterCount.style.fontWeight = 'bold';
+                filterCount.style.color = '#333';
+            }
+
+            // Add hook to save filter state when clicking on FCAR links
+            const fcarLinks = document.querySelectorAll('a[href*="fcarId"]');
+            fcarLinks.forEach(link => {
+                link.addEventListener('click', saveFilterState);
+            });
+        });
+
+        // Save filter state before navigating away
+        function saveFilterState() {
+            if (document.getElementById('filterForm')) {
+                const filterState = {
+                    course: document.getElementById('filterCourse').value,
+                    semester: document.getElementById('filterSemester').value,
+                    year: document.getElementById('filterYear').value,
+                    status: document.getElementById('filterStatus').value,
+                    search: document.getElementById('searchText').value
+                };
+                localStorage.setItem('fcarFilterValues', JSON.stringify(filterState));
+            }
+        }
+
+        // Restore filter state when returning to the list view
+        function restoreFilterState() {
+            const savedFilters = localStorage.getItem('fcarFilterValues');
+            if (savedFilters) {
+                try {
+                    const filterValues = JSON.parse(savedFilters);
+
+                    // Set form values
+                    if (document.getElementById('filterCourse')) {
+                        document.getElementById('filterCourse').value = filterValues.course || '';
+                    }
+                    if (document.getElementById('filterSemester')) {
+                        document.getElementById('filterSemester').value = filterValues.semester || '';
+                    }
+                    if (document.getElementById('filterYear')) {
+                        document.getElementById('filterYear').value = filterValues.year || '';
+                    }
+                    if (document.getElementById('filterStatus')) {
+                        document.getElementById('filterStatus').value = filterValues.status || '';
+                    }
+                    if (document.getElementById('searchText')) {
+                        document.getElementById('searchText').value = filterValues.search || '';
+                    }
+
+                    // Apply the filters immediately if any are set
+                    if (filterValues.course || filterValues.semester ||
+                        filterValues.year || filterValues.status || filterValues.search) {
+                        applyFilters();
+                    }
+                } catch (e) {
+                    console.error("Error restoring filter state:", e);
+                    localStorage.removeItem('fcarFilterValues');
+                }
+            }
+        }
+
+        // Apply filters to FCAR list
+        function applyFilters() {
+            const course = document.getElementById('filterCourse').value;
+            const semester = document.getElementById('filterSemester').value;
+            const year = document.getElementById('filterYear').value;
+            const status = document.getElementById('filterStatus').value;
+            const searchText = document.getElementById('searchText').value.toLowerCase();
+
+            const fcarItems = document.querySelectorAll('#fcarList .fcar-item');
+            let visibleCount = 0;
+
+            fcarItems.forEach(function(item) {
+                const itemCourse = item.getAttribute('data-course');
+                const itemSemester = item.getAttribute('data-semester');
+                const itemYear = item.getAttribute('data-year');
+                const itemStatus = item.getAttribute('data-status');
+                const itemText = item.innerText.toLowerCase();
+
+                // Check if item matches all selected filters
+                const matchesCourse = !course || itemCourse === course;
+                const matchesSemester = !semester || itemSemester === semester;
+                const matchesYear = !year || itemYear === year;
+                const matchesStatus = !status || itemStatus === status;
+                const matchesSearch = !searchText || itemText.includes(searchText);
+
+                // Show or hide based on filter matches
+                if (matchesCourse && matchesSemester && matchesYear && matchesStatus && matchesSearch) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Update the filter count display
+            const filterCount = document.getElementById('filterCount');
+            if (filterCount) {
+                if (visibleCount === fcarItems.length) {
+                    filterCount.textContent = `Showing all ${visibleCount} FCARs`;
+                } else {
+                    filterCount.textContent = `Showing ${visibleCount} of ${fcarItems.length} FCARs`;
+                }
+
+                // FIXED: Force apply styles to ensure proper display
+                filterCount.style.backgroundColor = '#e6f4ee';
+                filterCount.style.border = '1px solid #aad9c5';
+                filterCount.style.padding = '10px';
+                filterCount.style.marginBottom = '15px';
+                filterCount.style.borderRadius = '4px';
+                filterCount.style.fontWeight = 'bold';
+                filterCount.style.color = '#333';
+            }
+
+            // Save filter state
+            saveFilterState();
+        }
+
+        // Reset all filters
+        function resetFilters() {
+            // Reset all filter inputs
+            document.getElementById('filterCourse').value = '';
+            document.getElementById('filterSemester').value = '';
+            document.getElementById('filterYear').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('searchText').value = '';
+
+            // Show all FCAR items
+            const fcarItems = document.querySelectorAll('#fcarList .fcar-item');
+            fcarItems.forEach(function(item) {
+                item.style.display = '';
+            });
+
+            // Update the filter count display
+            const filterCount = document.getElementById('filterCount');
+            if (filterCount) {
+                filterCount.textContent = `Showing all ${fcarItems.length} FCARs`;
+
+                // FIXED: Force apply styles to ensure proper display
+                filterCount.style.backgroundColor = '#e6f4ee';
+                filterCount.style.border = '1px solid #aad9c5';
+                filterCount.style.padding = '10px';
+                filterCount.style.marginBottom = '15px';
+                filterCount.style.borderRadius = '4px';
+                filterCount.style.fontWeight = 'bold';
+                filterCount.style.color = '#333';
+            }
+
+            // Clear saved filter state
+            localStorage.removeItem('fcarFilterValues');
         }
     </script>
 </div>

@@ -19,21 +19,46 @@
         <servlet-name>AdminServlet</servlet-name>
         <servlet-class>com.ABETAppTeam.AdminServlet</servlet-class>
     </servlet>
+
+    <servlet>
+        <servlet-name>ImportFCARServlet</servlet-name>
+        <servlet-class>com.ABETAppTeam.ImportFCARServlet</servlet-class>
+    </servlet>
     
     <servlet>
         <servlet-name>ProfessorServlet</servlet-name>
         <servlet-class>com.ABETAppTeam.ProfessorServlet</servlet-class>
     </servlet>
 
+    <servlet>
+        <servlet-name>ReportServlet</servlet-name>
+        <servlet-class>com.ABETAppTeam.ReportServlet</servlet-class>
+    </servlet>
+    
+    <servlet>
+        <servlet-name>SettingsServlet</servlet-name>
+        <servlet-class>com.ABETAppTeam.SettingsServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ViewFCARServlet</servlet-name>
+        <servlet-class>com.ABETAppTeam.ViewFCARServlet</servlet-class>
+    </servlet>
+    
     <!-- Servlet Mappings -->
     <servlet-mapping>
         <servlet-name>IndexServlet</servlet-name>
         <url-pattern>/index</url-pattern>
     </servlet-mapping>
-    
+
     <servlet-mapping>
         <servlet-name>AdminServlet</servlet-name>
         <url-pattern>/admin</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ImportFCARServlet</servlet-name>
+        <url-pattern>/import</url-pattern>
     </servlet-mapping>
     
     <servlet-mapping>
@@ -41,7 +66,35 @@
         <url-pattern>/professor</url-pattern>
     </servlet-mapping>
 
+    <servlet-mapping>
+        <servlet-name>ReportServlet</servlet-name>
+        <url-pattern>/reports</url-pattern>
+    </servlet-mapping>
+    
+    <servlet-mapping>
+        <servlet-name>SettingsServlet</servlet-name>
+        <url-pattern>/settings</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ViewFCARServlet</servlet-name>
+        <url-pattern>/view</url-pattern>
+    </servlet-mapping>
+
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
+
+    <error-page>
+        <error-code>403</error-code>
+        <location>/WEB-INF/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>404</error-code>
+        <location>/WEB-INF/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/WEB-INF/error.jsp</location>
+    </error-page>
 </web-app>

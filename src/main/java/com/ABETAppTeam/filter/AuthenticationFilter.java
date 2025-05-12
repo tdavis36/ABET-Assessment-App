@@ -1,8 +1,7 @@
 package com.ABETAppTeam.filter;
 
-import com.ABETAppTeam.Admin;
-import com.ABETAppTeam.Professor;
-import com.ABETAppTeam.User;
+import com.ABETAppTeam.model.Admin;
+import com.ABETAppTeam.model.User;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -20,7 +19,7 @@ import java.io.IOException;
 /**
  * Filter to protect routes that require authentication
  */
-@WebFilter(urlPatterns = {"/AdminServlet/*", "/ProfessorServlet/*", "/ViewFCARServlet/*", "/ReportsServlet/*"})
+@WebFilter(urlPatterns = {"/AdminServlet/*", "/ProfessorServlet/*", "/ViewFCARServlet/*", "/ReportServlet/*"})
 public class AuthenticationFilter implements Filter {
 
     @Override
@@ -50,6 +49,22 @@ public class AuthenticationFilter implements Filter {
                 // User is not an admin but trying to access admin resources
                 httpResponse.sendRedirect(httpRequest.getContextPath() + "/index");
                 return;
+            }
+
+            if (requestURI.contains("/ReportServlet")) {
+                // For report generation, we should allow both admins and professors,
+                // but possibly with different levels of access
+                String action = httpRequest.getParameter("action");
+
+                // Actions that only admins can perform
+                boolean adminOnlyAction = action != null &&
+                        (action.equals("deleteReport") ||
+                                action.equals("modifyReportSettings"));
+
+                if (adminOnlyAction && !(user instanceof Admin)) {
+                    httpResponse.sendRedirect(httpRequest.getContextPath() + "/index");
+                    return;
+                }
             }
 
             // Allow the request to proceed
