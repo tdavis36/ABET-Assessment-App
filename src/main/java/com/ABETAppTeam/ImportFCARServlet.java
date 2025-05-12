@@ -257,7 +257,7 @@ public class ImportFCARServlet extends BaseServlet {
      * @param currentUser  The current user
      * @return List of FCAR objects created from the CSV data
      */
-    private List<FCAR> processCSVFile(Part filePart, boolean hasHeaderRow, User currentUser) throws IOException {
+    List<FCAR> processCSVFile(Part filePart, boolean hasHeaderRow, User currentUser) throws IOException {
         List<FCAR> fcars = new ArrayList<>();
         Map<String, Integer> columnMap = new HashMap<>();
         StringBuilder errorLog = new StringBuilder();
@@ -530,7 +530,7 @@ public class ImportFCARServlet extends BaseServlet {
      * @param part The Part containing the file
      * @return The file name
      */
-    private String getFileName (Part part){
+    String getFileName(Part part){
         String contentDisposition = part.getHeader("content-disposition");
         String[] elements = contentDisposition.split(";");
 
