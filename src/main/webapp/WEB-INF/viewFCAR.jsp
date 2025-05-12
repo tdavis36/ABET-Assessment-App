@@ -334,7 +334,6 @@
                                 </p>
                             </div>
                             <div>
-                                <!-- FIXED: Added this parameter and return false to toggleDetails -->
                                 <button class="btn toggle-details" onclick="toggleDetails('fcar-${selectedFCAR.fcarId}', this); return false;">Show Details</button>
                                 <c:if test="${user.userId == selectedFCAR.instructorId || user.roleId == 1}">
                                     <a href="${pageContext.request.contextPath}/view?action=edit&fcarId=${selectedFCAR.fcarId}" class="btn">Edit FCAR</a>
@@ -400,8 +399,165 @@
                                         </c:if>
                                     </div>
 
-                                        <%-- Rest of the assessment methods content - this is unchanged --%>
-                                        <%-- ... existing content ... --%>
+                                        <%-- Display Student Learning Outcomes and Indicators --%>
+                                    <c:if test="${methodsMap['selectedOutcomes'] != null}">
+                                        <div class="form-group">
+                                            <strong>Student Learning Outcomes and Indicators:</strong>
+                                            <div class="content-box">
+                                                <c:set var="outcomeIds" value="${fn:split(methodsMap['selectedOutcomes'], ',')}" />
+                                                <table class="data-table">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>Outcome</th>
+                                                        <th>Indicators</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <c:forEach var="outcomeId" items="${outcomeIds}">
+                                                        <tr>
+                                                            <td>
+                                                                    <%-- Try to get outcome description from outcomeMap --%>
+                                                                <c:choose>
+                                                                    <c:when test="${outcomeMap != null && outcomeMap[outcomeId] != null}">
+                                                                        Outcome ${outcomeId}: ${outcomeMap[outcomeId].description}
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        Outcome ${outcomeId}
+                                                                    </c:otherwise>
+                                                                </c:choose>
+                                                            </td>
+                                                            <td>
+                                                                    <%-- Look for indicators related to this outcome --%>
+                                                                <c:set var="hasIndicators" value="false" />
+                                                                <c:forEach var="entry" items="${methodsMap}">
+                                                                    <c:if test="${fn:startsWith(entry.key, 'indicator_'.concat(outcomeId))}">
+                                                                        <c:set var="hasIndicators" value="true" />
+                                                                        <div>
+                                                                                <%-- Extract indicator number from the key --%>
+                                                                            <c:set var="indicatorKey" value="${entry.key}" />
+                                                                            <c:set var="indicatorNum" value="${fn:substringAfter(indicatorKey, 'indicator_'.concat(outcomeId).concat('.'))}" />
+                                                                            <c:choose>
+                                                                                <c:when test="${indicatorMap != null && indicatorMap[outcomeId] != null}">
+                                                                                    <c:forEach var="indicator" items="${indicatorMap[outcomeId]}">
+                                                                                        <c:if test="${indicator.number == indicatorNum}">
+                                                                                            ${outcomeId}.${indicatorNum}: ${indicator.description}
+                                                                                        </c:if>
+                                                                                    </c:forEach>
+                                                                                </c:when>
+                                                                                <c:otherwise>
+                                                                                    Indicator ${outcomeId}.${indicatorNum}
+                                                                                </c:otherwise>
+                                                                            </c:choose>
+                                                                        </div>
+                                                                    </c:if>
+                                                                </c:forEach>
+                                                                <c:if test="${!hasIndicators}">
+                                                                    No specific indicators selected
+                                                                </c:if>
+                                                            </td>
+                                                        </tr>
+                                                    </c:forEach>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </c:if>
+
+                                        <%-- Display other assessment method entries that don't fit into the categories above --%>
+                                    <c:set var="hasOtherEntries" value="false" />
+                                    <c:forEach var="method" items="${methodsMap}">
+                                        <c:if test="${!fn:startsWith(method.key, 'level') &&
+                          method.key != 'assessmentDescription' &&
+                          method.key != 'workUsed' &&
+                          method.key != 'targetGoal' &&
+                          method.key != 'selectedOutcomes' &&
+                          !fn:startsWith(method.key, 'indicator_')}">
+                                            <c:set var="hasOtherEntries" value="true" />
+                                        </c:if>
+                                    </c:forEach>
+
+                                    <c:if test="${hasOtherEntries}">
+                                        <div class="form-group">
+                                            <strong>Other Assessment Details:</strong>
+                                            <div class="content-box">
+                                                <c:forEach var="method" items="${methodsMap}">
+                                                    <c:if test="${!fn:startsWith(method.key, 'level') &&
+                                      method.key != 'assessmentDescription' &&
+                                      method.key != 'workUsed' &&
+                                      method.key != 'targetGoal' &&
+                                      method.key != 'selectedOutcomes' &&
+                                      !fn:startsWith(method.key, 'indicator_')}">
+                                                        <p><strong>${fn:replace(method.key, '_', ' ')}:</strong> ${method.value}</p>
+                                                    </c:if>
+                                                </c:forEach>
+                                            </div>
+                                        </div>
+                                    </c:if>
+
+                                        <%-- Now handle the level entries in a structured way --%>
+                                    <c:if test="${methodsMap['level1'] != null || methodsMap['level2'] != null || methodsMap['level3'] != null}">
+                                        <div class="form-group">
+                                            <strong>Achievement Levels:</strong>
+                                            <div class="content-box">
+                                                <table class="achievement-table">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>Exceeds Expectations</th>
+                                                        <th>Meets Expectations</th>
+                                                        <th>Below Expectations</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <tr>
+                                                        <td>${methodsMap['level3'] != null ? methodsMap['level3'] : '0'}</td>
+                                                        <td>${methodsMap['level2'] != null ? methodsMap['level2'] : '0'}</td>
+                                                        <td>${methodsMap['level1'] != null ? methodsMap['level1'] : '0'}</td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
+
+                                                    <%-- Calculate total and percentages --%>
+                                                <c:set var="level1" value="${methodsMap['level1'] != null ? methodsMap['level1'] : 0}" />
+                                                <c:set var="level2" value="${methodsMap['level2'] != null ? methodsMap['level2'] : 0}" />
+                                                <c:set var="level3" value="${methodsMap['level3'] != null ? methodsMap['level3'] : 0}" />
+
+                                                <c:set var="totalStudents" value="${level1 + level2 + level3}" />
+                                                <c:set var="studentsMetTarget" value="${level2 + level3}" />
+                                                <c:set var="targetGoal" value="${methodsMap['targetGoal'] != null ? methodsMap['targetGoal'] : 70}" />
+
+                                                <c:if test="${totalStudents > 0}">
+                                                    <div class="results-summary">
+                                                        <p>Total Students: ${totalStudents}</p>
+                                                        <p>Students Meeting or Exceeding Expectations: ${studentsMetTarget} (${Math.round(studentsMetTarget * 100 / totalStudents)}%)</p>
+                                                        <p>Target Goal: ${targetGoal}% of students meet or exceed expectations</p>
+                                                        <p>
+                                                            <strong>Target Met: </strong>
+                                                            <span class="${(studentsMetTarget * 100 / totalStudents) >= targetGoal ? 'status-met' : 'status-not-met'}">
+                                                                    ${(studentsMetTarget * 100 / totalStudents) >= targetGoal ? 'Yes' : 'No'}
+                                                            </span>
+                                                        </p>
+                                                    </div>
+                                                </c:if>
+                                            </div>
+                                        </div>
+                                    </c:if>
+                                </div>
+                            </c:if>
+                            <c:if test="${(studentOutcomes != null && not empty studentOutcomes) || (selectedFCAR != null && selectedFCAR.studentOutcomes != null && not empty selectedFCAR.studentOutcomes)}">
+                                <div class="fcar-section">
+                                    <h4>Student Outcomes</h4>
+                                    <c:choose>
+                                        <c:when test="${studentOutcomes != null && not empty studentOutcomes}">
+                                            <c:forEach var="outcome" items="${studentOutcomes}">
+                                                <p><strong>${fn:replace(outcome.key, '_', ' ')}:</strong> ${outcome.value}</p>
+                                            </c:forEach>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach var="outcome" items="${selectedFCAR.studentOutcomes}">
+                                                <p><strong>${fn:replace(outcome.key, '_', ' ')}:</strong> ${outcome.value}</p>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </c:if>
 

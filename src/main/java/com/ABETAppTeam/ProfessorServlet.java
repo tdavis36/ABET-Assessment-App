@@ -20,12 +20,14 @@ import com.ABETAppTeam.util.AppUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 @WebServlet (value = "/ProfessorServlet", urlPatterns = "/professor")
+@MultipartConfig
 public class ProfessorServlet extends BaseServlet {
     @Serial
     private static final long serialVersionUID = 1L;

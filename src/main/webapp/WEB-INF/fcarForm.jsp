@@ -16,7 +16,7 @@
     <h1>Faculty Course Assessment Report (FCAR)</h1>
     <p>Complete the assessment form below for the course.</p>
 
-    <form action="${pageContext.request.contextPath}/${sessionScope.userRole == 'admin' ? 'AdminServlet' : 'ProfessorServlet'}" method="post" id="fcarForm">
+    <form action="${pageContext.request.contextPath}/${sessionScope.userRole == 'admin' ? 'admin' : 'professor'}" method="post" id="fcarForm">
         <input type="hidden" name="action" value="saveFCAR"/>
         <input type="hidden" name="saveAction" id="saveActionInput" value="save"/>
 
@@ -30,7 +30,7 @@
 
             <div class="form-group">
                 <label for="courseId">Course:</label>
-                <input type="text" id="courseId" name="courseId" value="${not empty fcar ? fcar.courseCode : ''}" required />
+                <input type="text" id="courseId" name="courseCode" value="${not empty fcar ? fcar.courseCode : ''}" required />
             </div>
 
             <div class="form-group">
