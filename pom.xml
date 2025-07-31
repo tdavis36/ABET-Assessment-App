@@ -25,32 +25,99 @@
         <flyway.version>11.5.0</flyway.version>
         <mariadb.version>3.4.1</mariadb.version>
 
-        <!-- App config -->
+        <!-- Default app config -->
         <app.port>8081</app.port>
+        <app.context.path>/</app.context.path>
+        <jetty.scan.interval>3</jetty.scan.interval>
 
-        <!-- Env config -->
-        <db.name>${env.DB_NAME}</db.name>
-        <db.username>${env.DB_USERNAME}</db.username>
-        <db.password>${env.DB_PASSWORD}</db.password>
-        <db.host>${env.DB_HOST}</db.host>
-        <db.port>${env.DB_PORT}</db.port>
-
+        <!-- Default database config (fallbacks if .env not available) -->
         <db.name>abetapp</db.name>
         <db.username>user</db.username>
         <db.password>pass</db.password>
-        <db.url>jdbc:mariadb://localhost:3306/${db.name}</db.url>
+        <db.host>localhost</db.host>
+        <db.port>3306</db.port>
+        <db.url>jdbc:mariadb://${db.host}:${db.port}/${db.name}</db.url>
 
+        <!-- Environment variable overrides with fallbacks -->
+        <env.DB_NAME>${db.name}</env.DB_NAME>
+        <env.DB_USERNAME>${db.username}</env.DB_USERNAME>
+        <env.DB_PASSWORD>${db.password}</env.DB_PASSWORD>
+        <env.DB_HOST>${db.host}</env.DB_HOST>
+        <env.DB_PORT>${db.port}</env.DB_PORT>
+
+        <!-- Logging levels -->
+        <log.level.root>INFO</log.level.root>
+        <log.level.app>DEBUG</log.level.app>
+        <log.level.jetty>INFO</log.level.jetty>
+        <log.level.hibernate>WARN</log.level.hibernate>
+
+        <!-- JVM arguments with sensible defaults for development -->
+        <jetty.jvmArgs>-Xmx1024m -Xms256m -XX:+UseG1GC</jetty.jvmArgs>
+
+        <!-- Default commands (will be overridden by platform profiles) -->
+        <python.command>python</python.command>
+        <docker.compose.command>docker compose</docker.compose.command>
     </properties>
 
     <profiles>
-        <!-- Environment profiles -->
+        <!-- =========================== -->
+        <!-- PLATFORM DETECTION PROFILES -->
+        <!-- =========================== -->
+
+        <!-- Windows Platform -->
         <profile>
-            <id>dev</id>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
             <properties>
-                <environment>dev</environment>
+                <python.command>py</python.command>
+                <docker.compose.command>docker-compose</docker.compose.command>
+                <maven.command>mvn.cmd</maven.command>
+                <platform.name>windows</platform.name>
             </properties>
         </profile>
 
+        <!-- macOS Platform -->
+        <profile>
+            <id>mac</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <properties>
+                <python.command>python3</python.command>
+                <docker.compose.command>docker compose</docker.compose.command>
+                <maven.command>mvn</maven.command>
+                <platform.name>mac</platform.name>
+            </properties>
+        </profile>
+
+        <!-- Unix/Linux Platform -->
+        <profile>
+            <id>unix</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>!Mac OS X</name>
+                </os>
+            </activation>
+            <properties>
+                <python.command>python3</python.command>
+                <docker.compose.command>docker compose</docker.compose.command>
+                <maven.command>mvn</maven.command>
+                <platform.name>linux</platform.name>
+            </properties>
+        </profile>
+
+        <!-- =========================== -->
+        <!-- ENVIRONMENT PROFILES        -->
+        <!-- =========================== -->
+
+        <!-- Local Development Profile (Default) -->
         <profile>
             <id>local</id>
             <activation>
@@ -58,13 +125,130 @@
             </activation>
             <properties>
                 <environment>local</environment>
+                <app.port>8081</app.port>
+                <jetty.scan.interval>3</jetty.scan.interval>
+                <log.level.root>DEBUG</log.level.root>
+                <log.level.app>DEBUG</log.level.app>
+                <log.level.jetty>INFO</log.level.jetty>
             </properties>
         </profile>
 
+        <!-- Development Profile -->
+        <profile>
+            <id>dev</id>
+            <properties>
+                <environment>dev</environment>
+                <app.port>8082</app.port>
+                <jetty.scan.interval>5</jetty.scan.interval>
+                <log.level.root>INFO</log.level.root>
+                <log.level.app>DEBUG</log.level.app>
+                <log.level.jetty>WARN</log.level.jetty>
+
+                <!-- Dev database settings -->
+                <db.name>abetapp_dev</db.name>
+                <db.username>dev_user</db.username>
+                <db.password>dev_pass</db.password>
+                <db.host>localhost</db.host>
+                <db.port>3306</db.port>
+            </properties>
+        </profile>
+
+        <!-- Testing Profile -->
+        <profile>
+            <id>test</id>
+            <properties>
+                <environment>test</environment>
+                <app.port>8083</app.port>
+                <log.level.root>WARN</log.level.root>
+                <log.level.app>INFO</log.level.app>
+                <log.level.jetty>ERROR</log.level.jetty>
+
+                <!-- Test database settings (uses H2 in-memory) -->
+                <db.name>abetapp_test</db.name>
+                <db.username>test</db.username>
+                <db.password>test</db.password>
+                <db.host>localhost</db.host>
+                <db.port>3306</db.port>
+                <db.url>jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL</db.url>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- Enhanced test configuration -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/*Test.java</include>
+                                <include>**/*Tests.java</include>
+                                <include>**/*IT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <environment>test</environment>
+                                <db.url>${db.url}</db.url>
+                                <log.level.root>${log.level.root}</log.level.root>
+                            </systemPropertyVariables>
+                            <argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Production Profile -->
+        <profile>
+            <id>prod</id>
+            <properties>
+                <environment>prod</environment>
+                <app.port>8080</app.port>
+                <jetty.scan.interval>0</jetty.scan.interval>
+                <log.level.root>WARN</log.level.root>
+                <log.level.app>INFO</log.level.app>
+                <log.level.jetty>ERROR</log.level.jetty>
+
+                <!-- Production database settings -->
+                <db.name>abetapp_prod</db.name>
+                <!-- These should be set via environment variables in production -->
+                <db.username>${env.DB_USERNAME}</db.username>
+                <db.password>${env.DB_PASSWORD}</db.password>
+                <db.host>${env.DB_HOST}</db.host>
+                <db.port>${env.DB_PORT}</db.port>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- Skip tests in production builds -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skipTests>true</skipTests>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- =========================== -->
+        <!-- FEATURE PROFILES            -->
+        <!-- =========================== -->
+
+        <!-- Fast Development Profile -->
+        <profile>
+            <id>fast-dev</id>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
+                <jetty.scan.interval>1</jetty.scan.interval>
+                <maven.compiler.debug>false</maven.compiler.debug>
+                <!-- Lighter JVM settings for faster startup -->
+                <jetty.jvmArgs>-Xmx512m -Xms128m -XX:TieredStopAtLevel=1</jetty.jvmArgs>
+            </properties>
+        </profile>
+
+        <!-- Database Management Profile -->
         <profile>
             <id>db-manage</id>
             <properties>
-                <!-- Overridable via -Ddb.action=migrate|info|start|stop -->
+                <!-- Overridable via -Ddb.action=migrate|info|clean|baseline -->
                 <db.action>info</db.action>
             </properties>
             <build>
@@ -81,7 +265,7 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>python</executable>
+                                    <executable>${python.command}</executable>
                                     <arguments>
                                         <argument>${project.basedir}/setup.py</argument>
                                         <argument>db</argument>
@@ -93,6 +277,160 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <!-- Integration Testing Profile -->
+        <profile>
+            <id>integration-test</id>
+            <properties>
+                <!-- Use separate database for integration tests -->
+                <db.name>abetapp_integration_test</db.name>
+                <db.url>jdbc:mariadb://${db.host}:${db.port}/${db.name}</db.url>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- Configure surefire to run integration tests -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <!-- Skip regular unit tests during integration test phase -->
+                            <execution>
+                                <id>default-test</id>
+                                <configuration>
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                            <!-- Run integration tests -->
+                            <execution>
+                                <id>integration-tests</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <includes>
+                                        <include>**/*IT.java</include>
+                                        <include>**/*IntegrationTest.java</include>
+                                    </includes>
+                                    <excludes>
+                                        <exclude>**/*Test.java</exclude>
+                                        <exclude>**/*Tests.java</exclude>
+                                    </excludes>
+                                    <systemPropertyVariables>
+                                        <environment>integration-test</environment>
+                                        <db.url>${db.url}</db.url>
+                                        <db.name>${db.name}</db.name>
+                                        <db.username>${db.username}</db.username>
+                                        <db.password>${db.password}</db.password>
+                                    </systemPropertyVariables>
+                                    <argLine>-Xmx1024m</argLine>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Start database before integration tests -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>start-db-for-integration-tests</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${python.command}</executable>
+                                    <arguments>
+                                        <argument>${project.basedir}/setup.py</argument>
+                                        <argument>db</argument>
+                                        <argument>start</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>run-db-migrations-for-integration-tests</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${python.command}</executable>
+                                    <arguments>
+                                        <argument>${project.basedir}/setup.py</argument>
+                                        <argument>db</argument>
+                                        <argument>migrate</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Code Quality Profile -->
+        <profile>
+            <id>quality</id>
+            <build>
+                <plugins>
+                    <!-- Enhanced JaCoCo configuration -->
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>check</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- SpotBugs for static analysis -->
+                    <plugin>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs-maven-plugin</artifactId>
+                        <version>4.8.6.0</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Debug Profile -->
+        <profile>
+            <id>debug</id>
+            <properties>
+                <!-- Debug JVM args include debugging + reasonable memory -->
+                <jetty.jvmArgs>-Xmx1024m -Xms256m -XX:+UseG1GC -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005</jetty.jvmArgs>
+                <log.level.root>DEBUG</log.level.root>
+                <log.level.app>TRACE</log.level.app>
+            </properties>
         </profile>
     </profiles>
 
@@ -303,7 +641,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Read .env -->
+            <!-- Read .env file and make properties available -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>properties-maven-plugin</artifactId>
@@ -316,7 +654,9 @@
                         </goals>
                         <configuration>
                             <files>
+                                <!-- Try .env first, then local.properties -->
                                 <file>.env</file>
+                                <file>local.properties</file>
                             </files>
                             <quiet>true</quiet>
                         </configuration>
@@ -349,19 +689,27 @@
                 <version>${jetty.version}</version>
                 <configuration>
                     <webApp>
-                        <contextPath>/</contextPath>
+                        <contextPath>${app.context.path}</contextPath>
                     </webApp>
                     <httpConnector>
                         <port>${app.port}</port>
                     </httpConnector>
                     <!-- Tells Jetty to watch for changes; re-deploy on code changes -->
-                    <scan>3</scan>
+                    <scan>${jetty.scan.interval}</scan>
                     <modules>
                         <!-- ensures JSP is loaded -->
                         <module>jsp</module>
                     </modules>
-                    <jvmArgs>-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=ERROR</jvmArgs>
+                    <jvmArgs>-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=ERROR ${jetty.jvmArgs}</jvmArgs>
                     <systemProperties>
+                        <systemProperty>
+                            <name>log.level.root</name>
+                            <value>${log.level.root}</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>log.level.app</name>
+                            <value>${log.level.app}</value>
+                        </systemProperty>
                         <systemProperty>
                             <name>java.util.logging.config.file</name>
                             <value>${project.basedir}/src/main/resources/logging.properties</value>
@@ -380,7 +728,7 @@
                         </systemProperty>
                         <systemProperty>
                             <name>org.eclipse.jetty.util.log.LEVEL</name>
-                            <value>INFO</value>
+                            <value>${log.level.jetty}</value>
                         </systemProperty>
                         <systemProperty>
                             <name>java.util.logging.config.file</name>
@@ -408,6 +756,9 @@
                         <include>**/*Tests.java</include>
                     </includes>
                     <argLine>-Xmx512m</argLine>
+                    <systemPropertyVariables>
+                        <log.level.root>${log.level.root}</log.level.root>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
 

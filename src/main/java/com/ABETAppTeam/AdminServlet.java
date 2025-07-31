@@ -3,25 +3,10 @@ package com.ABETAppTeam;
 import java.io.IOException;
 import java.io.PrintWriter;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import com.ABETAppTeam.controller.CourseController;
-import com.ABETAppTeam.controller.DepartmentController;
-import com.ABETAppTeam.controller.DisplaySystemController;
-import com.ABETAppTeam.controller.FCARController;
-import com.ABETAppTeam.controller.OutcomeController;
-import com.ABETAppTeam.controller.UserController;
-import com.ABETAppTeam.model.Admin;
-import com.ABETAppTeam.model.Course;
-import com.ABETAppTeam.model.Department;
-import com.ABETAppTeam.model.FCAR;
-import com.ABETAppTeam.model.Professor;
-import com.ABETAppTeam.model.User;
+import com.ABETAppTeam.controller.*;
+import com.ABETAppTeam.model.*;
 import com.ABETAppTeam.service.LoggingService;
 
 import jakarta.servlet.ServletException;
@@ -30,6 +15,26 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+/**
+ * Administrative servlet that handles all admin-related operations for the ABET Assessment Application.
+ * This servlet provides functionality for managing users, courses, departments, and FCARs (Faculty Course
+ * Assessment Reports), and serves as the primary interface for administrative tasks.
+ *
+ * <p>Key functionalities include:</p>
+ * <ul>
+ *   <li>User management (create, edit, toggle status)</li>
+ *   <li>FCAR lifecycle management (create, update, approve, reject, delete)</li>
+ *   <li>Administrative dashboard with statistics and data visualization</li>
+ *   <li>AJAX endpoints for dynamic frontend interactions</li>
+ *   <li>Access control ensuring only admin users can perform operations</li>
+ * </ul>
+ *
+ * <p>This servlet extends {@link BaseServlet} to inherit common functionality and security features.</p>
+ *
+ * @author ABETAppTeam
+ * @version 1.0
+ * @since 0.0.1
+ */
 @WebServlet(value = "/AdminServlet", urlPatterns ="/admin")
 public class AdminServlet extends BaseServlet {
 
@@ -484,7 +489,7 @@ public class AdminServlet extends BaseServlet {
                 // If user is a professor, update assigned courses
                 if (user instanceof Professor) {
                     String[] assignedCourses = request.getParameterValues("assignedCourses");
-                    List<String> courseCodes = assignedCourses != null ? 
+                    List<String> courseCodes = assignedCourses != null ?
                             Arrays.asList(assignedCourses) : new ArrayList<>();
                     userController.assignCoursesToProfessor(userId, courseCodes);
                     logger.info("Updated course assignments for professor ID {}", userId);
@@ -785,7 +790,7 @@ public class AdminServlet extends BaseServlet {
 
     /**
      * Handles AJAX requests for a professor's assigned courses
-     * 
+     *
      * @param request  HTTP request
      * @param response HTTP response
      * @throws IOException If an I/O error occurs
@@ -1221,9 +1226,28 @@ public class AdminServlet extends BaseServlet {
     }
 
     /**
-     * Handles AJAX requests to save or submit an FCAR
+     * Handles AJAX requests to save or submit FCAR data with comprehensive validation and processing.
+     *
+     * <p>This method supports both saving FCARs as drafts and submitting them for review.
+     * It processes complex FCAR data including:</p>
+     * <ul>
+     *   <li>Basic FCAR information (course, professor, semester, year)</li>
+     *   <li>Assessment methods and achievement level data</li>
+     *   <li>Learning outcome selections and target goals</li>
+     *   <li>Student outcome summaries</li>
+     *   <li>Improvement action plans</li>
+     * </ul>
+     *
+     * <p>The method includes comprehensive access control, ensuring only admins can
+     * create or modify FCARs through this interface.</p>
+     *
+     * @param request  the HttpServletRequest containing FCAR data and save action
+     * @param response the HttpServletResponse for sending JSON result
+     * @param action   the specific action (saveFCAR or submitFCAR)
+     * @throws IOException      if JSON response operations fail
+     * @throws ServletException if FCAR processing operations fail
      */
-    private void handleAjaxSaveOrSubmitFCAR(HttpServletRequest request, HttpServletResponse response, String action) 
+    private void handleAjaxSaveOrSubmitFCAR(HttpServletRequest request, HttpServletResponse response, String action)
             throws IOException, ServletException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
@@ -1357,7 +1381,7 @@ public class AdminServlet extends BaseServlet {
                 // Send JSON response
                 sendJsonResponse(response, responseData);
             } else {
-                sendJsonError(response, "Failed to " + ("submit".equals(saveAction) ? "submit" : "save") + " FCAR", 
+                sendJsonError(response, "Failed to " + ("submit".equals(saveAction) ? "submit" : "save") + " FCAR",
                         HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
         } catch (SecurityException e) {
@@ -1374,7 +1398,15 @@ public class AdminServlet extends BaseServlet {
     }
 
     /**
-     * Sends a JSON error response
+     * Sends a standardized JSON error response with the specified message and HTTP status code.
+     *
+     * <p>This utility method ensures consistent error response formatting across all AJAX endpoints.
+     * The response includes both a success flag and error message for client-side processing.</p>
+     *
+     * @param response   the HttpServletResponse to write the error to
+     * @param message    the error message to include in the response
+     * @param statusCode the HTTP status code to set
+     * @throws IOException if JSON writing operations fail
      */
     private void sendJsonError(HttpServletResponse response, String message, int statusCode) throws IOException {
         response.setStatus(statusCode);

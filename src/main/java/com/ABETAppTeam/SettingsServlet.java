@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class SettingsServlet extends BaseServlet {
     @Serial
     private static final long serialVersionUID = 1L;
-    private static final String ENV_FILE_PATH = ".env";
+    private static final String ENV_FILE_PATH = "local.properties";
     private static final String DB_PROPERTIES_PATH = "/database.properties";
 
     /**
@@ -215,7 +215,7 @@ public class SettingsServlet extends BaseServlet {
         }
 
         try {
-            // Save to .env file
+            // Save to local.properties file
             saveToEnvFile(host, port, name, username, password);
 
             // Save to database.properties file
@@ -317,13 +317,13 @@ public class SettingsServlet extends BaseServlet {
     }
 
     /**
-     * Save database settings to .env file
+     * Save database settings to local.properties file
      */
     private void saveToEnvFile(String host, String port, String name, String username, String password)
             throws IOException {
         File envFile = new File(ENV_FILE_PATH);
 
-        // Read existing .env file if it exists
+        // Read existing local.properties file if it exists
         Properties envProps = new Properties();
         if (envFile.exists()) {
             try (BufferedReader reader = new BufferedReader(new FileReader(envFile))) {
@@ -346,7 +346,7 @@ public class SettingsServlet extends BaseServlet {
         envProps.setProperty("DB_USERNAME", username);
         envProps.setProperty("DB_PASSWORD", password);
 
-        // Write to .env file
+        // Write to local.properties file
         try (PrintWriter writer = new PrintWriter(new FileWriter(envFile))) {
             writer.println("# Database Configuration");
             writer.println("DB_HOST=" + host);
@@ -406,7 +406,7 @@ public class SettingsServlet extends BaseServlet {
             config.username = System.getenv("DB_USERNAME");
             config.password = System.getenv("DB_PASSWORD");
 
-            // Load from .env file if environment variables are not set
+            // Load from local.properties file if environment variables are not set
             if (config.host == null || config.port == null || config.name == null ||
                     config.username == null || config.password == null) {
 

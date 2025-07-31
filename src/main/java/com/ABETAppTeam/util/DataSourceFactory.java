@@ -104,7 +104,7 @@ public class DataSourceFactory {
     }
 
     /**
-     * Load database configuration from environment variables or .env file
+     * Load database configuration from environment variables or local.properties file
      *
      * @return Database configuration object
      */
@@ -122,12 +122,12 @@ public class DataSourceFactory {
             config.username = System.getenv("DB_USERNAME");
             config.password = System.getenv("DB_PASSWORD");
 
-            // Load from .env file if environment variables are not set
+            // Load from local.properties file if environment variables are not set
             if (config.host == null || config.port == null || config.name == null ||
                     config.username == null || config.password == null) {
 
                 Properties envProps = new Properties();
-                File envFile = new File(".env");
+                File envFile = new File("local.properties");
 
                 if (envFile.exists()) {
                     try (FileInputStream fis = new FileInputStream(envFile)) {
@@ -142,12 +142,12 @@ public class DataSourceFactory {
                             }
                         }
 
-                        logger.debug("Loaded database configuration from .env file");
+                        logger.debug("Loaded database configuration from local.properties file");
                     } catch (IOException e) {
-                        logger.error("Error reading .env file: {}", e.getMessage(), e);
+                        logger.error("Error reading local.properties file: {}", e.getMessage(), e);
                     }
                 } else {
-                    logger.warn("No .env file found at {}. Using default database settings.", envFile.getAbsolutePath());
+                    logger.warn("No local.properties file found at {}. Using default database settings.", envFile.getAbsolutePath());
                 }
 
                 // Set configuration from properties if not set from environment variables

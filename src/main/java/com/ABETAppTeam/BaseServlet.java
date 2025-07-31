@@ -86,7 +86,7 @@ public abstract class BaseServlet extends HttpServlet {
                 AppUtils.debug("No active session found during logout attempt");
             }
 
-            // Set cache control headers using method from BaseServlet
+            // Set cache control headers using a method from BaseServlet
             setCacheControlHeaders(response);
 
             Cookie[] cookies = request.getCookies();
