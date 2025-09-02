@@ -1,0 +1,65 @@
+plugins {
+    id 'org.springframework.boot' version '3.2.0'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id 'java'
+    id 'com.github.node-gradle.node' version '7.0.1'
+}
+
+def skipFrontend = project.hasProperty('skipFrontend') && project.property('skipFrontend') == 'true'
+
+node {
+    version = '18.17.0'
+    npmVersion = '9.6.7'
+    download = true
+    nodeProjectDir = file("${project.projectDir}/frontend")
+}
+
+def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+def npmExecutable = isWindows ? 'npm.cmd' : 'npm'
+
+tasks.register('installFrontendDeps', Exec) {
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'ci'
+    inputs.file('frontend/package-lock.json')
+    outputs.dir('frontend/node_modules')
+}
+
+tasks.register('testFrontend', Exec) {
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'test:unit'
+    onlyIf { !skipFrontend }
+}
+
+tasks.register('buildFrontend', Exec) {
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'build'
+    inputs.files(fileTree("frontend/src"))
+    inputs.file("frontend/package.json")
+    outputs.dir("frontend/dist")
+    onlyIf { !skipFrontend }
+}
+
+tasks.register('copyFrontend', Copy) {
+    dependsOn tasks.buildFrontend
+    from "frontend/dist"
+    into "src/main/resources/static"
+    onlyIf { !skipFrontend }
+}
+
+// Configure main tasks
+tasks.named('test') {
+    if (!skipFrontend) {
+        dependsOn tasks.testFrontend
+    }
+}
+
+tasks.named('processResources') {
+    if (!skipFrontend) {
+        dependsOn tasks.copyFrontend
+    }
+}
