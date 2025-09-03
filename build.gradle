@@ -26,6 +26,12 @@ test {
     jvmArgs '-XX:-UseSharedSpaces'
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 def skipFrontend = project.hasProperty('skipFrontend') && project.property('skipFrontend') == 'true'
 
 node {
