@@ -5,6 +5,13 @@ plugins {
     id 'com.github.node-gradle.node' version '7.0.1'
 }
 
+// Java version configuration
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 repositories {
     mavenCentral()
     gradlePluginPortal()
@@ -15,6 +22,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'        // REST API
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'   // Database access
     implementation 'org.springframework.boot:spring-boot-starter-validation' // Request validation
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'   // Health checks
 
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client' // Database driver
     runtimeOnly 'com.h2database:h2'
@@ -24,12 +32,7 @@ dependencies {
 
 test {
     jvmArgs '-XX:-UseSharedSpaces'
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+    useJUnitPlatform()
 }
 
 def skipFrontend = project.hasProperty('skipFrontend') && project.property('skipFrontend') == 'true'
@@ -89,4 +92,35 @@ tasks.named('processResources') {
     if (!skipFrontend) {
         dependsOn tasks.copyFrontend
     }
+}
+
+// Spring Boot Docker configuration
+bootBuildImage {
+    imageName = "${project.name}:${project.version}"
+    environment = [
+            "BP_JVM_VERSION": "21"
+    ]
+    buildpacks = [
+            "gcr.io/paketo-buildpacks/java"
+    ]
+}
+
+// Docker Compose support
+tasks.register('composeUp', Exec) {
+    description = 'Start services with Docker Compose'
+    executable 'docker-compose'
+    args 'up', '-d'
+}
+
+tasks.register('composeDown', Exec) {
+    description = 'Stop services with Docker Compose'
+    executable 'docker-compose'
+    args 'down'
+}
+
+tasks.register('composeBuild', Exec) {
+    description = 'Build Docker image using Spring Boot buildpack'
+    dependsOn 'bootBuildImage'
+    executable 'docker-compose'
+    args 'build', '--no-cache'
 }

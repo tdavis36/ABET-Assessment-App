@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Database service
+  database:
+    image: mariadb:11.4
+    container_name: abet-database
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-abet_assessment}
+      MYSQL_USER: ${DB_USERNAME:-abet_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-abet_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - abet-network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Application service using Spring Boot's buildpack
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: abet-app
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: jdbc:mariadb://database:3306/${DB_NAME:-abet_assessment}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-abet_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-abet_password}
+      # Spring Boot optimizations
+      SERVER_COMPRESSION_ENABLED: true
+      SERVER_COMPRESSION_MIN_RESPONSE_SIZE: 1024
+      SPRING_WEB_RESOURCES_CACHE_CACHECONTROL_MAX_AGE: 365d
+      SPRING_WEB_RESOURCES_CACHE_CACHECONTROL_CACHE_PUBLIC: true
+      # JVM options
+      JAVA_TOOL_OPTIONS: ${JAVA_OPTS:--Xmx512m -Xms256m -XX:+UseContainerSupport}
+    ports:
+      - "8080:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - abet-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      start_period: 60s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  db_data:
+    driver: local
+
+networks:
+  abet-network:
+    driver: bridge
