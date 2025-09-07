@@ -1,15 +1,15 @@
+# Deployment testing configuration with H2 (no external database)
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      SPRING_PROFILES_ACTIVE: dev-docker
+      SPRING_PROFILES_ACTIVE: dev-docker  # Uses H2 database
     ports:
       - "8080:8080"
     networks:
       - abet-network
-    restart: unless-stopped
 
 networks:
   abet-network:
