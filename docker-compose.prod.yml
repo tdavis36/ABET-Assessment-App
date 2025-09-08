@@ -1,0 +1,65 @@
+services:
+  app:
+    image: ${IMAGE_TAG}
+    container_name: abet-prod
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT_NAME=${ENVIRONMENT_NAME:-production}
+      - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_OPTS=-Xmx1g -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport
+      - SERVER_FORWARD_HEADERS_STRATEGY=framework
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://database:3306/abet_prod
+      - SPRING_DATASOURCE_USERNAME=abet_user
+      - SPRING_DATASOURCE_PASSWORD=${PROD_DB_PASSWORD}
+    ports:
+      - "100.121.66.86:8080:8080"
+    networks:
+      - abet-network
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  database:
+    image: mariadb:11
+    container_name: abet-db-prod
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: abet_prod
+      MYSQL_USER: abet_user
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      # Production database optimizations
+      MYSQL_INITDB_SKIP_TZINFO: 1
+    volumes:
+      - db_data_prod:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "100.121.66.86:3306:3306"
+    networks:
+      - abet-network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    command: >
+      --innodb-buffer-pool-size=512M
+      --innodb-log-file-size=128M
+      --max-connections=200
+      --query-cache-size=64M
+      --query-cache-type=1
+
+volumes:
+  db_data_prod:
+    driver: local
+
+networks:
+  abet-network:
+    driver: bridge
