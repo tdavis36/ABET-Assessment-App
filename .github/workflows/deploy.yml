@@ -14,7 +14,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: tdavis36/ABET-Assessment-App
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   test:
