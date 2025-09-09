@@ -183,7 +183,7 @@ jobs:
             # Pull latest image
             echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
             docker pull ${{ needs.build-and-push.outputs.image }}
-            
+                   
             # Update Docker Compose with Tailscale IP
             sed -i "s/100\.[0-9]*\.[0-9]*\.[0-9]*:8081:8080/${TAILSCALE_IP}:8081:8080/g" docker-compose.staging.yml
             
@@ -254,6 +254,7 @@ jobs:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
           script: |
             echo "TAILSCALE_IP=$(tailscale ip -4)" >> $GITHUB_OUTPUT
 
@@ -265,183 +266,6 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://${{ steps.get-ip.outputs.TAILSCALE_IP }}:8081
         run: |
           echo "E2E tests require Tailscale network access"
-          echo "Staging URL: http://${{ steps.get-ip.outputs.TAILSCALE_IP }}:8081"
-          echo "Skipping E2E tests for security (runner not on Tailscale)"
-          # npx playwright test
-
-  deploy-production:
-    needs: [build-and-push, e2e-tests]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    steps:
-      - name: Deploy to production
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          script: |
-            set -e
-            cd /opt/app
-            
-            echo "Starting production deployment..."
-            
-            # Get network information
-            TAILSCALE_IP=$(tailscale ip -4)
-            PUBLIC_IP=$(curl -s ifconfig.me)
-            
-            echo "Network Info:"
-            echo " Public IP: $PUBLIC_IP"
-            echo " Tailscale IP: $TAILSCALE_IP"
-            
-            # Critical security checks
-            echo "Running pre-deployment security checks..."
-            
-            # Verify Tailscale is running
-            if ! systemctl is-active --quiet tailscaled; then
-                echo "CRITICAL: Tailscale is not running"
-                exit 1
-            fi
-            
-            # Verify firewall is active
-            if ! ufw status | grep -q "Status: active"; then
-                echo "CRITICAL: Firewall is not active"
-                exit 1
-            fi
-            
-            # Verify no services listening on 0.0.0.0
-            if netstat -tlnp | grep -E "0\.0\.0\.0:(8080|8081)"; then
-                echo "CRITICAL: Services listening on all interfaces detected"
-                exit 1
-            fi
-            
-            echo "Pre-deployment security checks passed"
-            
-            # Create backup
-            echo "Creating deployment backup..."
-            BACKUP_DIR="/opt/app/backups/$(date +%Y%m%d_%H%M%S)"
-            mkdir -p $BACKUP_DIR
-            docker-compose -f docker-compose.prod.yml config > $BACKUP_DIR/docker-compose.prod.yml.backup
-            
-            # Pull latest image
-            echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
-            docker pull ${{ needs.build-and-push.outputs.image }}
-            
-            # Update Docker Compose with current Tailscale IP
-            sed -i "s/100\.[0-9]*\.[0-9]*\.[0-9]*:8080:8080/${TAILSCALE_IP}:8080:8080/g" docker-compose.prod.yml
-            sed -i "s/100\.[0-9]*\.[0-9]*\.[0-9]*:3306:3306/${TAILSCALE_IP}:3306:3306/g" docker-compose.prod.yml
-            
-            # Stop existing container gracefully
-            echo "Stopping existing production container..."
-            docker-compose -f docker-compose.prod.yml down --timeout 30 || true
-            
-            # Start new container
-            echo "Starting new production container..."
-            IMAGE_TAG=${{ needs.build-and-push.outputs.image }} docker-compose -f docker-compose.prod.yml up -d
-            
-            # Wait for application to be ready
-            echo "Waiting for application to start..."
-            sleep 45
-            
-            # Health check via Tailscale IP
-            echo "Running production health check..."
-            for i in {1..5}; do
-                if curl -f --max-time 10 http://$TAILSCALE_IP:8080/actuator/health; then
-                    echo "Production health check passed (attempt $i)"
-                    break
-                else
-                    echo "Health check failed (attempt $i/5)"
-                    if [ $i -eq 5 ]; then
-                        echo "Production health check failed after 5 attempts"
-                        echo "Container logs:"
-                        docker logs abet-prod --tail 100
-                        exit 1
-                    fi
-                    sleep 10
-                fi
-            done
-            
-            # Critical security verification
-            echo "Running post-deployment security verification..."
-            
-            # Ensure NOT accessible from public IP
-            if timeout 5 bash -c "</dev/tcp/$PUBLIC_IP/8080" 2>/dev/null; then
-                echo "CRITICAL SECURITY BREACH: Production accessible from public IP!"
-                echo "ROLLING BACK DEPLOYMENT"
-                docker-compose -f docker-compose.prod.yml down
-                exit 1
-            else
-                echo "Security verification passed - production not accessible from public IP"
-            fi
-            
-            # Verify database is also secure
-            if timeout 5 bash -c "</dev/tcp/$PUBLIC_IP/3306" 2>/dev/null; then
-                echo "CRITICAL: Database accessible from public IP!"
-                exit 1
-            else
-                echo "Database security verified"
-            fi
-            
-            # Clean up old images (keep last 3)
-            docker image prune -af --filter "until=72h"
-            
-            # Log successful deployment
-            echo "$(date): Production deployment successful - ${{ needs.build-and-push.outputs.image }}" >> /var/log/deployments.log
-            
-            echo "Production deployment completed successfully!"
-            echo "Access URL : http://$TAILSCALE_IP:8080"
-            echo "Database URL : $TAILSCALE_IP:3306"
-            echo "Deployment digest: ${{ needs.build-and-push.outputs.digest }}"
-
-  notify-team:
-    needs: [deploy-staging, deploy-production]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Get deployment status
-        id: status
-        run: |
-          if [[ "${{ needs.deploy-staging.result }}" == "success" && "${{ needs.deploy-production.result }}" == "success" ]]; then
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "message=Deployment successful to both staging and production" >> $GITHUB_OUTPUT
-          elif [[ "${{ needs.deploy-staging.result }}" == "success" ]]; then
-            echo "status=partial" >> $GITHUB_OUTPUT
-            echo "message=Staging deployed successfully, Production failed" >> $GITHUB_OUTPUT
-          else
-            echo "status=failure" >> $GITHUB_OUTPUT
-            echo "message=Deployment failed" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Get Tailscale URLs
-        id: urls
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          script: |
-            TAILSCALE_IP=$(tailscale ip -4)
-            echo "staging_url=http://$TAILSCALE_IP:8081" >> $GITHUB_OUTPUT
-            echo "production_url=http://$TAILSCALE_IP:8080" >> $GITHUB_OUTPUT
-
-      # Optional: Add Slack/Discord/Email notification here
-      - name: Deployment Summary
-        run: |
-          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Access URLs (Tailscale Network Only)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Staging**: ${{ steps.urls.outputs.staging_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Production**: ${{ steps.urls.outputs.production_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Security Status" >> $GITHUB_STEP_SUMMARY
-          echo "Applications only accessible via Tailscale network" >> $GITHUB_STEP_SUMMARY
-          echo "Zero public internet exposure" >> $GITHUB_STEP_SUMMARY
-          echo "End-to-end encrypted team access" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Build Info" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: ${{ needs.build-and-push.outputs.image }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "Staging URL: $PLAYWRIGHT_BASE_URL"
+          # Uncomment when runner is on Tailscale network:
+          # npx playwright test --config=playwright.config.ts
