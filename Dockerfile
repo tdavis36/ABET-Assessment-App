@@ -8,7 +8,7 @@ WORKDIR /app/frontend
 
 # Copy package files first (for dependency caching)
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 FROM node:22-alpine AS frontend-build
 WORKDIR /app/frontend
