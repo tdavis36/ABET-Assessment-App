@@ -33,9 +33,9 @@ function logAvailableInterfaces(): void {
   // Print available IPs
   console.log('\nAvailable network interfaces:')
   console.log(`  ➜  Selected: localhost - Docker can access via host.docker.internal`)
-  allIPs.forEach(ip => console.log(`  ➜  Available: ${ip}`))
+  allIPs.forEach(ip => console.log(`     Available: ${ip}`))
   if (tailscaleIPs.length > 0) {
-    tailscaleIPs.forEach(ip => console.log(`  ➜  ${ip}`))
+    tailscaleIPs.forEach(ip => console.log(`     ${ip}`))
   }
   console.log('')
 }
