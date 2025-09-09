@@ -235,23 +235,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Copy test files to droplet
+        uses: appleboy/scp-action@v0.1.5
         with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          source: "Dockerfile.playwright,frontend/package*.json,frontend/e2e/,frontend/playwright*.config.ts"
+          target: "/opt/app/e2e-temp"
+          strip_components: 0
 
-      - name: Install dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: Install Playwright browsers
-        working-directory: ./frontend
-        run: npx playwright install --with-deps
-
-      - name: Get staging Tailscale IP
-        id: get-ip
+      - name: Run E2E tests on droplet
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DROPLET_IP }}
@@ -259,16 +254,122 @@ jobs:
           key: ${{ secrets.DROPLET_SSH_KEY }}
           passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
           script: |
-            echo "TAILSCALE_IP=$(tailscale ip -4)" >> $GITHUB_OUTPUT
+            set -e
+            cd /opt/app
+            
+            echo "===================================="
+            echo "🎭 Starting E2E Tests Against Staging"
+            echo "===================================="
+            
+            # Verify staging is running
+            if ! docker ps | grep -q abet-staging; then
+                echo "ERROR: Staging container is not running"
+                exit 1
+            fi
+            echo "✓ Staging container is running"
+            
+            # Copy test files from temp location
+            echo "Setting up test files..."
+            if [ -d /opt/app/e2e-temp ]; then
+                cp -r /opt/app/e2e-temp/* /opt/app/ 2>/dev/null || true
+                echo "✓ Test files copied"
+            fi
+            
+            # Build Playwright test container
+            echo "Building Playwright test container..."
+            if [ -f Dockerfile.playwright ]; then
+                docker build -f Dockerfile.playwright -t abet-playwright-tests . || {
+                    echo "Failed to build test container"
+                    exit 1
+                }
+                echo "✓ Test container built"
+            else
+                echo "ERROR: Dockerfile.playwright not found"
+                exit 1
+            fi
+            
+            # Create directories for test results
+            mkdir -p /opt/app/frontend/test-results
+            mkdir -p /opt/app/frontend/playwright-report
+            
+            # Run E2E tests against localhost:8081 (staging port)
+            echo "Running E2E tests..."
+            echo "Target URL: http://localhost:8081"
+            
+            # Run tests using docker with host network to access localhost:8081
+            docker run --rm \
+              --name abet-e2e-runner \
+              --network host \
+              -e PLAYWRIGHT_BASE_URL=http://localhost:8081 \
+              -e CI=true \
+              -v /opt/app/frontend/test-results:/app/test-results \
+              -v /opt/app/frontend/playwright-report:/app/playwright-report \
+              abet-playwright-tests \
+              npx playwright test --config=playwright.staging.config.ts --reporter=list,html,junit
+            
+            # Capture test exit code
+            TEST_EXIT_CODE=$?
+            
+            # Display test summary
+            echo "===================================="
+            if [ $TEST_EXIT_CODE -eq 0 ]; then
+                echo "✅ All E2E tests passed!"
+            else
+                echo "❌ Some E2E tests failed (exit code: $TEST_EXIT_CODE)"
+            
+                # Check for test results
+                if [ -f /opt/app/frontend/test-results/junit.xml ]; then
+                    echo "Test results saved to junit.xml"
+                    # Show summary if available
+                    grep -E "(tests|failures|errors|skipped)" /opt/app/frontend/test-results/junit.xml || true
+                fi
+            fi
+            echo "===================================="
+            
+            # Clean up
+            echo "Cleaning up..."
+            docker rmi abet-playwright-tests 2>/dev/null || true
+            rm -rf /opt/app/e2e-temp
+            echo "✓ Cleanup complete"
+            
+            # Exit with test result code
+            exit $TEST_EXIT_CODE
 
-      - name: Run E2E tests against staging
-        working-directory: ./frontend
-        env:
-          # Note: E2E tests won't work unless runner is also on Tailscale network
-          # This is intentional for security - only team members can test
-          PLAYWRIGHT_BASE_URL: http://${{ steps.get-ip.outputs.TAILSCALE_IP }}:8081
-        run: |
-          echo "E2E tests require Tailscale network access"
-          echo "Staging URL: $PLAYWRIGHT_BASE_URL"
-          # Uncomment when runner is on Tailscale network:
-          # npx playwright test --config=playwright.config.ts
+      - name: Retrieve test artifacts
+        if: always()
+        continue-on-error: true
+        uses: appleboy/scp-action@v0.1.5
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          source: "/opt/app/frontend/test-results/,/opt/app/frontend/playwright-report/"
+          target: "./test-artifacts"
+          strip_components: 3
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_number }}
+          path: |
+            ./test-artifacts/test-results/
+            ./test-artifacts/playwright-report/
+          retention-days: 7
+
+      - name: Clean up droplet test files
+        if: always()
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          script: |
+            # Clean up test results after retrieval
+            rm -rf /opt/app/frontend/test-results/* 2>/dev/null || true
+            rm -rf /opt/app/frontend/playwright-report/* 2>/dev/null || true
+            rm -rf /opt/app/e2e-temp 2>/dev/null || true
+            echo "Test artifacts cleaned up"

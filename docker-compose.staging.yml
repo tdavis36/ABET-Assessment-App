@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   app:
     image: ${IMAGE_TAG}
@@ -12,7 +14,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=abet_user
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
     ports:
-      # Staging on port 8081, also bound to Tailscale IP only
+      # Staging on port 8081, bound to Tailscale IP only
       - "100.121.66.86:8081:8080"
     networks:
       - abet-network-staging
@@ -47,6 +49,41 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+
+  # E2E test runner service (use with --profile e2e-test)
+  playwright-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.playwright
+    container_name: abet-e2e-tests
+    profiles:
+      - e2e-test
+    environment:
+      # Point to staging app service
+      PLAYWRIGHT_BASE_URL: http://app:8080
+      # Enable debug output
+      DEBUG: ${DEBUG:-pw:api}
+      # CI mode
+      CI: 'true'
+    volumes:
+      # Mount test results for retrieval
+      - ./frontend/test-results:/app/test-results
+      - ./frontend/playwright-report:/app/playwright-report
+      # Mount the test files (for development)
+      - ./frontend/e2e:/app/e2e:ro
+      - ./frontend/playwright.staging.config.ts:/app/playwright.staging.config.ts:ro
+    networks:
+      - abet-network-staging
+    depends_on:
+      app:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for staging server to be ready...' &&
+        wget --spider --quiet --tries=30 --waitretry=2 http://app:8080/actuator/health &&
+        echo 'Staging server is ready, starting tests...' &&
+        npx playwright test --config=playwright.staging.config.ts --reporter=list,html,junit
+      "
 
 volumes:
   db_data_staging:
