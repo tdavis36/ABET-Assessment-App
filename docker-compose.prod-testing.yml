@@ -1,0 +1,66 @@
+# Production testing configuration with MariaDB
+services:
+  # Override app service to use MariaDB and production-like settings
+  app:
+    ports:
+      - "8080:8080"  # Expose application on port 8080
+    environment:
+      SPRING_PROFILES_ACTIVE: dev-mariadb
+      # Database connection
+      SPRING_DATASOURCE_URL: jdbc:mariadb://database:3306/abet_assessment
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-abet_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-abet_password}
+      # Production-like JVM settings
+      JAVA_TOOL_OPTIONS: ${JAVA_OPTS:--Xmx1g -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport}
+      # Server optimizations
+      SERVER_COMPRESSION_ENABLED: true
+      SERVER_COMPRESSION_MIN_RESPONSE_SIZE: 1024
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - abet-network
+
+  # Adminer for database management
+  adminer:
+    image: adminer:4.8.1
+    container_name: abet-adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"  # Access Adminer at http://localhost:8081
+    networks:
+      - abet-network
+    depends_on:
+      database:
+        condition: service_healthy
+
+  # Define database service for production testing (overrides the one in docker-compose.yml)
+  database:
+    image: mariadb:11.4
+    container_name: abet-database-prod-testing
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secure_root_password_123}
+      MYSQL_DATABASE: ${DB_NAME:-abet_assessment}
+      MYSQL_USER: ${DB_USERNAME:-abet_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secure_user_password_456}
+      # Production-like MariaDB settings
+      MYSQL_INITDB_SKIP_TZINFO: 1
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data_prod_testing:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - abet-network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # No profiles - enabled by default when this compose file is used
+
+volumes:
+  db_data_prod_testing:
+    driver: local

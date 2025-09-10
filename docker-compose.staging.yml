@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  app:
+    image: ${IMAGE_TAG}
+    container_name: abet-staging
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT_NAME=${ENVIRONMENT_NAME:-staging}
+      - SPRING_PROFILES_ACTIVE=staging
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+      - SERVER_FORWARD_HEADERS_STRATEGY=framework
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://database:3306/abet_staging
+      - SPRING_DATASOURCE_USERNAME=abet_user
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+    ports:
+      # Staging on port 8081, bound to Tailscale IP only
+      - "100.121.66.86:8081:8080"
+    networks:
+      - abet-network-staging
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  database:
+    image: mariadb:11
+    container_name: abet-db-staging
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: abet_staging
+      MYSQL_USER: abet_user
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data_staging:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "100.121.66.86:3307:3306"
+    networks:
+      - abet-network-staging
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # E2E test runner service (use with --profile e2e-test)
+  playwright-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.playwright
+    container_name: abet-e2e-tests
+    profiles:
+      - e2e-test
+    environment:
+      # Point to staging app service
+      PLAYWRIGHT_BASE_URL: http://app:8080
+      # Enable debug output
+      DEBUG: ${DEBUG:-pw:api}
+      # CI mode
+      CI: 'true'
+    volumes:
+      # Mount test results for retrieval
+      - ./frontend/test-results:/app/test-results
+      - ./frontend/playwright-report:/app/playwright-report
+      # Mount the test files (for development)
+      - ./frontend/e2e:/app/e2e:ro
+      - ./frontend/playwright.staging.config.ts:/app/playwright.staging.config.ts:ro
+    networks:
+      - abet-network-staging
+    depends_on:
+      app:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for staging server to be ready...' &&
+        wget --spider --quiet --tries=30 --waitretry=2 http://app:8080/actuator/health &&
+        echo 'Staging server is ready, starting tests...' &&
+        npx playwright test --config=playwright.staging.config.ts --reporter=list,html,junit
+      "
+
+volumes:
+  db_data_staging:
+    driver: local
+
+networks:
+  abet-network-staging:
+    driver: bridge

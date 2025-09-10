@@ -1,0 +1,16 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: dev-docker
+    ports:
+      - "8080:8080"
+    networks:
+      - abet-network
+    restart: unless-stopped
+
+networks:
+  abet-network:
+    driver: bridge

@@ -5,6 +5,16 @@ plugins {
     id 'com.github.node-gradle.node' version '7.0.1'
 }
 
+version = '0.0.7-dev'
+group = 'com.abetappteam.abetapp'
+
+// Java version configuration
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 repositories {
     mavenCentral()
     gradlePluginPortal()
@@ -15,6 +25,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'        // REST API
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'   // Database access
     implementation 'org.springframework.boot:spring-boot-starter-validation' // Request validation
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'   // Health checks
 
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client' // Database driver
     runtimeOnly 'com.h2database:h2'
@@ -24,25 +35,36 @@ dependencies {
 
 test {
     jvmArgs '-XX:-UseSharedSpaces'
+    useJUnitPlatform()
 }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+// Configure bootRun for development
+bootRun {
+    // Default to dev profile for local development
+    args = ['--spring.profiles.active=dev']
+
+    // Allow overriding with system property
+    if (System.getProperty('spring.profiles.active')) {
+        args = ["--spring.profiles.active=${System.getProperty('spring.profiles.active')}"]
     }
+
+    // JVM arguments for development
+    jvmArgs = [
+            '-Dspring.devtools.restart.enabled=true',
+            '-Dspring.devtools.livereload.enabled=true'
+    ]
 }
 
 def skipFrontend = project.hasProperty('skipFrontend') && project.property('skipFrontend') == 'true'
 
 node {
-    version = '18.17.0'
-    npmVersion = '9.6.7'
+    version = '20.19.0'
+    npmVersion = '10.9.0'
     download = true
     nodeProjectDir = file("${project.projectDir}/frontend")
 }
 
-def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
-def npmExecutable = isWindows ? 'npm.cmd' : 'npm'
+def npmExecutable = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
 
 tasks.register('installFrontendDeps', Exec) {
     workingDir 'frontend'
@@ -89,4 +111,143 @@ tasks.named('processResources') {
     if (!skipFrontend) {
         dependsOn tasks.copyFrontend
     }
+}
+
+// Development tasks
+tasks.register('dev') {
+    group = 'abet-dev'
+    description = 'Run application in development mode (backend only, no frontend build) - LOCAL ONLY'
+    dependsOn 'bootRun'
+    doFirst {
+        project.setProperty('skipFrontend', 'true')
+        println "Starting LOCAL development mode - backend only"
+        println "Start frontend separately with: cd frontend && npm run dev"
+        println "Frontend will be available at: http://localhost:5173"
+        println "Backend will be available at: http://localhost:8080"
+    }
+}
+
+tasks.register('devLocalDeploymentTesting') {
+    group = 'abet-dev'
+    description = 'Run application in development mode with frontend build - LOCAL ONLY'
+    dependsOn 'bootRun'
+    doFirst {
+        println "Starting LOCAL development mode with frontend build"
+        println "Application will be available at: http://localhost:8080"
+    }
+}
+
+// Docker development tasks (H2 database)
+tasks.register('devDeploymentTestingUp', Exec) {
+    group = 'abet-dev'
+    description = 'Start Docker development environment with H2 (internal task)'
+    executable 'docker-compose'
+    args '-f', 'docker-compose.deployment-testing.yml', 'up', '-d'
+}
+
+tasks.register('devDeploymentTesting') {
+    group = 'abet-dev'
+    description = 'Run development environment in Docker (H2 database + built frontend)'
+    dependsOn 'composeBuild', 'devDeploymentTestingUp'
+    doLast {
+        println "Development environment started in Docker:"
+        println "Application (with built frontend): http://localhost:8080"
+        println "Database: H2 in-memory (no external container needed)"
+        println ""
+        println "This mimics production behavior with frontend built into the JAR"
+        println "H2 Console available at: http://localhost:8080/h2-console"
+        println "To stop: ./gradlew devDeploymentTestingStop"
+        println "To view logs: ./gradlew devDeploymentTestingLogs"
+    }
+}
+
+tasks.register('devDeploymentTestingLogs', Exec) {
+    group = 'abet-dev'
+    description = 'Follow logs for Docker development environment'
+    executable 'docker-compose'
+    args '-f', 'docker-compose.deployment-testing.yml', 'logs', '-f'
+}
+
+tasks.register('devDeploymentTestingStop', Exec) {
+    group = 'abet-dev'
+    description = 'Stop Docker development environment'
+    executable 'docker-compose'
+    args '-f', 'docker-compose.deployment-testing.yml', 'down'
+    doLast {
+        println "Docker development environment stopped"
+    }
+}
+
+// Docker development tasks (MariaDB database)
+tasks.register('devProdTestingUp', Exec) {
+    group = 'abet-dev'
+    description = 'Start production testing Docker environment with MariaDB (internal task)'
+    executable 'docker-compose'
+    args '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'up', '-d'
+}
+
+tasks.register('devProdTesting') {
+    group = 'abet-dev'
+    description = 'Run full production testing environment in Docker (MariaDB + built frontend)'
+    dependsOn 'composeBuild', 'devProdTestingUp'
+    doLast {
+        println "Production testing environment started in Docker:"
+        println "Application (with built frontend): http://localhost:8080"
+        println "Adminer for database management: http://localhost:8081"
+        println "Database: MariaDB on localhost:3306"
+        println ""
+        println "This simulates the full production environment:"
+        println "- MariaDB database (instead of H2)"
+        println "- Production-like JVM settings"
+        println "- Connection pooling"
+        println "- Frontend built into JAR"
+        println ""
+        println "To stop: ./gradlew devDockerProdTestingStop"
+        println "To view logs: ./gradlew devDockerProdTestingLogs"
+        println "To connect to database: mysql -h 127.0.0.1 -P 3307 -u abet_user -p"
+    }
+}
+
+tasks.register('devProdTestingLogs', Exec) {
+    group = 'abet-dev'
+    description = 'Follow logs for production testing Docker environment'
+    executable 'docker-compose'
+    args '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'logs', '-f'
+}
+
+tasks.register('devProdTestingStop', Exec) {
+    group = 'abet-dev'
+    description = 'Stop production testing Docker environment'
+    executable 'docker-compose'
+    args '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'down'
+    doLast {
+        println "Production testing Docker environment stopped"
+    }
+}
+
+// Spring Boot Docker configuration
+bootBuildImage {
+    imageName = "${project.name}:${project.version}"
+    environment = [
+            "BP_JVM_VERSION": "21"
+    ]
+}
+
+// Docker Compose support
+tasks.register('composeUp', Exec) {
+    description = 'Start services with Docker Compose'
+    executable 'docker-compose'
+    args 'up', '-d'
+}
+
+tasks.register('composeDown', Exec) {
+    description = 'Stop services with Docker Compose'
+    executable 'docker-compose'
+    args 'down'
+}
+
+tasks.register('composeBuild', Exec) {
+    description = 'Build Docker images'
+    executable 'docker-compose'
+    args 'build'
 }

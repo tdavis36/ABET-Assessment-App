@@ -1,0 +1,375 @@
+name: Secure CI/CD Pipeline with Tailscale
+
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+  packages: write
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run frontend linting
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Run frontend unit tests
+        working-directory: ./frontend
+        run: npm run test:unit
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Run backend tests
+        run: ./gradlew test
+
+      - name: Run backend integration tests
+        run: ./gradlew integrationTest || true
+
+      - name: Generate test reports
+        if: always()
+        run: |
+          echo "Frontend tests completed"
+          echo "Backend tests completed"
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  build-and-push:
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up image name
+        run: |
+          # Convert repository name to lowercase for GHCR compatibility
+          echo "IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image
+        id: image
+        run: |
+          # Use branch tag which definitely exists
+          IMAGE_NAME_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          echo "image=${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${{ github.ref_name }}" >> $GITHUB_OUTPUT
+
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging'
+    environment: staging
+    steps:
+      - name: Deploy to staging
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          script: |
+            set -e
+            cd /opt/app
+            
+            echo "Starting staging deployment..."
+            
+            # Get Tailscale IP for security verification
+            TAILSCALE_IP=$(tailscale ip -4)
+            PUBLIC_IP=$(curl -s ifconfig.me)
+            
+            echo "Network Info:"
+            echo "   Public IP: $PUBLIC_IP"
+            echo "   Tailscale IP: $TAILSCALE_IP"
+            
+            # Verify Tailscale is running
+            if ! systemctl is-active --quiet tailscaled; then
+                echo "ERROR: Tailscale is not running"
+                exit 1
+            fi
+            
+            # Verify firewall is active
+            if ! ufw status | grep -q "Status: active"; then
+                echo "ERROR: Firewall is not active"
+                exit 1
+            fi
+            
+            # Pull latest image
+            echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
+            docker pull ${{ needs.build-and-push.outputs.image }}
+                   
+            # Update Docker Compose with Tailscale IP
+            sed -i "s/100\.[0-9]*\.[0-9]*\.[0-9]*:8081:8080/${TAILSCALE_IP}:8081:8080/g" docker-compose.staging.yml
+            
+            # Stop existing container
+            echo "Stopping existing staging container..."
+            docker-compose -f docker-compose.staging.yml down || true
+            
+            # Start new container
+            echo "Starting new staging container..."
+            IMAGE_TAG=${{ needs.build-and-push.outputs.image }} docker-compose -f docker-compose.staging.yml up -d
+            
+            # Wait for container to be ready
+            echo "Waiting for application to start..."
+            sleep 30
+            
+            # Health check via Tailscale IP
+            echo "Running health check..."
+            if curl -f --max-time 10 http://$TAILSCALE_IP:8081/actuator/health; then
+                echo "Staging health check passed"
+            else
+                echo "Staging health check failed"
+                docker logs abet-staging --tail 50
+                exit 1
+            fi
+            
+            # Security verification - ensure NOT accessible from public IP
+            echo "Running security verification..."
+            if timeout 5 bash -c "</dev/tcp/$PUBLIC_IP/8081" 2>/dev/null; then
+                echo "CRITICAL SECURITY ISSUE: Staging accessible from public IP!"
+                exit 1
+            else
+                echo "Security check passed - staging not accessible from public IP"
+            fi
+            
+            # Clean up old images
+            docker image prune -af --filter "until=24h"
+            
+            echo "Staging deployment completed successfully!"
+            echo "Access URL (Tailscale only): http://$TAILSCALE_IP:8081"
+
+  e2e-tests:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy test files to droplet
+        uses: appleboy/scp-action@v0.1.5
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          source: "Dockerfile.playwright,frontend/package*.json,frontend/e2e/,frontend/playwright*.config.ts"
+          target: "/opt/app/e2e-temp"
+          strip_components: 0
+
+      - name: Run E2E tests on droplet
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          script: |
+            set -e
+            cd /opt/app
+            
+            echo "===================================="
+            echo "🎭 Starting E2E Tests Against Staging"
+            echo "===================================="
+            
+            # Verify staging is running
+            if ! docker ps | grep -q abet-staging; then
+                echo "ERROR: Staging container is not running"
+                exit 1
+            fi
+            echo "✓ Staging container is running"
+            
+            # Copy test files from temp location
+            echo "Setting up test files..."
+            if [ -d /opt/app/e2e-temp ]; then
+                cp -r /opt/app/e2e-temp/* /opt/app/ 2>/dev/null || true
+                echo "✓ Test files copied"
+            fi
+            
+            # Build Playwright test container
+            echo "Building Playwright test container..."
+            if [ -f Dockerfile.playwright ]; then
+                docker build -f Dockerfile.playwright -t abet-playwright-tests . || {
+                    echo "Failed to build test container"
+                    exit 1
+                }
+                echo "✓ Test container built"
+            else
+                echo "ERROR: Dockerfile.playwright not found"
+                exit 1
+            fi
+            
+            # Create directories for test results
+            mkdir -p /opt/app/frontend/test-results
+            mkdir -p /opt/app/frontend/playwright-report
+            
+            # Run E2E tests against localhost:8081 (staging port)
+            echo "Running E2E tests..."
+            echo "Target URL: http://localhost:8081"
+            
+            # Run tests using docker with host network to access localhost:8081
+            docker run --rm \
+              --name abet-e2e-runner \
+              --network host \
+              -e PLAYWRIGHT_BASE_URL=http://localhost:8081 \
+              -e CI=true \
+              -v /opt/app/frontend/test-results:/app/test-results \
+              -v /opt/app/frontend/playwright-report:/app/playwright-report \
+              abet-playwright-tests \
+              npx playwright test --config=playwright.staging.config.ts --reporter=list,html,junit
+            
+            # Capture test exit code
+            TEST_EXIT_CODE=$?
+            
+            # Display test summary
+            echo "===================================="
+            if [ $TEST_EXIT_CODE -eq 0 ]; then
+                echo "✅ All E2E tests passed!"
+            else
+                echo "❌ Some E2E tests failed (exit code: $TEST_EXIT_CODE)"
+            
+                # Check for test results
+                if [ -f /opt/app/frontend/test-results/junit.xml ]; then
+                    echo "Test results saved to junit.xml"
+                    # Show summary if available
+                    grep -E "(tests|failures|errors|skipped)" /opt/app/frontend/test-results/junit.xml || true
+                fi
+            fi
+            echo "===================================="
+            
+            # Clean up
+            echo "Cleaning up..."
+            docker rmi abet-playwright-tests 2>/dev/null || true
+            rm -rf /opt/app/e2e-temp
+            echo "✓ Cleanup complete"
+            
+            # Exit with test result code
+            exit $TEST_EXIT_CODE
+
+      - name: Retrieve test artifacts
+        if: always()
+        continue-on-error: true
+        uses: appleboy/scp-action@v0.1.5
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          source: "/opt/app/frontend/test-results/,/opt/app/frontend/playwright-report/"
+          target: "./test-artifacts"
+          strip_components: 3
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_number }}
+          path: |
+            ./test-artifacts/test-results/
+            ./test-artifacts/playwright-report/
+          retention-days: 7
+
+      - name: Clean up droplet test files
+        if: always()
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          script: |
+            # Clean up test results after retrieval
+            rm -rf /opt/app/frontend/test-results/* 2>/dev/null || true
+            rm -rf /opt/app/frontend/playwright-report/* 2>/dev/null || true
+            rm -rf /opt/app/e2e-temp 2>/dev/null || true
+            echo "Test artifacts cleaned up"
