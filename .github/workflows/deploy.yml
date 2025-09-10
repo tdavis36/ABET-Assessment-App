@@ -168,7 +168,7 @@ jobs:
             --max-time 600 \
             --retry 2 \
             --retry-delay 10 \
-            "http://${{ secrets.DROPLET_TAILSCALE_IP }}:9001/deploy")
+            "http://${{ secrets.DROPLET_TAILSCALE_IP }}:9000/deploy")
           
           # Parse response
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
