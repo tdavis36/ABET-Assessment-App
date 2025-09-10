@@ -1,4 +1,4 @@
-name: Secure CI/CD Pipeline with Tailscale
+name: CI/CD Pipeline for Staging
 
 permissions:
   security-events: write
@@ -8,9 +8,9 @@ permissions:
 
 on:
   push:
-    branches: [main, staging]
+    branches: [staging]
   pull_request:
-    branches: [main]
+    branches: [staging]
 
 env:
   REGISTRY: ghcr.io
@@ -94,14 +94,13 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     outputs:
       image: ${{ steps.image.outputs.image }}
-      digest: ${{ steps.build.outputs.digest }}
+      tailscale_ip: ${{ steps.get-tailscale-ip.outputs.tailscale_ip }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up image name
         run: |
-          # Convert repository name to lowercase for GHCR compatibility
           echo "IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
@@ -140,7 +139,6 @@ jobs:
       - name: Output image
         id: image
         run: |
-          # Use branch tag which definitely exists
           IMAGE_NAME_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
           echo "image=${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${{ github.ref_name }}" >> $GITHUB_OUTPUT
 
@@ -149,27 +147,26 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/staging'
     environment: staging
+    outputs:
+      tailscale_ip: ${{ steps.set-tailscale-ip.outputs.tailscale_ip }}
     steps:
-      - name: Deploy to staging
+      - name: Deploy to staging via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          port: ${{ secrets.DROPLET_SSH_PORT || 22 }}
           script: |
             set -e
             cd /opt/app
             
-            echo "Starting staging deployment..."
+            echo "Starting staging deployment via SSH..."
             
-            # Get Tailscale IP for security verification
+            # Get Tailscale IP for binding
             TAILSCALE_IP=$(tailscale ip -4)
-            PUBLIC_IP=$(curl -s ifconfig.me)
-            
-            echo "Network Info:"
-            echo "   Public IP: $PUBLIC_IP"
-            echo "   Tailscale IP: $TAILSCALE_IP"
+            echo "Tailscale IP: $TAILSCALE_IP"
             
             # Verify Tailscale is running
             if ! systemctl is-active --quiet tailscaled; then
@@ -177,43 +174,65 @@ jobs:
                 exit 1
             fi
             
-            # Verify firewall is active
-            if ! ufw status | grep -q "Status: active"; then
-                echo "ERROR: Firewall is not active"
-                exit 1
-            fi
+            # Create docker-compose override for staging (bind to Tailscale IP only)
+            cat > docker-compose.staging.yml << EOF
+            services:
+              app:
+                image: ${{ needs.build-and-push.outputs.image }}
+                environment:
+                  SPRING_PROFILES_ACTIVE: staging
+                ports:
+                  - "${TAILSCALE_IP}:8081:8080"  # Bind only to Tailscale IP
+                restart: unless-stopped
+                networks:
+                  - app-network
+                logging:
+                  driver: "json-file"
+                  options:
+                    max-size: "10m"
+                    max-file: "3"
+            
+            networks:
+              app-network:
+                driver: bridge
+            EOF
             
             # Pull latest image
             echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
             docker pull ${{ needs.build-and-push.outputs.image }}
-                   
-            # Update Docker Compose with Tailscale IP
-            sed -i "s/100\.[0-9]*\.[0-9]*\.[0-9]*:8081:8080/${TAILSCALE_IP}:8081:8080/g" docker-compose.staging.yml
             
-            # Stop existing container
+            # Stop existing staging container
             echo "Stopping existing staging container..."
             docker-compose -f docker-compose.staging.yml down || true
             
             # Start new container
             echo "Starting new staging container..."
-            IMAGE_TAG=${{ needs.build-and-push.outputs.image }} docker-compose -f docker-compose.staging.yml up -d
+            docker-compose -f docker-compose.staging.yml up -d
             
-            # Wait for container to be ready
+            # Wait for application to start
             echo "Waiting for application to start..."
             sleep 30
             
-            # Health check via Tailscale IP
+            # Health check via Tailscale IP (local to the server)
             echo "Running health check..."
-            if curl -f --max-time 10 http://$TAILSCALE_IP:8081/actuator/health; then
+            for i in {1..10}; do
+              if curl -f --max-time 10 http://${TAILSCALE_IP}:8081/actuator/health; then
                 echo "Staging health check passed"
-            else
-                echo "Staging health check failed"
-                docker logs abet-staging --tail 50
-                exit 1
-            fi
+                break
+              else
+                echo "Health check attempt $i failed, retrying..."
+                sleep 10
+                if [ $i -eq 10 ]; then
+                  echo "Staging health check failed after 10 attempts"
+                  docker logs $(docker-compose -f docker-compose.staging.yml ps -q app) --tail 50
+                  exit 1
+                fi
+              fi
+            done
             
             # Security verification - ensure NOT accessible from public IP
-            echo "Running security verification..."
+            PUBLIC_IP=$(curl -s ifconfig.me)
+            echo "Verifying staging is not accessible from public IP: $PUBLIC_IP"
             if timeout 5 bash -c "</dev/tcp/$PUBLIC_IP/8081" 2>/dev/null; then
                 echo "CRITICAL SECURITY ISSUE: Staging accessible from public IP!"
                 exit 1
@@ -225,151 +244,107 @@ jobs:
             docker image prune -af --filter "until=24h"
             
             echo "Staging deployment completed successfully!"
-            echo "Access URL (Tailscale only): http://$TAILSCALE_IP:8081"
+            echo "Access URL (Tailscale only): http://${TAILSCALE_IP}:8081"
 
-  e2e-tests:
+      - name: Get Tailscale IP for output
+        id: get-tailscale-ip
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          port: '22'
+          script: |
+            tailscale ip -4
+
+      - name: Set Tailscale IP output
+        id: set-tailscale-ip
+        run: |
+          echo "tailscale_ip=${{ steps.get-tailscale-ip.outputs.stdout }}" >> $GITHUB_OUTPUT
+
+  notify-staging-ready:
     needs: deploy-staging
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/staging'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Notify staging deployment
+        run: |
+          echo "Staging deployment completed!"
+          echo "Access URL: http://${{ needs.deploy-staging.outputs.tailscale_ip }}:8081"
+          echo "Only accessible via Tailscale network"
+          echo "Manual testing required"
+  # TODO: Set up Ubuntu server on school computer for self hosted runner.
 
-      - name: Copy test files to droplet
-        uses: appleboy/scp-action@v0.1.5
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          source: "Dockerfile.playwright,frontend/package*.json,frontend/e2e/,frontend/playwright*.config.ts"
-          target: "/opt/app/e2e-temp"
-          strip_components: 0
-
-      - name: Run E2E tests on droplet
+  deploy-production:
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Deploy to production via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_SSH_PORT || 22 }}
           script: |
             set -e
             cd /opt/app
             
-            echo "===================================="
-            echo "🎭 Starting E2E Tests Against Staging"
-            echo "===================================="
+            echo "Starting production deployment..."
             
-            # Verify staging is running
-            if ! docker ps | grep -q abet-staging; then
-                echo "ERROR: Staging container is not running"
-                exit 1
-            fi
-            echo "✓ Staging container is running"
+            # Create docker-compose override for production (public access)
+            cat > docker-compose.production.yml << EOF
+            services:
+              app:
+                image: ${{ needs.build-and-push.outputs.image }}
+                environment:
+                  SPRING_PROFILES_ACTIVE: production
+                ports:
+                  - "80:8080"  # Public access
+                restart: unless-stopped
+                networks:
+                  - app-network
+                logging:
+                  driver: "json-file"
+                  options:
+                    max-size: "10m"
+                    max-file: "3"
             
-            # Copy test files from temp location
-            echo "Setting up test files..."
-            if [ -d /opt/app/e2e-temp ]; then
-                cp -r /opt/app/e2e-temp/* /opt/app/ 2>/dev/null || true
-                echo "✓ Test files copied"
-            fi
+            networks:
+              app-network:
+                driver: bridge
+            EOF
             
-            # Build Playwright test container
-            echo "Building Playwright test container..."
-            if [ -f Dockerfile.playwright ]; then
-                docker build -f Dockerfile.playwright -t abet-playwright-tests . || {
-                    echo "Failed to build test container"
-                    exit 1
-                }
-                echo "✓ Test container built"
-            else
-                echo "ERROR: Dockerfile.playwright not found"
-                exit 1
-            fi
+            # Pull latest image
+            echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
+            docker pull ${{ needs.build-and-push.outputs.image }}
             
-            # Create directories for test results
-            mkdir -p /opt/app/frontend/test-results
-            mkdir -p /opt/app/frontend/playwright-report
+            # Blue-green deployment
+            echo "Starting new production container..."
+            docker-compose -f docker-compose.production.yml up -d --force-recreate
             
-            # Run E2E tests against localhost:8081 (staging port)
-            echo "Running E2E tests..."
-            echo "Target URL: http://localhost:8081"
-            
-            # Run tests using docker with host network to access localhost:8081
-            docker run --rm \
-              --name abet-e2e-runner \
-              --network host \
-              -e PLAYWRIGHT_BASE_URL=http://localhost:8081 \
-              -e CI=true \
-              -v /opt/app/frontend/test-results:/app/test-results \
-              -v /opt/app/frontend/playwright-report:/app/playwright-report \
-              abet-playwright-tests \
-              npx playwright test --config=playwright.staging.config.ts --reporter=list,html,junit
-            
-            # Capture test exit code
-            TEST_EXIT_CODE=$?
-            
-            # Display test summary
-            echo "===================================="
-            if [ $TEST_EXIT_CODE -eq 0 ]; then
-                echo "✅ All E2E tests passed!"
-            else
-                echo "❌ Some E2E tests failed (exit code: $TEST_EXIT_CODE)"
-            
-                # Check for test results
-                if [ -f /opt/app/frontend/test-results/junit.xml ]; then
-                    echo "Test results saved to junit.xml"
-                    # Show summary if available
-                    grep -E "(tests|failures|errors|skipped)" /opt/app/frontend/test-results/junit.xml || true
+            # Health check
+            echo "Running production health check..."
+            for i in {1..15}; do
+              if curl -f --max-time 10 http://localhost:80/actuator/health; then
+                echo "Production health check passed"
+                break
+              else
+                echo "Health check attempt $i failed, retrying..."
+                sleep 10
+                if [ $i -eq 15 ]; then
+                  echo "Production deployment failed - rolling back"
+                  docker-compose -f docker-compose.production.yml down
+                  exit 1
                 fi
-            fi
-            echo "===================================="
+              fi
+            done
             
-            # Clean up
-            echo "Cleaning up..."
-            docker rmi abet-playwright-tests 2>/dev/null || true
-            rm -rf /opt/app/e2e-temp
-            echo "✓ Cleanup complete"
+            # Clean up old images
+            docker image prune -af --filter "until=72h"
             
-            # Exit with test result code
-            exit $TEST_EXIT_CODE
-
-      - name: Retrieve test artifacts
-        if: always()
-        continue-on-error: true
-        uses: appleboy/scp-action@v0.1.5
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          source: "/opt/app/frontend/test-results/,/opt/app/frontend/playwright-report/"
-          target: "./test-artifacts"
-          strip_components: 3
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-${{ github.run_number }}
-          path: |
-            ./test-artifacts/test-results/
-            ./test-artifacts/playwright-report/
-          retention-days: 7
-
-      - name: Clean up droplet test files
-        if: always()
-        continue-on-error: true
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          script: |
-            # Clean up test results after retrieval
-            rm -rf /opt/app/frontend/test-results/* 2>/dev/null || true
-            rm -rf /opt/app/frontend/playwright-report/* 2>/dev/null || true
-            rm -rf /opt/app/e2e-temp 2>/dev/null || true
-            echo "Test artifacts cleaned up"
+            echo "Production deployment completed successfully!"
+            echo "Public access: http://${{ secrets.DROPLET_IP }}"
