@@ -150,28 +150,31 @@ jobs:
     if: github.ref == 'refs/heads/staging'
     environment: staging
     steps:
-    - name: Test connectivity before deployment
-      run: |
-        echo "Testing basic connectivity..."
-        timeout 10 nc -zv ${{ secrets.DROPLET_IP }} 22 || echo "Cannot reach SSH port"    
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_TOKEN }}
 
-    - name: Deploy to staging
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.DROPLET_IP }}
-        username: ${{ secrets.DROPLET_USER }}
-        key: ${{ secrets.DROPLET_SSH_KEY }}
-        passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-        timeout: 300s          # Add this - 5 minutes for connection
-        command_timeout: 900s   # Add this - 15 minutes for script execution
-        debug: true            # Add this for troubleshooting
-        script: |
-          set -ex  # Add -x for debug output
+      - name: Deploy to staging droplet
+        run: |
+          # Get droplet info
+          DROPLET_ID=$(doctl compute droplet list --format ID,Name --no-header | grep "droplet-1-dev" | awk '{print $1}')
+          
+          if [ -z "$DROPLET_ID" ]; then
+            echo "Error: Could not find droplet"
+            exit 1
+          fi
+          
+          echo "Found droplet ID: $DROPLET_ID"
+          
+          # Create deployment script
+          cat > deploy_script.sh << 'EOF'
+          set -ex
           cd /opt/app
           
           echo "Starting staging deployment at $(date)..."
           
-          # Get network info with timeouts (we know these work from tests)
+          # Get network info with timeouts
           TAILSCALE_IP=$(timeout 30 tailscale ip -4)
           PUBLIC_IP=$(timeout 30 curl -s ifconfig.me)
           
@@ -179,7 +182,7 @@ jobs:
           echo "   Public IP: $PUBLIC_IP"
           echo "   Tailscale IP: $TAILSCALE_IP"
           
-          # Verify services (we know these work from tests)
+          # Verify services
           if ! systemctl is-active --quiet tailscaled; then
               echo "ERROR: Tailscale is not running"
               exit 1
@@ -190,7 +193,7 @@ jobs:
               exit 1
           fi
           
-          # Pull image (we know this works and is fast)
+          # Pull latest image
           echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
           docker pull ${{ needs.build-and-push.outputs.image }}
           
@@ -219,7 +222,7 @@ jobs:
               exit 1
           fi
           
-          # Security verification - ensure NOT accessible from public IP
+          # Security verification
           echo "Running security verification..."
           if timeout 5 bash -c "</dev/tcp/$PUBLIC_IP/8081" 2>/dev/null; then
               echo "CRITICAL SECURITY ISSUE: Staging accessible from public IP!"
@@ -233,6 +236,10 @@ jobs:
           
           echo "Staging deployment completed successfully at $(date)!"
           echo "Access URL (Tailscale only): http://$TAILSCALE_IP:8081"
+          EOF
+          
+          # Execute deployment script on droplet
+          doctl compute ssh $DROPLET_ID --ssh-command "bash -s" < deploy_script.sh
 
   e2e-tests:
     needs: deploy-staging
