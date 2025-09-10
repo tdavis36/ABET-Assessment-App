@@ -150,82 +150,84 @@ jobs:
     if: github.ref == 'refs/heads/staging'
     environment: staging
     steps:
-      - name: Deploy to staging
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          script: |
-            set -e
-            cd /opt/app
-            
-            echo "Starting staging deployment..."
-            
-            # Get Tailscale IP for security verification
-            TAILSCALE_IP=$(tailscale ip -4)
-            PUBLIC_IP=$(curl -s ifconfig.me)
-            
-            echo "Network Info:"
-            echo "   Public IP: $PUBLIC_IP"
-            echo "   Tailscale IP: $TAILSCALE_IP"
-            
-            # Verify Tailscale is running
-            if ! systemctl is-active --quiet tailscaled; then
-                echo "ERROR: Tailscale is not running"
-                exit 1
-            fi
-            
-            # Verify firewall is active
-            if ! ufw status | grep -q "Status: active"; then
-                echo "ERROR: Firewall is not active"
-                exit 1
-            fi
-            
-            # Pull latest image
-            echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
-            docker pull ${{ needs.build-and-push.outputs.image }}
-                   
-            # Update Docker Compose with Tailscale IP
-            sed -i "s/100\.[0-9]*\.[0-9]*\.[0-9]*:8081:8080/${TAILSCALE_IP}:8081:8080/g" docker-compose.staging.yml
-            
-            # Stop existing container
-            echo "Stopping existing staging container..."
-            docker-compose -f docker-compose.staging.yml down || true
-            
-            # Start new container
-            echo "Starting new staging container..."
-            IMAGE_TAG=${{ needs.build-and-push.outputs.image }} docker-compose -f docker-compose.staging.yml up -d
-            
-            # Wait for container to be ready
-            echo "Waiting for application to start..."
-            sleep 30
-            
-            # Health check via Tailscale IP
-            echo "Running health check..."
-            if curl -f --max-time 10 http://$TAILSCALE_IP:8081/actuator/health; then
-                echo "Staging health check passed"
-            else
-                echo "Staging health check failed"
-                docker logs abet-staging --tail 50
-                exit 1
-            fi
-            
-            # Security verification - ensure NOT accessible from public IP
-            echo "Running security verification..."
-            if timeout 5 bash -c "</dev/tcp/$PUBLIC_IP/8081" 2>/dev/null; then
-                echo "CRITICAL SECURITY ISSUE: Staging accessible from public IP!"
-                exit 1
-            else
-                echo "Security check passed - staging not accessible from public IP"
-            fi
-            
-            # Clean up old images
-            docker image prune -af --filter "until=24h"
-            
-            echo "Staging deployment completed successfully!"
-            echo "Access URL (Tailscale only): http://$TAILSCALE_IP:8081"
+    - name: Deploy to staging
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.DROPLET_IP }}
+        username: ${{ secrets.DROPLET_USER }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+        timeout: 300s          # Add this - 5 minutes for connection
+        command_timeout: 900s   # Add this - 15 minutes for script execution
+        debug: true            # Add this for troubleshooting
+        script: |
+          set -ex  # Add -x for debug output
+          cd /opt/app
+          
+          echo "Starting staging deployment at $(date)..."
+          
+          # Get network info with timeouts (we know these work from tests)
+          TAILSCALE_IP=$(timeout 30 tailscale ip -4)
+          PUBLIC_IP=$(timeout 30 curl -s ifconfig.me)
+          
+          echo "Network Info:"
+          echo "   Public IP: $PUBLIC_IP"
+          echo "   Tailscale IP: $TAILSCALE_IP"
+          
+          # Verify services (we know these work from tests)
+          if ! systemctl is-active --quiet tailscaled; then
+              echo "ERROR: Tailscale is not running"
+              exit 1
+          fi
+          
+          if ! ufw status | grep -q "Status: active"; then
+              echo "ERROR: Firewall is not active"
+              exit 1
+          fi
+          
+          # Pull image (we know this works and is fast)
+          echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
+          docker pull ${{ needs.build-and-push.outputs.image }}
+          
+          # Update Docker Compose with Tailscale IP
+          sed -i "s/100\.[0-9]*\.[0-9]*\.[0-9]*:8081:8080/${TAILSCALE_IP}:8081:8080/g" docker-compose.staging.yml
+          
+          # Stop existing container
+          echo "Stopping existing staging container..."
+          docker-compose -f docker-compose.staging.yml down || true
+          
+          # Start new container
+          echo "Starting new staging container..."
+          IMAGE_TAG=${{ needs.build-and-push.outputs.image }} docker-compose -f docker-compose.staging.yml up -d
+          
+          # Wait for container to be ready
+          echo "Waiting for application to start..."
+          sleep 30
+          
+          # Health check via Tailscale IP
+          echo "Running health check..."
+          if curl -f --max-time 10 http://$TAILSCALE_IP:8081/actuator/health; then
+              echo "Staging health check passed"
+          else
+              echo "Staging health check failed"
+              docker logs abet-staging --tail 50
+              exit 1
+          fi
+          
+          # Security verification - ensure NOT accessible from public IP
+          echo "Running security verification..."
+          if timeout 5 bash -c "</dev/tcp/$PUBLIC_IP/8081" 2>/dev/null; then
+              echo "CRITICAL SECURITY ISSUE: Staging accessible from public IP!"
+              exit 1
+          else
+              echo "Security check passed - staging not accessible from public IP"
+          fi
+          
+          # Clean up old images
+          docker image prune -af --filter "until=24h"
+          
+          echo "Staging deployment completed successfully at $(date)!"
+          echo "Access URL (Tailscale only): http://$TAILSCALE_IP:8081"
 
   e2e-tests:
     needs: deploy-staging
