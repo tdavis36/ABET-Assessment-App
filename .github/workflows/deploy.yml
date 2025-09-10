@@ -195,8 +195,10 @@ jobs:
 
       - name: Verify deployment health
         run: |
+          echo "Waiting 2 minutes before health check..."
+          sleep 120
+          
           echo "Verifying deployment health..."
-          sleep 10  # Give deployment a moment to stabilize
           
           # Health check via webhook
           HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" \
