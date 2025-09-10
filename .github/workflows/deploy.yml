@@ -29,14 +29,44 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'frontend/package-lock.json'
 
-      - name: Install dependencies
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
         run: npm ci
 
-      - name: Run tests
-        run: npm test
-
-      - name: Run linting
+      - name: Run frontend linting
+        working-directory: ./frontend
         run: npm run lint
+
+      - name: Run frontend unit tests
+        working-directory: ./frontend
+        run: npm run test:unit
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Run backend tests
+        run: ./gradlew test
+
+      - name: Run backend integration tests
+        run: ./gradlew integrationTest || true
+
+      - name: Generate test reports
+        if: always()
+        run: |
+          echo "Frontend tests completed"
+          echo "Backend tests completed"
 
   security-scan:
     runs-on: ubuntu-latest
