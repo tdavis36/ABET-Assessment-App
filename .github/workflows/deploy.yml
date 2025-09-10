@@ -165,10 +165,11 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
             -d "$PAYLOAD" \
-            --max-time 600 \
+            --max-time 900 \
+          --connect-timeout 30 \
             --retry 2 \
             --retry-delay 10 \
-            "http://${{ secrets.DROPLET_TAILSCALE_IP }}:9000/deploy")
+            "http://${{ secrets.DROPLET_TAILSCALE_IP }}:9001/deploy")
           
           # Parse response
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
@@ -179,15 +180,15 @@ jobs:
           
           # Check if deployment was successful
           if [ "$HTTP_CODE" = "200" ]; then
-            echo "Staging deployment completed successfully!"
+            echo "✅ Staging deployment completed successfully!"
           
             # Extract access URL from response if available
             ACCESS_URL=$(echo "$RESPONSE_BODY" | jq -r '.access_url // empty' 2>/dev/null || echo "")
             if [ -n "$ACCESS_URL" ]; then
-              echo "Access URL: $ACCESS_URL"
+              echo "🔗 Access URL: $ACCESS_URL"
             fi
           else
-            echo "Staging deployment failed!"
+            echo "❌ Staging deployment failed!"
             echo "Error details: $RESPONSE_BODY"
             exit 1
           fi
@@ -214,27 +215,6 @@ jobs:
             echo "Response: $HEALTH_BODY"
           fi
 
-      - name: Verify deployment health
-        run: |
-          echo "Verifying deployment health..."
-          sleep 10  # Give deployment a moment to stabilize
-          
-          # Health check via webhook
-          HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" \
-            --max-time 30 \
-            "http://${{ secrets.DROPLET_TAILSCALE_IP }}:9001/health")
-          
-          HEALTH_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
-          HEALTH_BODY=$(echo "$HEALTH_RESPONSE" | head -n -1)
-          
-          if [ "$HEALTH_CODE" = "200" ]; then
-            echo "✅ Webhook service is healthy"
-            echo "Health check: $HEALTH_BODY"
-          else
-            echo "⚠️ Webhook service health check failed"
-            echo "Status: $HEALTH_CODE"
-            echo "Response: $HEALTH_BODY"
-          fi
   e2e-tests:
     needs: deploy-staging
     runs-on: ubuntu-latest
