@@ -249,10 +249,11 @@ jobs:
         id: get-tailscale-ip
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          port: ${{ secrets.STAGING_SSH_PORT || 22 }}
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
+          port: '22'
           script: |
             echo "tailscale_ip=$(tailscale ip -4)" >> $GITHUB_OUTPUT
 
@@ -342,4 +343,4 @@ jobs:
             docker image prune -af --filter "until=72h"
             
             echo "Production deployment completed successfully!"
-            echo "🌐 Public access: http://${{ secrets.DROPLET_IP }}"
+            echo "Public access: http://${{ secrets.DROPLET_IP }}"
