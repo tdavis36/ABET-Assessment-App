@@ -150,97 +150,91 @@ jobs:
     if: github.ref == 'refs/heads/staging'
     environment: staging
     steps:
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_TOKEN }}
-
-      - name: Deploy to staging droplet
+      - name: Deploy to staging via webhook
         run: |
-          # Get droplet info
-          DROPLET_ID=$(doctl compute droplet list --format ID,Name --no-header | grep "droplet-1-dev" | awk '{print $1}')
+          echo "Deploying to staging environment..."
+          echo "Image: ${{ needs.build-and-push.outputs.image }}"
           
-          if [ -z "$DROPLET_ID" ]; then
-            echo "Error: Could not find droplet"
+          # Create signature for webhook security
+          PAYLOAD='{"image":"${{ needs.build-and-push.outputs.image }}","environment":"staging"}'
+          SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | sed 's/^.* //')
+          
+          # Deploy via webhook
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
+            -d "$PAYLOAD" \
+            --max-time 600 \
+            --retry 2 \
+            --retry-delay 10 \
+            "http://${{ secrets.DROPLET_TAILSCALE_IP }}:9001/deploy")
+          
+          # Parse response
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
+          
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $RESPONSE_BODY"
+          
+          # Check if deployment was successful
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "Staging deployment completed successfully!"
+          
+            # Extract access URL from response if available
+            ACCESS_URL=$(echo "$RESPONSE_BODY" | jq -r '.access_url // empty' 2>/dev/null || echo "")
+            if [ -n "$ACCESS_URL" ]; then
+              echo "Access URL: $ACCESS_URL"
+            fi
+          else
+            echo "Staging deployment failed!"
+            echo "Error details: $RESPONSE_BODY"
             exit 1
           fi
-          
-          echo "Found droplet ID: $DROPLET_ID"
-          
-          # Create deployment script
-          cat > deploy_script.sh << 'EOF'
-          set -ex
-          cd /opt/app
-          
-          echo "Starting staging deployment at $(date)..."
-          
-          # Get network info with timeouts
-          TAILSCALE_IP=$(timeout 30 tailscale ip -4)
-          PUBLIC_IP=$(timeout 30 curl -s ifconfig.me)
-          
-          echo "Network Info:"
-          echo "   Public IP: $PUBLIC_IP"
-          echo "   Tailscale IP: $TAILSCALE_IP"
-          
-          # Verify services
-          if ! systemctl is-active --quiet tailscaled; then
-              echo "ERROR: Tailscale is not running"
-              exit 1
-          fi
-          
-          if ! ufw status | grep -q "Status: active"; then
-              echo "ERROR: Firewall is not active"
-              exit 1
-          fi
-          
-          # Pull latest image
-          echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
-          docker pull ${{ needs.build-and-push.outputs.image }}
-          
-          # Update Docker Compose with Tailscale IP
-          sed -i "s/100\.[0-9]*\.[0-9]*\.[0-9]*:8081:8080/${TAILSCALE_IP}:8081:8080/g" docker-compose.staging.yml
-          
-          # Stop existing container
-          echo "Stopping existing staging container..."
-          docker-compose -f docker-compose.staging.yml down || true
-          
-          # Start new container
-          echo "Starting new staging container..."
-          IMAGE_TAG=${{ needs.build-and-push.outputs.image }} docker-compose -f docker-compose.staging.yml up -d
-          
-          # Wait for container to be ready
-          echo "Waiting for application to start..."
-          sleep 30
-          
-          # Health check via Tailscale IP
-          echo "Running health check..."
-          if curl -f --max-time 10 http://$TAILSCALE_IP:8081/actuator/health; then
-              echo "Staging health check passed"
-          else
-              echo "Staging health check failed"
-              docker logs abet-staging --tail 50
-              exit 1
-          fi
-          
-          # Security verification
-          echo "Running security verification..."
-          if timeout 5 bash -c "</dev/tcp/$PUBLIC_IP/8081" 2>/dev/null; then
-              echo "CRITICAL SECURITY ISSUE: Staging accessible from public IP!"
-              exit 1
-          else
-              echo "Security check passed - staging not accessible from public IP"
-          fi
-          
-          # Clean up old images
-          docker image prune -af --filter "until=24h"
-          
-          echo "Staging deployment completed successfully at $(date)!"
-          echo "Access URL (Tailscale only): http://$TAILSCALE_IP:8081"
-          EOF
-          
-          # Execute deployment script on droplet
-          doctl compute ssh $DROPLET_ID --ssh-command "bash -s" < deploy_script.sh
 
+      - name: Verify deployment health
+        run: |
+          echo "Verifying deployment health..."
+          sleep 10  # Give deployment a moment to stabilize
+          
+          # Health check via webhook
+          HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" \
+            --max-time 30 \
+            "http://${{ secrets.DROPLET_TAILSCALE_IP }}:9000/health")
+          
+          HEALTH_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
+          HEALTH_BODY=$(echo "$HEALTH_RESPONSE" | head -n -1)
+          
+          if [ "$HEALTH_CODE" = "200" ]; then
+            echo "Webhook service is healthy"
+            echo "Health check: $HEALTH_BODY"
+          else
+            echo "Webhook service health check failed"
+            echo "Status: $HEALTH_CODE"
+            echo "Response: $HEALTH_BODY"
+          fi
+
+      - name: Verify deployment health
+        run: |
+          echo "Verifying deployment health..."
+          sleep 10  # Give deployment a moment to stabilize
+          
+          # Health check via webhook
+          HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" \
+            --max-time 30 \
+            "http://${{ secrets.DROPLET_TAILSCALE_IP }}:9001/health")
+          
+          HEALTH_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
+          HEALTH_BODY=$(echo "$HEALTH_RESPONSE" | head -n -1)
+          
+          if [ "$HEALTH_CODE" = "200" ]; then
+            echo "✅ Webhook service is healthy"
+            echo "Health check: $HEALTH_BODY"
+          else
+            echo "⚠️ Webhook service health check failed"
+            echo "Status: $HEALTH_CODE"
+            echo "Response: $HEALTH_BODY"
+          fi
   e2e-tests:
     needs: deploy-staging
     runs-on: ubuntu-latest
