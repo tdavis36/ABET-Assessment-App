@@ -148,7 +148,7 @@ jobs:
     if: github.ref == 'refs/heads/staging'
     environment: staging
     outputs:
-      tailscale_ip: ${{ steps.get-tailscale-ip.outputs.tailscale_ip }}
+      tailscale_ip: ${{ steps.set-tailscale-ip.outputs.tailscale_ip }}
     steps:
       - name: Deploy to staging via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -256,10 +256,13 @@ jobs:
           passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
           port: '22'
           script: |
-            echo "tailscale_ip=$(tailscale ip -4)" >> $GITHUB_OUTPUT
+            tailscale ip -4
 
-  # Note: E2E tests would need to run from a machine on your Tailscale network
-  # You could set up a self-hosted runner on Tailscale for this
+      - name: Set Tailscale IP output
+        id: set-tailscale-ip
+        run: |
+          echo "tailscale_ip=${{ steps.get-tailscale-ip.outputs.stdout }}" >> $GITHUB_OUTPUT
+
   notify-staging-ready:
     needs: deploy-staging
     runs-on: ubuntu-latest
@@ -270,7 +273,7 @@ jobs:
           echo "Staging deployment completed!"
           echo "Access URL: http://${{ needs.deploy-staging.outputs.tailscale_ip }}:8081"
           echo "Only accessible via Tailscale network"
-          echo "Manual testing required (E2E tests need Tailscale access)"
+          echo "Manual testing required"
   # TODO: Set up Ubuntu server on school computer for self hosted runner.
 
   deploy-production:
