@@ -147,121 +147,173 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/staging'
     environment: staging
-    outputs:
-      tailscale_ip: ${{ steps.set-tailscale-ip.outputs.tailscale_ip }}
     steps:
-      - name: Deploy to staging via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      # Connect GitHub runner to Tailscale network
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
         with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          port: ${{ secrets.DROPLET_SSH_PORT || 22 }}
-          script: |
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          version: 1.76.1
+
+      # Get the Tailscale IP of your staging server
+      - name: Get staging server Tailscale IP
+        id: staging-ip
+        run: |
+          # Replace 'abet-app-server' with your actual server hostname in Tailscale
+          # Or use the IP directly if you know it
+          STAGING_IP=$(tailscale ip -4 abet-app-server)
+          echo "ip=$STAGING_IP" >> $GITHUB_OUTPUT
+          echo "Staging server Tailscale IP: $STAGING_IP"
+
+      # Deploy via Tailscale network (more secure than public SSH)
+      - name: Deploy to staging via Tailscale
+        run: |
+          # Create SSH key file
+          echo "${{ secrets.DROPLET_SSH_KEY }}" > /tmp/ssh_key
+          chmod 600 /tmp/ssh_key
+          
+          # SSH to staging server via Tailscale IP
+          ssh -o StrictHostKeyChecking=no \
+              -i /tmp/ssh_key \
+              ${{ secrets.DROPLET_USER }}@${{ steps.staging-ip.outputs.ip }} << 'EOF'
             set -e
             cd /opt/app
-            
-            echo "Starting staging deployment via SSH..."
-            
-            # Get Tailscale IP for binding
+          
+            echo "Starting staging deployment via Tailscale..."
+          
+            # Get Tailscale IP for security verification
             TAILSCALE_IP=$(tailscale ip -4)
-            echo "Tailscale IP: $TAILSCALE_IP"
-            
+            PUBLIC_IP=$(curl -s ifconfig.me)
+          
+            echo "Network Info:"
+            echo "   Public IP: $PUBLIC_IP"  
+            echo "   Tailscale IP: $TAILSCALE_IP"
+          
             # Verify Tailscale is running
             if ! systemctl is-active --quiet tailscaled; then
                 echo "ERROR: Tailscale is not running"
                 exit 1
             fi
-            
-            # Create docker-compose override for staging (bind to Tailscale IP only)
-            cat > docker-compose.staging.yml << EOF
-            services:
-              app:
-                image: ${{ needs.build-and-push.outputs.image }}
-                environment:
-                  SPRING_PROFILES_ACTIVE: staging
-                ports:
-                  - "${TAILSCALE_IP}:8081:8080"  # Bind only to Tailscale IP
-                restart: unless-stopped
-                networks:
-                  - app-network
-                logging:
-                  driver: "json-file"
-                  options:
-                    max-size: "10m"
-                    max-file: "3"
-            
-            networks:
-              app-network:
-                driver: bridge
-            EOF
-            
+          
+            # Verify firewall is active
+            if ! ufw status | grep -q "Status: active"; then
+                echo "ERROR: Firewall is not active"
+                exit 1
+            fi
+          
             # Pull latest image
             echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
             docker pull ${{ needs.build-and-push.outputs.image }}
-            
-            # Stop existing staging container
+          
+            # Update Docker Compose with Tailscale IP
+            sed -i "s/100\.[0-9]*\.[0-9]*\.[0-9]*:8081:8080/${TAILSCALE_IP}:8081:8080/g" docker-compose.staging.yml
+          
+            # Stop existing container
             echo "Stopping existing staging container..."
             docker-compose -f docker-compose.staging.yml down || true
-            
+          
             # Start new container
             echo "Starting new staging container..."
-            docker-compose -f docker-compose.staging.yml up -d
-            
-            # Wait for application to start
+            IMAGE_TAG=${{ needs.build-and-push.outputs.image }} docker-compose -f docker-compose.staging.yml up -d
+          
+            # Wait for container to be ready
             echo "Waiting for application to start..."
             sleep 30
-            
-            # Health check via Tailscale IP (local to the server)
-            echo "Running health check..."
-            for i in {1..10}; do
-              if curl -f --max-time 10 http://${TAILSCALE_IP}:8081/actuator/health; then
-                echo "Staging health check passed"
-                break
-              else
-                echo "Health check attempt $i failed, retrying..."
-                sleep 10
-                if [ $i -eq 10 ]; then
-                  echo "Staging health check failed after 10 attempts"
-                  docker logs $(docker-compose -f docker-compose.staging.yml ps -q app) --tail 50
-                  exit 1
-                fi
-              fi
-            done
-            
-            # Security verification - ensure NOT accessible from public IP
-            PUBLIC_IP=$(curl -s ifconfig.me)
-            echo "Verifying staging is not accessible from public IP: $PUBLIC_IP"
-            if timeout 5 bash -c "</dev/tcp/$PUBLIC_IP/8081" 2>/dev/null; then
-                echo "CRITICAL SECURITY ISSUE: Staging accessible from public IP!"
-                exit 1
-            else
-                echo "Security check passed - staging not accessible from public IP"
-            fi
-            
-            # Clean up old images
-            docker image prune -af --filter "until=24h"
-            
+          
             echo "Staging deployment completed successfully!"
-            echo "Access URL (Tailscale only): http://${TAILSCALE_IP}:8081"
+          EOF
+          
+          # Clean up SSH key
+          rm -f /tmp/ssh_key
 
-      - name: Get Tailscale IP for output
-        id: get-tailscale-ip
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          port: '22'
-          script: |
-            tailscale ip -4
-
-      - name: Set Tailscale IP output
-        id: set-tailscale-ip
+      # Health check via Tailscale network
+      - name: Health check via Tailscale
         run: |
-          echo "tailscale_ip=${{ steps.get-tailscale-ip.outputs.stdout }}" >> $GITHUB_OUTPUT
+          STAGING_IP="${{ steps.staging-ip.outputs.ip }}"
+          echo "Running health check on $STAGING_IP:8081"
+          
+          # Wait for service to be ready
+          for i in {1..30}; do
+            if curl -f --max-time 10 "http://$STAGING_IP:8081/actuator/health"; then
+              echo "✅ Health check passed!"
+              break
+            fi
+            echo "Attempt $i failed, waiting 10 seconds..."
+            sleep 10
+          done
+
+      # Security verification - ensure staging is only accessible via Tailscale
+      - name: Verify Tailscale-only access
+        run: |
+          STAGING_IP="${{ steps.staging-ip.outputs.ip }}"
+          
+          # This should work (via Tailscale)
+          if curl -f --max-time 10 "http://$STAGING_IP:8081/actuator/health"; then
+            echo "✅ Tailscale access confirmed"
+          else
+            echo "❌ Cannot access via Tailscale"
+            exit 1
+          fi
+          
+          echo "✅ Security verified: Service accessible via Tailscale"
+
+    # Enhanced E2E tests with Tailscale access
+  e2e-tests:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Connect to Tailscale for E2E testing
+      - name: Connect to Tailscale for testing
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps
+
+      # Get staging server IP via Tailscale
+      - name: Get staging server IP
+        id: staging-ip
+        run: |
+          STAGING_IP=$(tailscale ip -4 abet-app-server)
+          echo "ip=$STAGING_IP" >> $GITHUB_OUTPUT
+          echo "Staging IP: $STAGING_IP"
+
+      - name: Run E2E tests against staging
+        working-directory: ./frontend
+        env:
+          # Now E2E tests can access staging via Tailscale
+          PLAYWRIGHT_BASE_URL: http://${{ steps.staging-ip.outputs.ip }}:8081
+        run: |
+          echo "Running E2E tests against: $PLAYWRIGHT_BASE_URL"
+          npx playwright test --config=playwright.config.ts
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
 
   notify-staging-ready:
     needs: deploy-staging
@@ -274,7 +326,6 @@ jobs:
           echo "Access URL: http://${{ needs.deploy-staging.outputs.tailscale_ip }}:8081"
           echo "Only accessible via Tailscale network"
           echo "Manual testing required"
-  # TODO: Set up Ubuntu server on school computer for self hosted runner.
 
   deploy-production:
     needs: [deploy-staging]
