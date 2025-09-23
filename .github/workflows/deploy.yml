@@ -167,17 +167,24 @@ jobs:
           echo "ip=$STAGING_IP" >> $GITHUB_OUTPUT
           echo "Staging server Tailscale IP: $STAGING_IP"
 
+      # Configure SSH with direct commands
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/staging.key
+          chmod 600 ~/.ssh/staging.key
+          cat >>~/.ssh/config <<END
+          Host staging
+            HostName ${{ steps.staging-ip.outputs.ip }}
+            User ${{ secrets.DROPLET_USER }}
+            IdentityFile ~/.ssh/staging.key
+            StrictHostKeyChecking no
+          END
+
       # Deploy via Tailscale network (more secure than public SSH)
       - name: Deploy to staging via Tailscale
         run: |
-          # Create SSH key file
-          echo "${{ secrets.DROPLET_SSH_KEY }}" > /tmp/ssh_key
-          chmod 600 /tmp/ssh_key
-          
-          # SSH to staging server via Tailscale IP
-          ssh -o StrictHostKeyChecking=no \
-              -i /tmp/ssh_key \
-              ${{ secrets.DROPLET_USER }}@${{ steps.staging-ip.outputs.ip }} << 'EOF'
+          ssh staging << 'EOF'
             set -e
             cd /opt/app
           
@@ -224,9 +231,6 @@ jobs:
           
             echo "Staging deployment completed successfully!"
           EOF
-          
-          # Clean up SSH key
-          rm -f /tmp/ssh_key
 
       # Health check via Tailscale network
       - name: Health check via Tailscale
@@ -259,61 +263,68 @@ jobs:
           
           echo "✅ Security verified: Service accessible via Tailscale"
 
-    # Enhanced E2E tests with Tailscale access
-  e2e-tests:
-    needs: deploy-staging
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/staging'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Connect to Tailscale for E2E testing
-      - name: Connect to Tailscale for testing
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
-
-      - name: Install dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: Install Playwright browsers
-        working-directory: ./frontend
-        run: npx playwright install --with-deps
-
-      # Get staging server IP via Tailscale
-      - name: Get staging server IP
-        id: staging-ip
-        run: |
-          STAGING_IP=$(tailscale ip -4 abet-app-server)
-          echo "ip=$STAGING_IP" >> $GITHUB_OUTPUT
-          echo "Staging IP: $STAGING_IP"
-
-      - name: Run E2E tests against staging
-        working-directory: ./frontend
-        env:
-          # Now E2E tests can access staging via Tailscale
-          PLAYWRIGHT_BASE_URL: http://${{ steps.staging-ip.outputs.ip }}:8081
-        run: |
-          echo "Running E2E tests against: $PLAYWRIGHT_BASE_URL"
-          npx playwright test --config=playwright.config.ts
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
+      # Cleanup SSH configuration
+      - name: Cleanup SSH
         if: always()
-        with:
-          name: playwright-report
-          path: frontend/playwright-report/
+        run: |
+          rm -f ~/.ssh/staging.key
+          rm -f ~/.ssh/config
+
+    # Enhanced E2E tests with Tailscale access
+    e2e-tests:
+      needs: deploy-staging
+      runs-on: ubuntu-latest
+      if: github.ref == 'refs/heads/staging'
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        # Connect to Tailscale for E2E testing
+        - name: Connect to Tailscale for testing
+          uses: tailscale/github-action@v3
+          with:
+            oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+            oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+            tags: tag:ci
+
+        - name: Set up Node.js
+          uses: actions/setup-node@v4
+          with:
+            node-version: '22'
+            cache: 'npm'
+            cache-dependency-path: 'frontend/package-lock.json'
+
+        - name: Install dependencies
+          working-directory: ./frontend
+          run: npm ci
+
+        - name: Install Playwright browsers
+          working-directory: ./frontend
+          run: npx playwright install --with-deps
+
+        # Get staging server IP via Tailscale
+        - name: Get staging server IP
+          id: staging-ip
+          run: |
+            STAGING_IP=$(tailscale ip -4 abet-app-server)
+            echo "ip=$STAGING_IP" >> $GITHUB_OUTPUT
+            echo "Staging IP: $STAGING_IP"
+
+        - name: Run E2E tests against staging
+          working-directory: ./frontend
+          env:
+            # Now E2E tests can access staging via Tailscale
+            PLAYWRIGHT_BASE_URL: http://${{ steps.staging-ip.outputs.ip }}:8081
+          run: |
+            echo "Running E2E tests against: $PLAYWRIGHT_BASE_URL"
+            npx playwright test --config=playwright.config.ts
+
+        - name: Upload test results
+          uses: actions/upload-artifact@v4
+          if: always()
+          with:
+            name: playwright-report
+            path: frontend/playwright-report/
 
   notify-staging-ready:
     needs: deploy-staging

@@ -59,7 +59,7 @@ def skipFrontend = project.hasProperty('skipFrontend') && project.property('skip
 
 node {
     version = '20.19.0'
-    npmVersion = '10.9.0'
+    npmVersion = '11.6.0'
     download = true
     nodeProjectDir = file("${project.projectDir}/frontend")
 }
