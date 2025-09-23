@@ -1,4 +1,119 @@
-// Core development modes
+plugins {
+    id 'org.springframework.boot' version '3.2.0'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'com.github.node-gradle.node' version '7.0.1'
+}
+
+version = '0.0.7-dev'
+group = 'com.abetappteam.abetapp'
+
+// Java version configuration
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'        // REST API
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'   // Database access
+    implementation 'org.springframework.boot:spring-boot-starter-validation' // Request validation
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'   // Health checks
+
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client' // Database driver
+    runtimeOnly 'com.h2database:h2'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+test {
+    jvmArgs '-XX:-UseSharedSpaces'
+    useJUnitPlatform()
+}
+
+// Configure bootRun for development
+bootRun {
+    // Default to dev profile for local development
+    args = ['--spring.profiles.active=dev']
+
+    // Allow overriding with system property
+    if (System.getProperty('spring.profiles.active')) {
+        args = ["--spring.profiles.active=${System.getProperty('spring.profiles.active')}"]
+    }
+
+    // JVM arguments for development
+    jvmArgs = [
+            '-Dspring.devtools.restart.enabled=true',
+            '-Dspring.devtools.livereload.enabled=true'
+    ]
+}
+
+def skipFrontend = project.hasProperty('skipFrontend') && project.property('skipFrontend') == 'true'
+
+node {
+    version = '20.19.0'
+    npmVersion = '10.9.0'
+    download = true
+    nodeProjectDir = file("${project.projectDir}/frontend")
+}
+
+def npmExecutable = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
+
+tasks.register('installFrontendDeps', Exec) {
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'ci'
+    inputs.file('frontend/package-lock.json')
+    outputs.dir('frontend/node_modules')
+}
+
+tasks.register('testFrontend', Exec) {
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'test:unit'
+    onlyIf { !skipFrontend }
+}
+
+tasks.register('buildFrontend', Exec) {
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'build'
+    inputs.files(fileTree("frontend/src"))
+    inputs.file("frontend/package.json")
+    outputs.dir("frontend/dist")
+    onlyIf { !skipFrontend }
+}
+
+tasks.register('copyFrontend', Copy) {
+    dependsOn tasks.buildFrontend
+    from "frontend/dist"
+    into "src/main/resources/static"
+    onlyIf { !skipFrontend }
+}
+
+// Configure main tasks
+tasks.named('test') {
+    if (!skipFrontend) {
+        dependsOn tasks.testFrontend
+    }
+}
+
+tasks.named('processResources') {
+    if (!skipFrontend) {
+        dependsOn tasks.copyFrontend
+    }
+}
+
+// Development tasks
 tasks.register('dev') {
     group = 'abet-dev'
     description = 'Run backend only for local development'
@@ -10,7 +125,7 @@ tasks.register('dev') {
     }
 }
 
-tasks.register('devWithFrontendBuild') {
+tasks.register('devWithFrontend') {
     group = 'abet-dev'
     description = 'Run with built frontend locally'
     dependsOn 'bootRun'
@@ -49,7 +164,7 @@ tasks.register('devDockerProd') {
     }
 }
 
-// Docker control tasks
+// Unified Docker control tasks
 tasks.register('stopDocker', Exec) {
     group = 'abet-dev'
     description = 'Stop Docker environment (use -Pcompose=<env>)'
