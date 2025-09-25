@@ -98,7 +98,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up image name
         run: |
           echo "IMAGE_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
@@ -270,61 +269,61 @@ jobs:
           rm -f ~/.ssh/staging.key
           rm -f ~/.ssh/config
 
-    # Enhanced E2E tests with Tailscale access
-    e2e-tests:
-      needs: deploy-staging
-      runs-on: ubuntu-latest
-      if: github.ref == 'refs/heads/staging'
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+  # Enhanced E2E tests with Tailscale access
+  e2e-testing:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        # Connect to Tailscale for E2E testing
-        - name: Connect to Tailscale for testing
-          uses: tailscale/github-action@v3
-          with:
-            oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-            oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-            tags: tag:ci
+      # Connect to Tailscale for E2E testing
+      - name: Connect to Tailscale for testing
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
 
-        - name: Set up Node.js
-          uses: actions/setup-node@v4
-          with:
-            node-version: '22'
-            cache: 'npm'
-            cache-dependency-path: 'frontend/package-lock.json'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
 
-        - name: Install dependencies
-          working-directory: ./frontend
-          run: npm ci
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
 
-        - name: Install Playwright browsers
-          working-directory: ./frontend
-          run: npx playwright install --with-deps
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps
 
-        # Get staging server IP via Tailscale
-        - name: Get staging server IP
-          id: staging-ip
-          run: |
-            STAGING_IP=$(tailscale ip -4 abet-app-server)
-            echo "ip=$STAGING_IP" >> $GITHUB_OUTPUT
-            echo "Staging IP: $STAGING_IP"
+      # Get staging server IP via Tailscale
+      - name: Get staging server IP
+        id: staging-ip
+        run: |
+          STAGING_IP=$(tailscale ip -4 abet-app-server)
+          echo "ip=$STAGING_IP" >> $GITHUB_OUTPUT
+          echo "Staging IP: $STAGING_IP"
 
-        - name: Run E2E tests against staging
-          working-directory: ./frontend
-          env:
-            # Now E2E tests can access staging via Tailscale
-            PLAYWRIGHT_BASE_URL: http://${{ steps.staging-ip.outputs.ip }}:8081
-          run: |
-            echo "Running E2E tests against: $PLAYWRIGHT_BASE_URL"
-            npx playwright test --config=playwright.config.ts
+      - name: Run E2E tests against staging
+        working-directory: ./frontend
+        env:
+          # Now E2E tests can access staging via Tailscale
+          PLAYWRIGHT_BASE_URL: http://${{ steps.staging-ip.outputs.ip }}:8081
+        run: |
+          echo "Running E2E tests against: $PLAYWRIGHT_BASE_URL"
+          npx playwright test --config=playwright.config.ts
 
-        - name: Upload test results
-          uses: actions/upload-artifact@v4
-          if: always()
-          with:
-            name: playwright-report
-            path: frontend/playwright-report/
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
 
   notify-staging-ready:
     needs: deploy-staging
