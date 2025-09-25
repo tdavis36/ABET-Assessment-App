@@ -304,7 +304,7 @@ jobs:
           
             # Stop existing staging containers
             echo "Stopping existing staging containers..."
-            docker-compose -f docker-compose.staging.yml down || echo "No existing containers to stop"
+            docker compose -f docker-compose.staging.yml down || echo "No existing containers to stop"
           
             # Clean up any orphaned containers
             docker container prune -f || true
@@ -317,10 +317,10 @@ jobs:
             export DB_ROOT_PASSWORD="${{ secrets.STAGING_DB_ROOT_PASSWORD }}"
             export DB_NAME="${{ secrets.STAGING_DB_NAME }}"
           
-            if ! docker-compose -f docker-compose.staging.yml up -d; then
+            if ! docker compose -f docker-compose.staging.yml up -d; then
                 echo "ERROR: Failed to start staging containers"
                 echo "Checking container logs..."
-                docker-compose -f docker-compose.staging.yml logs || true
+                docker compose -f docker-compose.staging.yml logs || true
                 exit 1
             fi
           
@@ -341,9 +341,9 @@ jobs:
                     if [ $i -eq 12 ]; then
                         echo "ERROR: Health check failed after 2 minutes"
                         echo "Container status:"
-                        docker-compose -f docker-compose.staging.yml ps
+                        docker compose -f docker-compose.staging.yml ps
                         echo "Application logs:"
-                        docker-compose -f docker-compose.staging.yml logs app
+                        docker compose -f docker-compose.staging.yml logs app
                         exit 1
                     fi
                     sleep 10
@@ -561,7 +561,7 @@ jobs:
           
             # Blue-green deployment
             echo "Starting new production container..."
-            docker-compose -f docker-compose.production.yml up -d --force-recreate
+            docker compose -f docker-compose.production.yml up -d --force-recreate
           
             # Health check
             echo "Running production health check..."
@@ -574,7 +574,7 @@ jobs:
                 sleep 10
                 if [ $i -eq 15 ]; then
                   echo "Production deployment failed - rolling back"
-                  docker-compose -f docker-compose.production.yml down
+                  docker compose -f docker-compose.production.yml down
                   exit 1
                 fi
               fi
