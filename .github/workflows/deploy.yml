@@ -235,8 +235,8 @@ jobs:
             echo "Deployment time: $(date)"
           
             # Navigate to application directory
-            cd /opt/app || {
-              echo "ERROR: /opt/app directory not found"
+            cd /opt/ABET-Assessment-App || {
+              echo "ERROR: /opt/ABET-Assessment-App directory not found"
               echo "Current directory: $(pwd)"
               echo "Available directories: $(ls -la /opt/ 2>/dev/null || echo 'No /opt directory')"
               exit 1
@@ -525,7 +525,7 @@ jobs:
           
           ssh production-server << 'PRODUCTION_DEPLOY'
             set -e
-            cd /opt/app
+            cd /opt/ABET-Assessment-App
           
             echo "Starting production deployment..."
           
