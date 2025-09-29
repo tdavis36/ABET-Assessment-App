@@ -289,8 +289,6 @@ jobs:
             # Update Docker Compose file with current Tailscale IP
             if [ "$TAILSCALE_IP" != "unknown" ] && [ -f "docker-compose.staging.yml" ]; then
                 echo "Updating docker-compose.staging.yml with Tailscale IP: $TAILSCALE_IP"
-                # Use a more specific sed pattern to update the Tailscale IP
-                sed -i "s/100\.[0-9]\+\.[0-9]\+\.[0-9]\+:8081:8080/${TAILSCALE_IP}:8081:8080/g" docker-compose.staging.yml
           
                 # Verify the change was made
                 if grep -q "${TAILSCALE_IP}:8081:8080" docker-compose.staging.yml; then
