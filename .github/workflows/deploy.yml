@@ -312,10 +312,10 @@ jobs:
             # Set environment variables and start new containers
             echo "Starting new staging containers..."
             export IMAGE_TAG="${{ needs.build-and-push.outputs.image }}"
-            export DB_USERNAME="${{ secrets.STAGING_DB_USERNAME }}"
-            export DB_PASSWORD="${{ secrets.STAGING_DB_PASSWORD }}"
-            export DB_ROOT_PASSWORD="${{ secrets.STAGING_DB_ROOT_PASSWORD }}"
-            export DB_NAME="${{ secrets.STAGING_DB_NAME }}"
+            export MARIADB_USERNAME="${{ secrets.STAGING_DB_USERNAME }}"
+            export MARIADB_PASSWORD="${{ secrets.STAGING_DB_PASSWORD }}"
+            export MARIADB_ROOT_PASSWORD="${{ secrets.STAGING_DB_ROOT_PASSWORD }}"
+            export MARIADB_NAME="${{ secrets.STAGING_DB_NAME }}"
           
             if ! docker compose -f docker-compose.staging.yml up -d; then
                 echo "ERROR: Failed to start staging containers"
