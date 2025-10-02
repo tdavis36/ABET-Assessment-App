@@ -302,7 +302,7 @@ jobs:
           
             # Stop existing staging containers
             echo "Stopping existing staging containers..."
-            docker compose -f docker-compose.staging.yml down || echo "No existing containers to stop"
+            docker compose -f docker-compose.staging.yml down --remove-orphans || echo "No existing containers to stop"
           
             # Clean up any orphaned containers
             docker container prune -f || true
