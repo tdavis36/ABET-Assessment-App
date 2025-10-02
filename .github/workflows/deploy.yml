@@ -229,7 +229,7 @@ jobs:
         run: |
           echo "Starting deployment to staging server..."
           
-          ssh staging-server << 'DEPLOY_SCRIPT'
+          ssh staging-server << "DEPLOY_SCRIPT"
             set -e
             echo "Starting staging deployment via Tailscale..."
             echo "Deployment time: $(date)"
