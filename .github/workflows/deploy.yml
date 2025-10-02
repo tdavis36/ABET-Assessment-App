@@ -250,12 +250,12 @@ jobs:
             fi
           
             # Get server network info
-            TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "unknown")
+            TAILSCALE_IP=\$(tailscale ip -4 2>/dev/null || echo "unknown")
             PUBLIC_IP=$(timeout 10 curl -s --max-time 5 ifconfig.me 2>/dev/null || echo "unknown")
           
             echo "Network Information:"
-            echo "  Server Tailscale IP: $TAILSCALE_IP"
-            echo "  Server Public IP: $PUBLIC_IP"
+            echo "  Server Tailscale IP: \$TAILSCALE_IP"
+            echo "  Server Public IP: \$PUBLIC_IP"
           
             # Verify firewall is active (security check)
             if command -v ufw >/dev/null 2>&1; then
@@ -288,7 +288,7 @@ jobs:
           
             # Update Docker Compose file with current Tailscale IP
             if [ "$TAILSCALE_IP" != "unknown" ] && [ -f "docker-compose.staging.yml" ]; then
-                echo "Updating docker-compose.staging.yml with Tailscale IP: $TAILSCALE_IP"
+                echo "Updating docker-compose.staging.yml with Tailscale IP: \$TAILSCALE_IP"
           
                 # Verify the change was made
                 if grep -q "${TAILSCALE_IP}:8081:8080" docker-compose.staging.yml; then
