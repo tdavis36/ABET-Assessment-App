@@ -34,7 +34,6 @@ dependencies {
 }
 
 test {
-    jvmArgs '-XX:-UseSharedSpaces'
     useJUnitPlatform()
 }
 
