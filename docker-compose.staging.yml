@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     image: ${IMAGE_TAG}
@@ -15,7 +13,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
     ports:
       # Staging on port 8081, bound to Tailscale IP only
-      - "100.121.66.86:8081:8080"
+      - "100.79.13.76:8081:8080"
     networks:
       - abet-network-staging
     depends_on:
@@ -41,7 +39,7 @@ services:
       - db_data_staging:/var/lib/mysql
       - ./database/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "100.121.66.86:3307:3306"
+      - "100.79.13.76:3307:3306"
     networks:
       - abet-network-staging
     healthcheck:
