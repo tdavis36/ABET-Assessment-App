@@ -34,7 +34,6 @@ dependencies {
 }
 
 test {
-    jvmArgs '-XX:-UseSharedSpaces'
     useJUnitPlatform()
 }
 
@@ -100,8 +99,21 @@ tasks.register('copyFrontend', Copy) {
     onlyIf { !skipFrontend }
 }
 
+tasks.register('devFrontend', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'dev'
+    inputs.files(fileTree("frontend/src"))
+    inputs.file("frontend/package.json")
+    outputs.dir("frontend/dist")
+    onlyIf { !skipFrontend }
+}
+
 // Configure main tasks
 tasks.named('test') {
+    group = 'abet-dev'
     if (!skipFrontend) {
         dependsOn tasks.testFrontend
     }
