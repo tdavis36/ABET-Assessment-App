@@ -5,7 +5,7 @@ plugins {
     id 'com.github.node-gradle.node' version '7.0.1'
 }
 
-version = '0.0.7-dev'
+version = '0.0.31-dev'
 group = 'com.abetappteam.abetapp'
 
 // Java version configuration
@@ -67,6 +67,7 @@ def npmExecutable = System.getProperty('os.name').toLowerCase().contains('window
 
 tasks.register('installFrontendDeps', Exec) {
     workingDir 'frontend'
+    onlyIf { !skipFrontend }
     executable npmExecutable
     args 'ci'
     inputs.file('frontend/package-lock.json')

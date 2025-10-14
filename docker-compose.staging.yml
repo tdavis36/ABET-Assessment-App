@@ -12,7 +12,6 @@ services:
       - SPRING_DATASOURCE_USERNAME=abet_user
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
     ports:
-      # Staging on port 8081, bound to Tailscale IP only
       - "100.79.13.76:8081:8080"
     networks:
       - abet-network-staging
