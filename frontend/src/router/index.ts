@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ConnectionTest from "@/components/ConnectionTest.vue"
 import HomePage from "@/components/HomePage.vue"
-import SummaryPage from "@components/SummaryPage.vue"
-import FCARPage from "@components/FCARPage.vue"
-import CourseViewPage from "@components/CourseViewPage"
-import InstructorViewPage from "@components/InstructorViewPage"
-import ProgramCoursesPage from "@components/ProgramCoursesPage"
-import ProgramInstructorsPage from "@components/ProgramInstructorsPage"
+import SummaryPage from "@/components/SummaryPage.vue"
+import FCARPage from "@/components/FCARPage.vue"
+import CourseViewPage from "@/components/CourseViewPage.vue"
+import InstructorViewPage from "@/components/InstructorViewPage.vue"
+import ProgramCoursesPage from "@/components/ProgramCoursesPage.vue"
+import ProgramInstructorsPage from "@/components/ProgramInstructorsPage.vue"
 
 const routes = [
   {
