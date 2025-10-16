@@ -154,12 +154,12 @@ jobs:
 
       # Connect GitHub runner to Tailscale network
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v3
+        uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
-          version: 1.76.1
+          version: 4.0.2
 
       # Get the Tailscale IP of staging server
       - name: Get staging server Tailscale IP
@@ -171,7 +171,7 @@ jobs:
           # Try to get IP by hostname first, fallback to direct IP if needed
           STAGING_IP=""
           
-          # Option 1: Try by hostname (replace with your actual server hostname)
+          # Option 1: Try by hostname
           if command -v nslookup >/dev/null 2>&1; then
             STAGING_IP=$(tailscale ip -4 abet-app-server 2>/dev/null || echo "")
           fi
