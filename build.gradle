@@ -100,6 +100,18 @@ tasks.register('copyFrontend', Copy) {
     onlyIf { !skipFrontend }
 }
 
+tasks.register('devFrontend', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'dev'
+    inputs.files(fileTree("frontend/src"))
+    inputs.file("frontend/package.json")
+    outputs.dir("frontend/dist")
+    onlyIf { !skipFrontend }
+}
+
 // Configure main tasks
 tasks.named('test') {
     group = 'abet-dev'
@@ -170,6 +182,7 @@ tasks.register('devDockerProd', Exec) {
         println "Adminer: http://localhost:8081"
         println "Stop with: ./gradlew stopDocker -Pcompose=prod-testing"
     }
+    executable 'docker'
 }
 
 // Docker tasks
