@@ -1,12 +1,11 @@
+<script lang="ts" setup>
+  import NavBar from '@/components/NavBar.vue'
+</script>
+
 <template>
   <div id="app">
     <header>
-      <h1>ABET Assessment App</h1>
-      <nav>
-        <router-link to="/">Home</router-link> |
-        <router-link to="/test-connection">Test Connection</router-link>
-      </nav>
-      <h1 hidden>This hidden element checks if the site loaded</h1>
+      <NavBar />
     </header>
 
     <main>

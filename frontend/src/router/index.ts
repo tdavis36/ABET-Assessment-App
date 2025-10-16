@@ -7,6 +7,8 @@ import CourseViewPage from "@/components/pages/CourseViewPage.vue"
 import InstructorViewPage from "@/components/pages/InstructorViewPage.vue"
 import ProgramCoursesPage from "@/components/pages/ProgramCoursesPage.vue"
 import ProgramInstructorsPage from "@/components/pages/ProgramInstructorsPage.vue"
+import LogInPage from "@/components/pages/LogIn.vue"
+import SignUpPage from "@/components/pages/SignUp.vue"
 
 const routes = [
   {
@@ -48,6 +50,16 @@ const routes = [
     path: '/:program_id/instructors',
     name: 'Program Instructors',
     component: ProgramInstructorsPage
+  },
+  {
+    path: '/login',
+    name: 'Log In',
+    component: LogInPage
+  },
+  {
+    path: '/signup',
+    name: 'Sign Up',
+    component: SignUpPage
   }
 ]
 
