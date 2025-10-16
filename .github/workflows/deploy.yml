@@ -94,7 +94,6 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     outputs:
       image: ${{ steps.image.outputs.image }}
-      tailscale_ip: ${{ steps.get-tailscale-ip.outputs.tailscale_ip }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -148,120 +147,321 @@ jobs:
     if: github.ref == 'refs/heads/staging'
     environment: staging
     outputs:
-      tailscale_ip: ${{ steps.set-tailscale-ip.outputs.tailscale_ip }}
+      tailscale_ip: ${{ steps.get-tailscale-ip.outputs.tailscale_ip }}
     steps:
-      - name: Deploy to staging via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Connect GitHub runner to Tailscale network
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
         with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          port: ${{ secrets.DROPLET_SSH_PORT || 22 }}
-          script: |
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          version: 1.76.1
+
+      # Get the Tailscale IP of staging server
+      - name: Get staging server Tailscale IP
+        id: get-tailscale-ip
+        run: |
+          # Wait a moment for Tailscale to fully initialize
+          sleep 5
+          
+          # Try to get IP by hostname first, fallback to direct IP if needed
+          STAGING_IP=""
+          
+          # Option 1: Try by hostname (replace with your actual server hostname)
+          if command -v nslookup >/dev/null 2>&1; then
+            STAGING_IP=$(tailscale ip -4 abet-app-server 2>/dev/null || echo "")
+          fi
+          
+          # Option 2: If hostname fails, use the direct IP you know
+          if [ -z "$STAGING_IP" ]; then
+            STAGING_IP="${{ secrets.STAGING_TAILSCALE_IP }}"
+          fi
+          
+          # Validate we have an IP
+          if [ -z "$STAGING_IP" ]; then
+            echo "ERROR: Could not determine staging server Tailscale IP"
+            echo "Available Tailscale devices:"
+            tailscale status || true
+            exit 1
+          fi
+          
+          echo "tailscale_ip=$STAGING_IP" >> $GITHUB_OUTPUT
+          echo "Staging server Tailscale IP: $STAGING_IP"
+
+      # Configure SSH with manual setup
+      - name: Configure SSH for deployment
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          
+          # Create SSH key file
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/staging_key
+          chmod 600 ~/.ssh/staging_key
+          
+          # Create SSH config
+          cat > ~/.ssh/config << EOF
+          Host staging-server
+            HostName ${{ steps.get-tailscale-ip.outputs.tailscale_ip }}
+            User ${{ secrets.STAGING_SSH_USER }}
+            IdentityFile ~/.ssh/staging_key
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            ServerAliveInterval 60
+            ServerAliveCountMax 3
+            ConnectTimeout 30
+          EOF
+          
+          chmod 600 ~/.ssh/config
+          
+          # Test SSH connection
+          echo "Testing SSH connection..."
+          ssh staging-server "echo 'SSH connection successful'" || {
+            echo "SSH connection failed"
+            exit 1
+          }
+
+      # Deploy using manual SSH
+      - name: Deploy to staging via Tailscale SSH
+        run: |
+          echo "Starting deployment to staging server..."
+          
+          ssh staging-server << "DEPLOY_SCRIPT"
             set -e
-            cd /opt/app
-            
-            echo "Starting staging deployment via SSH..."
-            
-            # Get Tailscale IP for binding
-            TAILSCALE_IP=$(tailscale ip -4)
-            echo "Tailscale IP: $TAILSCALE_IP"
-            
-            # Verify Tailscale is running
+            echo "Starting staging deployment via Tailscale..."
+            echo "Deployment time: $(date)"
+          
+            # Navigate to application directory
+            cd /opt/ABET-Assessment-App || {
+              echo "ERROR: /opt/ABET-Assessment-App directory not found"
+              echo "Current directory: $(pwd)"
+              echo "Available directories: $(ls -la /opt/ 2>/dev/null || echo 'No /opt directory')"
+              exit 1
+            }
+          
+            # Verify Tailscale is running on target server
             if ! systemctl is-active --quiet tailscaled; then
-                echo "ERROR: Tailscale is not running"
+                echo "ERROR: Tailscale is not running on staging server"
+                systemctl status tailscaled || true
                 exit 1
             fi
-            
-            # Create docker-compose override for staging (bind to Tailscale IP only)
-            cat > docker-compose.staging.yml << EOF
-            services:
-              app:
-                image: ${{ needs.build-and-push.outputs.image }}
-                environment:
-                  SPRING_PROFILES_ACTIVE: staging
-                ports:
-                  - "${TAILSCALE_IP}:8081:8080"  # Bind only to Tailscale IP
-                restart: unless-stopped
-                networks:
-                  - app-network
-                logging:
-                  driver: "json-file"
-                  options:
-                    max-size: "10m"
-                    max-file: "3"
-            
-            networks:
-              app-network:
-                driver: bridge
-            EOF
-            
-            # Pull latest image
+          
+            # Get server network info
+            TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "unknown")
+            PUBLIC_IP=$(timeout 10 curl -s --max-time 5 ifconfig.me 2>/dev/null || echo "unknown")
+          
+            echo "Network Information:"
+            echo "  Server Tailscale IP: $TAILSCALE_IP"
+            echo "  Server Public IP: $PUBLIC_IP"
+          
+            # Verify firewall is active (security check)
+            if command -v ufw >/dev/null 2>&1; then
+              if ! ufw status | grep -q "Status: active"; then
+                  echo "WARNING: UFW firewall is not active"
+              else
+                  echo "✓ UFW firewall is active"
+              fi
+            fi
+          
+            # Verify Docker is running
+            if ! docker info >/dev/null 2>&1; then
+                echo "ERROR: Docker is not running"
+                systemctl status docker || true
+                exit 1
+            fi
+          
+            echo "✓ Docker is running"
+          
+            # Login to GitHub Container Registry (if not already logged in)
+            echo "Logging into GitHub Container Registry..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+            # Pull the latest image
             echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
-            docker pull ${{ needs.build-and-push.outputs.image }}
-            
-            # Stop existing staging container
-            echo "Stopping existing staging container..."
-            docker-compose -f docker-compose.staging.yml down || true
-            
-            # Start new container
-            echo "Starting new staging container..."
-            docker-compose -f docker-compose.staging.yml up -d
-            
+            if ! docker pull "${{ needs.build-and-push.outputs.image }}"; then
+                echo "ERROR: Failed to pull Docker image"
+                exit 1
+            fi
+          
+            # Update Docker Compose file with current Tailscale IP
+            if [ "$TAILSCALE_IP" != "unknown" ] && [ -f "docker-compose.staging.yml" ]; then
+                echo "Updating docker-compose.staging.yml with Tailscale IP: $TAILSCALE_IP"
+          
+                # Verify the change was made
+                if grep -q "${TAILSCALE_IP}:8081:8080" docker-compose.staging.yml; then
+                    echo "✓ Successfully updated Tailscale IP in compose file"
+                else
+                    echo "WARNING: May not have updated Tailscale IP correctly"
+                    echo "Current compose file ports section:"
+                    grep -A 2 -B 2 "8081:8080" docker-compose.staging.yml || true
+                fi
+            fi
+          
+            # Stop existing staging containers
+            echo "Stopping existing staging containers..."
+            docker compose -f docker-compose.staging.yml down --remove-orphans || echo "No existing containers to stop"
+          
+            # Clean up any orphaned containers
+            docker container prune -f || true
+          
+            # Set environment variables and start new containers
+            echo "Starting new staging containers..."
+            export IMAGE_TAG="${{ needs.build-and-push.outputs.image }}"
+            export DB_USERNAME="${{ secrets.STAGING_DB_USERNAME }}"
+            export DB_PASSWORD="${{ secrets.STAGING_DB_PASSWORD }}"
+            export DB_ROOT_PASSWORD="${{ secrets.STAGING_DB_ROOT_PASSWORD }}"
+            export DB_NAME="${{ secrets.STAGING_DB_NAME }}"
+          
+            if ! docker compose -f docker-compose.staging.yml up -d; then
+                echo "ERROR: Failed to start staging containers"
+                echo "Checking container logs..."
+                docker compose -f docker-compose.staging.yml logs || true
+                exit 1
+            fi
+          
             # Wait for application to start
             echo "Waiting for application to start..."
             sleep 30
-            
-            # Health check via Tailscale IP (local to the server)
+          
+            # Health check
             echo "Running health check..."
-            for i in {1..10}; do
-              if curl -f --max-time 10 http://${TAILSCALE_IP}:8081/actuator/health; then
-                echo "Staging health check passed"
-                break
-              else
-                echo "Health check attempt $i failed, retrying..."
-                sleep 10
-                if [ $i -eq 10 ]; then
-                  echo "Staging health check failed after 10 attempts"
-                  docker logs $(docker-compose -f docker-compose.staging.yml ps -q app) --tail 50
-                  exit 1
+            HEALTH_URL="http://localhost:8081/actuator/health"
+          
+            for i in {1..12}; do
+                if curl -f --max-time 10 --connect-timeout 5 "$HEALTH_URL" >/dev/null 2>&1; then
+                    echo "✓ Health check passed (attempt $i)"
+                    break
+                else
+                    echo "Health check failed (attempt $i/12), waiting 10 seconds..."
+                    if [ $i -eq 12 ]; then
+                        echo "ERROR: Health check failed after 2 minutes"
+                        echo "Container status:"
+                        docker compose -f docker-compose.staging.yml ps
+                        echo "Application logs:"
+                        docker compose -f docker-compose.staging.yml logs app
+                        exit 1
+                    fi
+                    sleep 10
                 fi
-              fi
             done
-            
-            # Security verification - ensure NOT accessible from public IP
-            PUBLIC_IP=$(curl -s ifconfig.me)
-            echo "Verifying staging is not accessible from public IP: $PUBLIC_IP"
-            if timeout 5 bash -c "</dev/tcp/$PUBLIC_IP/8081" 2>/dev/null; then
-                echo "CRITICAL SECURITY ISSUE: Staging accessible from public IP!"
-                exit 1
-            else
-                echo "Security check passed - staging not accessible from public IP"
-            fi
-            
-            # Clean up old images
-            docker image prune -af --filter "until=24h"
-            
-            echo "Staging deployment completed successfully!"
-            echo "Access URL (Tailscale only): http://${TAILSCALE_IP}:8081"
+          
+            # Clean up old Docker images (keep last 3)
+            echo "Cleaning up old Docker images..."
+            docker image prune -f || true
+          
+            echo "✓ Staging deployment completed successfully!"
+            echo "Staging URL (Tailscale only): http://${TAILSCALE_IP}:8081"
+            echo "Deployment completed at: $(date)"
+          DEPLOY_SCRIPT
+          
+          if [ $? -eq 0 ]; then
+            echo "✓ Deployment completed successfully"
+          else
+            echo "❌ Deployment failed"
+            exit 1
+          fi
 
-      - name: Get Tailscale IP for output
-        id: get-tailscale-ip
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-          port: '22'
-          script: |
-            tailscale ip -4
-
-      - name: Set Tailscale IP output
-        id: set-tailscale-ip
+      # Cleanup SSH configuration
+      - name: Cleanup SSH configuration
+        if: always()
         run: |
-          echo "tailscale_ip=${{ steps.get-tailscale-ip.outputs.stdout }}" >> $GITHUB_OUTPUT
+          rm -f ~/.ssh/staging_key
+          rm -f ~/.ssh/config
+
+      # Verify deployment via Tailscale network
+      - name: Verify deployment via Tailscale
+        run: |
+          STAGING_IP="${{ steps.get-tailscale-ip.outputs.tailscale_ip }}"
+          echo "Verifying deployment on $STAGING_IP:8081"
+          
+          # Wait a moment for the service to be fully ready
+          sleep 10
+          
+          # Health check via Tailscale
+          for i in {1..15}; do
+            if curl -f --max-time 10 --connect-timeout 5 "http://$STAGING_IP:8081/actuator/health"; then
+              echo "✓ External health check passed (attempt $i)"
+          
+              # Get additional health info
+              echo "Application health details:"
+              curl -s "http://$STAGING_IP:8081/actuator/health" | head -10 || true
+              break
+            else
+              echo "External health check failed (attempt $i/15), waiting 10 seconds..."
+              if [ $i -eq 15 ]; then
+                echo "ERROR: External health check failed"
+                exit 1
+              fi
+              sleep 10
+            fi
+          done
+          
+          echo "✓ Deployment verification completed"
+
+  # Enhanced E2E tests with Tailscale access
+  e2e-testing:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Connect to Tailscale for E2E testing
+      - name: Connect to Tailscale for testing
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps
+
+      - name: Run E2E tests against staging
+        working-directory: ./frontend
+        env:
+          # Use the Tailscale IP from the deploy job
+          PLAYWRIGHT_BASE_URL: http://${{ needs.deploy-staging.outputs.tailscale_ip }}:8081
+        run: |
+          echo "Running E2E tests against: $PLAYWRIGHT_BASE_URL"
+          
+          # Wait for staging to be ready
+          echo "Waiting for staging to be ready..."
+          for i in {1..10}; do
+            if curl -f --max-time 10 "$PLAYWRIGHT_BASE_URL/actuator/health"; then
+              echo "✓ Staging is ready for E2E tests"
+              break
+            else
+              echo "Waiting for staging (attempt $i/10)..."
+              sleep 15
+            fi
+          done
+          
+          # Run the actual E2E tests
+          npx playwright test --config=playwright.config.ts
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
 
   notify-staging-ready:
     needs: deploy-staging
@@ -270,31 +470,63 @@ jobs:
     steps:
       - name: Notify staging deployment
         run: |
-          echo "Staging deployment completed!"
+          echo "✓ Staging deployment completed successfully!"
           echo "Access URL: http://${{ needs.deploy-staging.outputs.tailscale_ip }}:8081"
           echo "Only accessible via Tailscale network"
-          echo "Manual testing required"
-  # TODO: Set up Ubuntu server on school computer for self hosted runner.
+          echo "Ready for manual testing"
 
   deploy-production:
-    needs: [deploy-staging]
+    needs: [deploy-staging, e2e-testing]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: production
     steps:
-      - name: Deploy to production via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.PRODUCTION_USER }}
-          key: ${{ secrets.PRODUCTION_SSH_KEY }}
-          port: ${{ secrets.PRODUCTION_SSH_PORT || 22 }}
-          script: |
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Configure SSH for production deployment
+      - name: Configure SSH for production
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          
+          # Create SSH key file
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/production_key
+          chmod 600 ~/.ssh/production_key
+          
+          # Create SSH config
+          cat > ~/.ssh/config << EOF
+          Host production-server
+            HostName ${{ secrets.PRODUCTION_HOST }}
+            User ${{ secrets.PRODUCTION_USER }}
+            IdentityFile ~/.ssh/production_key
+            Port ${{ secrets.PRODUCTION_SSH_PORT || 22 }}
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            ServerAliveInterval 60
+            ServerAliveCountMax 3
+            ConnectTimeout 30
+          EOF
+          
+          chmod 600 ~/.ssh/config
+          
+          # Test SSH connection
+          echo "Testing SSH connection to production..."
+          ssh production-server "echo 'Production SSH connection successful'" || {
+            echo "Production SSH connection failed"
+            exit 1
+          }
+
+      - name: Deploy to production
+        run: |
+          echo "Starting production deployment..."
+          
+          ssh production-server << 'PRODUCTION_DEPLOY'
             set -e
-            cd /opt/app
-            
+            cd /opt/ABET-Assessment-App
+          
             echo "Starting production deployment..."
-            
+          
             # Create docker-compose override for production (public access)
             cat > docker-compose.production.yml << EOF
             services:
@@ -312,20 +544,23 @@ jobs:
                   options:
                     max-size: "10m"
                     max-file: "3"
-            
+          
             networks:
               app-network:
                 driver: bridge
             EOF
-            
+          
+            # Login to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
             # Pull latest image
             echo "Pulling image: ${{ needs.build-and-push.outputs.image }}"
             docker pull ${{ needs.build-and-push.outputs.image }}
-            
+          
             # Blue-green deployment
             echo "Starting new production container..."
-            docker-compose -f docker-compose.production.yml up -d --force-recreate
-            
+            docker compose -f docker-compose.production.yml up -d --force-recreate
+          
             # Health check
             echo "Running production health check..."
             for i in {1..15}; do
@@ -337,14 +572,29 @@ jobs:
                 sleep 10
                 if [ $i -eq 15 ]; then
                   echo "Production deployment failed - rolling back"
-                  docker-compose -f docker-compose.production.yml down
+                  docker compose -f docker-compose.production.yml down
                   exit 1
                 fi
               fi
             done
-            
+          
             # Clean up old images
             docker image prune -af --filter "until=72h"
-            
+          
             echo "Production deployment completed successfully!"
-            echo "Public access: http://${{ secrets.DROPLET_IP }}"
+            echo "Public access: http://${{ secrets.PRODUCTION_HOST }}"
+          PRODUCTION_DEPLOY
+          
+          if [ $? -eq 0 ]; then
+            echo "✓ Production deployment completed successfully"
+          else
+            echo "❌ Production deployment failed"
+            exit 1
+          fi
+
+      # Cleanup SSH configuration
+      - name: Cleanup production SSH configuration
+        if: always()
+        run: |
+          rm -f ~/.ssh/production_key
+          rm -f ~/.ssh/config

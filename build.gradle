@@ -34,7 +34,6 @@ dependencies {
 }
 
 test {
-    jvmArgs '-XX:-UseSharedSpaces'
     useJUnitPlatform()
 }
 
@@ -59,7 +58,7 @@ def skipFrontend = project.hasProperty('skipFrontend') && project.property('skip
 
 node {
     version = '20.19.0'
-    npmVersion = '10.9.0'
+    npmVersion = '11.6.0'
     download = true
     nodeProjectDir = file("${project.projectDir}/frontend")
 }
@@ -101,8 +100,21 @@ tasks.register('copyFrontend', Copy) {
     onlyIf { !skipFrontend }
 }
 
+tasks.register('devFrontend', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'dev'
+    inputs.files(fileTree("frontend/src"))
+    inputs.file("frontend/package.json")
+    outputs.dir("frontend/dist")
+    onlyIf { !skipFrontend }
+}
+
 // Configure main tasks
 tasks.named('test') {
+    group = 'abet-dev'
     if (!skipFrontend) {
         dependsOn tasks.testFrontend
     }
@@ -117,138 +129,86 @@ tasks.named('processResources') {
 // Development tasks
 tasks.register('dev') {
     group = 'abet-dev'
-    description = 'Run application in development mode (backend only, no frontend build) - LOCAL ONLY'
+    description = 'Run backend only for local development'
     dependsOn 'bootRun'
     doFirst {
         project.setProperty('skipFrontend', 'true')
-        println "Starting LOCAL development mode - backend only"
-        println "Start frontend separately with: cd frontend && npm run dev"
-        println "Frontend will be available at: http://localhost:5173"
-        println "Backend will be available at: http://localhost:8080"
+        println "Backend: http://localhost:8080"
+        println "Start frontend separately: cd frontend && npm run dev"
     }
 }
 
-tasks.register('devLocalDeploymentTesting') {
+tasks.register('devWithFrontend') {
     group = 'abet-dev'
-    description = 'Run application in development mode with frontend build - LOCAL ONLY'
+    description = 'Run with built frontend locally'
     dependsOn 'bootRun'
     doFirst {
-        println "Starting LOCAL development mode with frontend build"
-        println "Application will be available at: http://localhost:8080"
+        println "Full app: http://localhost:8080"
     }
 }
 
-// Docker development tasks (H2 database)
-tasks.register('devDeploymentTestingUp', Exec) {
+// Unified Docker development tasks
+tasks.register('devDocker') {
     group = 'abet-dev'
-    description = 'Start Docker development environment with H2 (internal task)'
-    executable 'docker-compose'
-    args '-f', 'docker-compose.deployment-testing.yml', 'up', '-d'
-}
-
-tasks.register('devDeploymentTesting') {
-    group = 'abet-dev'
-    description = 'Run development environment in Docker (H2 database + built frontend)'
-    dependsOn 'composeBuild', 'devDeploymentTestingUp'
+    description = 'Run in Docker with H2 database'
+    dependsOn 'composeBuild'
     doLast {
-        println "Development environment started in Docker:"
-        println "Application (with built frontend): http://localhost:8080"
-        println "Database: H2 in-memory (no external container needed)"
-        println ""
-        println "This mimics production behavior with frontend built into the JAR"
-        println "H2 Console available at: http://localhost:8080/h2-console"
-        println "To stop: ./gradlew devDeploymentTestingStop"
-        println "To view logs: ./gradlew devDeploymentTestingLogs"
+        exec {
+            executable 'docker'
+            args 'compose', '-f', 'docker-compose.deployment-testing.yml', 'up', '-d'
+        }
+        println "Docker app: http://localhost:8080"
+        println "Stop with: ./gradlew stopDocker -Pcompose=deployment-testing"
     }
 }
 
-tasks.register('devDeploymentTestingLogs', Exec) {
+tasks.register('devDockerProd') {
     group = 'abet-dev'
-    description = 'Follow logs for Docker development environment'
-    executable 'docker-compose'
-    args '-f', 'docker-compose.deployment-testing.yml', 'logs', '-f'
-}
-
-tasks.register('devDeploymentTestingStop', Exec) {
-    group = 'abet-dev'
-    description = 'Stop Docker development environment'
-    executable 'docker-compose'
-    args '-f', 'docker-compose.deployment-testing.yml', 'down'
+    description = 'Run in Docker with MariaDB (production-like)'
+    dependsOn 'composeBuild'
     doLast {
-        println "Docker development environment stopped"
+        exec {
+            executable 'docker'
+            args 'compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'up', '-d'
+        }
+        println "Docker app: http://localhost:8080"
+        println "Adminer: http://localhost:8081"
+        println "Stop with: ./gradlew stopDocker -Pcompose=prod-testing"
     }
 }
 
-// Docker development tasks (MariaDB database)
-tasks.register('devProdTestingUp', Exec) {
+// Unified Docker control tasks
+tasks.register('stopDocker', Exec) {
     group = 'abet-dev'
-    description = 'Start production testing Docker environment with MariaDB (internal task)'
-    executable 'docker-compose'
-    args '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'up', '-d'
-}
-
-tasks.register('devProdTesting') {
-    group = 'abet-dev'
-    description = 'Run full production testing environment in Docker (MariaDB + built frontend)'
-    dependsOn 'composeBuild', 'devProdTestingUp'
-    doLast {
-        println "Production testing environment started in Docker:"
-        println "Application (with built frontend): http://localhost:8080"
-        println "Adminer for database management: http://localhost:8081"
-        println "Database: MariaDB on localhost:3306"
-        println ""
-        println "This simulates the full production environment:"
-        println "- MariaDB database (instead of H2)"
-        println "- Production-like JVM settings"
-        println "- Connection pooling"
-        println "- Frontend built into JAR"
-        println ""
-        println "To stop: ./gradlew devDockerProdTestingStop"
-        println "To view logs: ./gradlew devDockerProdTestingLogs"
-        println "To connect to database: mysql -h 127.0.0.1 -P 3307 -u abet_user -p"
+    description = 'Stop Docker environment (use -Pcompose=<env>)'
+    doFirst {
+        def composeEnv = project.findProperty('compose') ?: 'deployment-testing'
+        if (composeEnv == 'prod-testing') {
+            args 'compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'down'
+        } else {
+            args 'compose', '-f', "docker-compose.${composeEnv}.yml", 'down'
+        }
     }
+    executable 'docker'
 }
 
-tasks.register('devProdTestingLogs', Exec) {
+tasks.register('logsDocker', Exec) {
     group = 'abet-dev'
-    description = 'Follow logs for production testing Docker environment'
-    executable 'docker-compose'
-    args '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'logs', '-f'
-}
-
-tasks.register('devProdTestingStop', Exec) {
-    group = 'abet-dev'
-    description = 'Stop production testing Docker environment'
-    executable 'docker-compose'
-    args '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'down'
-    doLast {
-        println "Production testing Docker environment stopped"
+    description = 'Follow Docker logs (use -Pcompose=<env>)'
+    doFirst {
+        def composeEnv = project.findProperty('compose') ?: 'deployment-testing'
+        if (composeEnv == 'prod-testing') {
+            args 'compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'logs', '-f'
+        } else {
+            args 'compose', '-f', "docker-compose.${composeEnv}.yml", 'logs', '-f'
+        }
     }
+    executable 'docker'
 }
 
-// Spring Boot Docker configuration
-bootBuildImage {
-    imageName = "${project.name}:${project.version}"
-    environment = [
-            "BP_JVM_VERSION": "21"
-    ]
-}
-
-// Docker Compose support
-tasks.register('composeUp', Exec) {
-    description = 'Start services with Docker Compose'
-    executable 'docker-compose'
-    args 'up', '-d'
-}
-
-tasks.register('composeDown', Exec) {
-    description = 'Stop services with Docker Compose'
-    executable 'docker-compose'
-    args 'down'
-}
-
+// Keep only essential Docker Compose tasks
 tasks.register('composeBuild', Exec) {
     description = 'Build Docker images'
-    executable 'docker-compose'
-    args 'build'
+    executable 'docker'
+    args 'compose', 'build'
 }
