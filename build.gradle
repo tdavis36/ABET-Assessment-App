@@ -100,18 +100,6 @@ tasks.register('copyFrontend', Copy) {
     onlyIf { !skipFrontend }
 }
 
-tasks.register('devFrontend', Exec) {
-    group = 'abet-dev'
-    dependsOn tasks.installFrontendDeps
-    workingDir 'frontend'
-    executable npmExecutable
-    args 'run', 'dev'
-    inputs.files(fileTree("frontend/src"))
-    inputs.file("frontend/package.json")
-    outputs.dir("frontend/dist")
-    onlyIf { !skipFrontend }
-}
-
 // Configure main tasks
 tasks.named('test') {
     group = 'abet-dev'
@@ -129,16 +117,27 @@ tasks.named('processResources') {
 // Development tasks
 tasks.register('dev') {
     group = 'abet-dev'
-    description = 'Run backend only for local development'
+    description = 'Run for local development'
     dependsOn 'bootRun'
     doFirst {
-        project.setProperty('skipFrontend', 'true')
+        println "Frontend: http://localhost:5173"
         println "Backend: http://localhost:8080"
-        println "Start frontend separately: cd frontend && npm run dev"
     }
 }
 
-tasks.register('devWithFrontend') {
+tasks.register('devFrontend', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'dev'
+    inputs.files(fileTree("frontend/src"))
+    inputs.file("frontend/package.json")
+    outputs.dir("frontend/dist")
+    onlyIf { !skipFrontend }
+}
+
+tasks.register('devWithBuiltInFrontend') {
     group = 'abet-dev'
     description = 'Run with built frontend locally'
     dependsOn 'bootRun'
@@ -147,38 +146,34 @@ tasks.register('devWithFrontend') {
     }
 }
 
-// Unified Docker development tasks
-tasks.register('devDocker') {
+// Docker development tasks
+tasks.register('devDocker', Exec) {
     group = 'abet-dev'
     description = 'Run in Docker with H2 database'
     dependsOn 'composeBuild'
-    doLast {
-        exec {
-            executable 'docker'
-            args 'compose', '-f', 'docker-compose.deployment-testing.yml', 'up', '-d'
-        }
+    executable 'docker'
+    args 'compose', '-f', 'docker-compose.deployment-testing.yml', 'up', '-d'
+    doFirst {
         println "Docker app: http://localhost:8080"
         println "Stop with: ./gradlew stopDocker -Pcompose=deployment-testing"
     }
 }
 
-tasks.register('devDockerProd') {
+tasks.register('devDockerProd', Exec) {
     group = 'abet-dev'
     description = 'Run in Docker with MariaDB (production-like)'
     dependsOn 'composeBuild'
-    doLast {
-        exec {
-            executable 'docker'
-            args 'compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'up', '-d'
-        }
+    executable 'docker'
+    args 'compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'up', '-d'
+    doFirst {
         println "Docker app: http://localhost:8080"
         println "Adminer: http://localhost:8081"
         println "Stop with: ./gradlew stopDocker -Pcompose=prod-testing"
     }
 }
 
-// Unified Docker control tasks
-tasks.register('stopDocker', Exec) {
+// Docker tasks
+tasks.register('dockerStop', Exec) {
     group = 'abet-dev'
     description = 'Stop Docker environment (use -Pcompose=<env>)'
     doFirst {
@@ -192,7 +187,7 @@ tasks.register('stopDocker', Exec) {
     executable 'docker'
 }
 
-tasks.register('logsDocker', Exec) {
+tasks.register('dockerLogs', Exec) {
     group = 'abet-dev'
     description = 'Follow Docker logs (use -Pcompose=<env>)'
     doFirst {
