@@ -1,11 +1,20 @@
 <script lang="ts" setup>
+  import { ref } from 'vue'
   import NavBar from '@/components/NavBar.vue'
+
+  const userID = ref(310297)
+  const loggedIn = ref(true)
+
+  function handle_logout(){
+    userID.value = 0
+    loggedIn.value = false;
+  }
 </script>
 
 <template>
   <div id="app">
     <header>
-      <NavBar />
+      <NavBar :loggedIn="loggedIn" :userID="userID" @logout="handle_logout"/>
     </header>
 
     <main>

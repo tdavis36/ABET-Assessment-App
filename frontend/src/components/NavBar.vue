@@ -1,5 +1,10 @@
 <script lang="ts" setup>
-
+    const props = defineProps({
+        loggedIn:Boolean,
+        userID:Number,
+    })
+    
+    const emits = defineEmits(["logout"])
 </script>
 
 <template>
@@ -9,7 +14,10 @@
         </div>
         <router-link to="/" class="nav_button">Home</router-link>
         <router-link to="/test-connection" class="nav_button">Test Connection</router-link>
-        <router-link to="/login" class="nav_button" id="login">Log In</router-link>
+        <router-link v-if="loggedIn" to="/home" class="nav_button" id="logout" @click="$emit('logout')">
+            Logged in as <strong>{{ userID }}</strong> | Log Out
+        </router-link>
+        <router-link v-else to="/login" class="nav_button" id="login">Log In</router-link>
     </div>
     <h1 hidden>This hidden element checks if the site loaded</h1>
 </template>
@@ -38,7 +46,7 @@
         text-decoration: none;
     }
 
-    #login{
+    #login, #logout{
         margin-left: auto;
     }
 </style>

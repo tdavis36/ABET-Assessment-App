@@ -7,7 +7,7 @@
     const display_error = true;
     const error_message = "Email or password is incorrect."
 
-    function login(): number{
+    function login(): Number{
         
         return 0;
     }
