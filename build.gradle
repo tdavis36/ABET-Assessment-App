@@ -75,6 +75,7 @@ tasks.register('installFrontendDeps', Exec) {
 }
 
 tasks.register('testFrontend', Exec) {
+    group = 'abet-dev'
     dependsOn tasks.installFrontendDeps
     workingDir 'frontend'
     executable npmExecutable
@@ -103,12 +104,11 @@ tasks.register('copyFrontend', Copy) {
 // Configure main tasks
 tasks.named('test') {
     group = 'abet-dev'
-    if (!skipFrontend) {
-        dependsOn tasks.testFrontend
-    }
+    useJUnitPlatform()
+    mustRunAfter tasks.matching { it.name.contains('Frontend') || it.name.contains('frontend') }
 }
 
-tasks.named('processResources') {
+tasks.named('bootJar') {
     if (!skipFrontend) {
         dependsOn tasks.copyFrontend
     }
@@ -170,6 +170,7 @@ tasks.register('devDockerProd', Exec) {
         println "Adminer: http://localhost:8081"
         println "Stop with: ./gradlew stopDocker -Pcompose=prod-testing"
     }
+    executable 'docker'
 }
 
 // Docker tasks
