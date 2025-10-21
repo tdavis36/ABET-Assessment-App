@@ -132,11 +132,14 @@ class ExampleRepositoryTest extends BaseRepositoryTest {
     void shouldDeleteExample() {
         // Given
         Example saved = exampleRepository.save(testExample);
+        entityManager.flush();
         Long id = saved.getId();
+        entityManager.clear();
 
         // When
         exampleRepository.deleteById(id);
-        clearContext();
+        entityManager.flush();
+        entityManager.clear();
 
         // Then
         assertThat(exampleRepository.findById(id)).isEmpty();
@@ -146,17 +149,19 @@ class ExampleRepositoryTest extends BaseRepositoryTest {
     void shouldUpdateExample() {
         // Given
         Example saved = exampleRepository.save(testExample);
-        clearContext();
+        entityManager.flush();
+        entityManager.clear();
 
         // When
         Example toUpdate = exampleRepository.findById(saved.getId()).orElseThrow();
         toUpdate.setName("Updated Name");
         toUpdate.setDescription("Updated Description");
-        Example updated = exampleRepository.save(toUpdate);
-        clearContext();
+        exampleRepository.save(toUpdate);
+        entityManager.flush();
+        entityManager.clear();
 
         // Then
-        Optional<Example> found = exampleRepository.findById(updated.getId());
+        Optional<Example> found = exampleRepository.findById(toUpdate.getId());
         assertThat(found).isPresent();
         assertThat(found.get().getName()).isEqualTo("Updated Name");
         assertThat(found.get().getDescription()).isEqualTo("Updated Description");

@@ -42,12 +42,8 @@ public class ExampleController extends BaseController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createExample(
-            @Valid @RequestBody ExampleDTO dto, BindingResult result) {
-
-        if (result.hasErrors()) {
-            return validationError(result);
-        }
+    public ResponseEntity<ApiResponse<Example>> createExample(
+            @Valid @RequestBody ExampleDTO dto) {
 
         Example example = exampleService.create(dto);
         return created(example);
