@@ -71,18 +71,18 @@ public interface CourseRepository extends JpaRepository<CourseEntity, Long> {
         Page<CourseEntity> searchByNameOrCourseIdOrSection(@Param("searchTerm") String searchTerm, Pageable pageable);
 
         // Methods for measure completeness calculations
-        @Query("SELECT COUNT(m) FROM MeasureEntity m WHERE m.courseId = :courseId")
+        @Query("SELECT COUNT(m) FROM MeasureEntity m WHERE m.course.id = :courseId")
         int countTotalMeasuresByCourseId(@Param("courseId") Long courseId);
 
-        @Query("SELECT COUNT(m) FROM MeasureEntity m WHERE m.courseId = :courseId AND m.status = 'COMPLETED'")
+        @Query("SELECT COUNT(m) FROM MeasureEntity m WHERE m.course.id = :courseId AND m.status = 'COMPLETED'")
         int countCompletedMeasuresByCourseId(@Param("courseId") Long courseId);
 
-        @Query("SELECT COUNT(m) FROM MeasureEntity m WHERE m.courseId = :courseId AND m.status = 'IN_PROGRESS'")
+        @Query("SELECT COUNT(m) FROM MeasureEntity m WHERE m.course.id = :courseId AND m.status = 'IN_PROGRESS'")
         int countInProgressMeasuresByCourseId(@Param("courseId") Long courseId);
 
-        @Query("SELECT COUNT(m) FROM MeasureEntity m WHERE m.courseId = :courseId AND m.status = 'SUBMITTED'")
+        @Query("SELECT COUNT(m) FROM MeasureEntity m WHERE m.course.id = :courseId AND m.status = 'SUBMITTED'")
         int countSubmittedMeasuresByCourseId(@Param("courseId") Long courseId);
 
-        @Query("SELECT COUNT(m) FROM MeasureEntity m WHERE m.courseId = :courseId AND m.status IN ('SUBMITTED', 'IN_REVIEW')")
+        @Query("SELECT COUNT(m) FROM MeasureEntity m WHERE m.course.id = :courseId AND m.status IN ('SUBMITTED', 'IN_REVIEW')")
         int countMeasuresInReviewByCourseId(@Param("courseId") Long courseId);
 }

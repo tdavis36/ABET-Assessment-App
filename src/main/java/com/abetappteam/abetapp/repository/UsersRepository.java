@@ -25,10 +25,10 @@ public interface UsersRepository extends JpaRepository<Users, Long>{
     Optional<Users> findByEmailIgnoreCase(String email);
     
     //Checks if users exists by first name (case insensitive)
-    boolean existsByFirstNameIgnoreCase();
+    boolean existsByFirstNameIgnoreCase(String firstNameFragment);
 
     //Checks if users exists by last name (cases insensitive)
-    boolean existsByLastNameIgnoreCase();
+    boolean existsByLastNameIgnoreCase(String lastNameFragment);
 
     //List users by first name containing (case insensitive search)
     List<Users> findByFirstNameContainingIgnoreCase(String firstNameFragment);
