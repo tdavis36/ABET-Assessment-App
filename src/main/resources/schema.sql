@@ -63,7 +63,7 @@ CREATE TABLE performance_indicator (
                 ind_value TINYINT NULL,                     --Value represents number assigned during evaluation
                 ind_description TEXT NOT NULL,
                 evaluation TEXT NULL,
-                student_outcome_id BIGINT,
+                student_outcome_id BIGINT NOT NULL,
                 threshold_percentage DECIMAL(5,2) DEFAULT 70.00,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 is_active BOOLEAN DEFAULT TRUE,
@@ -112,6 +112,9 @@ CREATE TABLE measure (
                 observation TEXT NULL,
                 recommended_action TEXT NULL,
                 fcar TEXT NULL,
+                met SMALLINT NULL,
+                exceeded SMALLINT NULL,
+                below SMALLINT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 is_active BOOLEAN DEFAULT TRUE,
                 FOREIGN KEY (courseIndicator_id) REFERENCES course_indicator(id)
