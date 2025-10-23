@@ -14,7 +14,7 @@
         </div>
         <router-link to="/" class="nav_button">Home</router-link>
         <router-link to="/test-connection" class="nav_button">Test Connection</router-link>
-        <router-link v-if="loggedIn" to="/home" class="nav_button" id="logout" @click="$emit('logout')">
+        <router-link v-if="loggedIn" to="/" class="nav_button" id="logout" @click="$emit('logout')">
             Logged in as <strong>{{ userID }}</strong> | Log Out
         </router-link>
         <router-link v-else to="/login" class="nav_button" id="login">Log In</router-link>
