@@ -75,6 +75,7 @@ tasks.register('installFrontendDeps', Exec) {
 }
 
 tasks.register('testFrontend', Exec) {
+    group = 'abet-dev'
     dependsOn tasks.installFrontendDeps
     workingDir 'frontend'
     executable npmExecutable
@@ -103,12 +104,11 @@ tasks.register('copyFrontend', Copy) {
 // Configure main tasks
 tasks.named('test') {
     group = 'abet-dev'
-    if (!skipFrontend) {
-        dependsOn tasks.testFrontend
-    }
+    useJUnitPlatform()
+    mustRunAfter tasks.matching { it.name.contains('Frontend') || it.name.contains('frontend') }
 }
 
-tasks.named('processResources') {
+tasks.named('bootJar') {
     if (!skipFrontend) {
         dependsOn tasks.copyFrontend
     }
@@ -160,9 +160,13 @@ tasks.register('devDocker', Exec) {
 }
 
 tasks.register('devDockerProd', Exec) {
+tasks.register('devDockerProd', Exec) {
     group = 'abet-dev'
     description = 'Run in Docker with MariaDB (production-like)'
     dependsOn 'composeBuild'
+    executable 'docker'
+    args 'compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'up', '-d'
+    doFirst {
     executable 'docker'
     args 'compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'up', '-d'
     doFirst {
@@ -170,8 +174,11 @@ tasks.register('devDockerProd', Exec) {
         println "Adminer: http://localhost:8081"
         println "Stop with: ./gradlew stopDocker -Pcompose=prod-testing"
     }
+    executable 'docker'
 }
 
+// Docker tasks
+tasks.register('dockerStop', Exec) {
 // Docker tasks
 tasks.register('dockerStop', Exec) {
     group = 'abet-dev'
@@ -187,6 +194,7 @@ tasks.register('dockerStop', Exec) {
     executable 'docker'
 }
 
+tasks.register('dockerLogs', Exec) {
 tasks.register('dockerLogs', Exec) {
     group = 'abet-dev'
     description = 'Follow Docker logs (use -Pcompose=<env>)'

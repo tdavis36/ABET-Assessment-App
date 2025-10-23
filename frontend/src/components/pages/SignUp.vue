@@ -11,7 +11,6 @@
     const error_message = "error message"
 
     function signup(): number{
-        
         return 0;
     }
 

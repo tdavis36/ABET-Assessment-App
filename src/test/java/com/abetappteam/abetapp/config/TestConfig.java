@@ -12,7 +12,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
  * Provides common beans and configuration needed across tests.
  */
 @TestConfiguration
-@EnableJpaAuditing
 public class TestConfig {
 
     /**

@@ -1,11 +1,9 @@
 package com.abetappteam.abetapp.controller;
 
-import com.abetappteam.abetapp.BaseControllerTest;
 import com.abetappteam.abetapp.dto.ExampleDTO;
 import com.abetappteam.abetapp.entity.Example;
 import com.abetappteam.abetapp.exception.ResourceNotFoundException;
 import com.abetappteam.abetapp.service.ExampleService;
-import com.abetappteam.abetapp.util.TestDataBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,11 +26,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Controller unit tests for ExampleController
- * Uses @WebMvcTest to test only the web layer with mocked services
+ * Unit tests for ExampleController - No database involved
+ * Uses MockMvc to test the controller layer with mocked service
  */
 @WebMvcTest(ExampleController.class)
-class ExampleControllerTest extends BaseControllerTest {
+@Execution(ExecutionMode.SAME_THREAD)  // Disable parallel execution - mocks don't work well with parallel tests
+class ExampleControllerUnitTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -47,20 +46,26 @@ class ExampleControllerTest extends BaseControllerTest {
     private ExampleDTO testDTO;
 
     @BeforeEach
-    public void setUp() {
-        // Reset mocks before each test
-        reset(exampleService);
+    void setUp() {
+        testExample = new Example();
+        testExample.setId(1L);
+        testExample.setName("Test Example");
+        testExample.setDescription("Description");
+        testExample.setActive(true);
 
-        testExample = TestDataBuilder.createExampleWithId(1L, "Test Example", "Description", true);
-        testDTO = TestDataBuilder.createExampleDTO("New Example", "New Description", true);
+        testDTO = new ExampleDTO();
+        testDTO.setName("New Example");
+        testDTO.setDescription("New Description");
+        testDTO.setActive(true);
     }
 
     @Test
     void shouldGetAllExamples() throws Exception {
         // Given
-        List<Example> examples = TestDataBuilder.createExampleList(3);
-        Page<Example> page = new PageImpl<>(examples, PageRequest.of(0, 20), 3);
+        List<Example> examples = List.of(testExample);
+        Page<Example> page = new PageImpl<>(examples, PageRequest.of(0, 20), 1);
 
+        // Mock the service to return the page when called with any PageRequest
         when(exampleService.findAll(any(PageRequest.class))).thenReturn(page);
 
         // When/Then
@@ -69,9 +74,10 @@ class ExampleControllerTest extends BaseControllerTest {
                         .param("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(3))
-                .andExpect(jsonPath("$.totalElements").value(3));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.totalElements").value(1));
 
+        // Verify the service was called
         verify(exampleService, times(1)).findAll(any(PageRequest.class));
     }
 
@@ -116,16 +122,19 @@ class ExampleControllerTest extends BaseControllerTest {
                         .content(objectMapper.writeValueAsString(testDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Resource created successfully"))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.name").value("Test Example"));
-
         verify(exampleService, times(1)).create(any(ExampleDTO.class));
     }
 
     @Test
     void shouldReturnBadRequestForInvalidExample() throws Exception {
-        // Given
-        ExampleDTO invalidDTO = TestDataBuilder.createInvalidExampleDTO();
+        // Given - DTO with missing required field (name)
+        ExampleDTO invalidDTO = new ExampleDTO();
+        invalidDTO.setName(null); // Invalid - name is required
+        invalidDTO.setDescription("Description");
+        invalidDTO.setActive(true);
 
         // When/Then
         mockMvc.perform(post("/api/examples")
@@ -133,6 +142,7 @@ class ExampleControllerTest extends BaseControllerTest {
                         .content(objectMapper.writeValueAsString(invalidDTO)))
                 .andExpect(status().isBadRequest());
 
+        // Service should not be called for invalid input
         verify(exampleService, never()).create(any(ExampleDTO.class));
     }
 
@@ -155,8 +165,7 @@ class ExampleControllerTest extends BaseControllerTest {
 
     @Test
     void shouldDeleteExample() throws Exception {
-        // Given - doNothing is default for void methods, but explicit for clarity
-        doNothing().when(exampleService).delete(1L);
+        // Given - no need to mock void method with doNothing, it's the default
 
         // When/Then
         mockMvc.perform(delete("/api/examples/1"))
