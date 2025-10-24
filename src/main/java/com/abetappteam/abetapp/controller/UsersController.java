@@ -12,8 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequestMapping("/api/users")
@@ -22,7 +24,17 @@ public class UsersController extends BaseController {
     @Autowired
     private UsersService usersService;
 
-    //Get User
+    //Get All Users
+    @GetMapping
+    public ResponseEntity<PagedResponse<Users>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+            Pageable pageable = createPageable(page, size, DEFAULT_SORT_FIELD, DEFAULT_SORT_DIRECTION);
+            Page<Users> users = usersService.findAll(pageable);
+            return pagedSuccess(users);
+        }
+    
+    //Find user by id
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Users>> getUser(@PathVariable Long id) {
         Users user = usersService.findById(id);
@@ -31,12 +43,8 @@ public class UsersController extends BaseController {
 
     //Create User
     @PostMapping
-    public ResponseEntity<?> createUser(
-            @Valid @RequestBody UsersDTO dto, BindingResult result) {
-
-        if (result.hasErrors()) {
-            return validationError(result);
-        }
+    public ResponseEntity<ApiResponse<Users>> createUser(
+            @Valid @RequestBody UsersDTO dto) {
 
         Users user = usersService.create(dto);
         return created(user);
@@ -56,6 +64,6 @@ public class UsersController extends BaseController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         usersService.delete(id);
-        return success(null, "User delted successfully");
+        return success(null, "User deleted successfully");
     }
 }

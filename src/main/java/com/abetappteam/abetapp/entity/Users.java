@@ -108,4 +108,19 @@ public class Users extends BaseEntity {
             return title + " " + firstName + " " + lastName;
         }
     }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + getId() +
+                ", email" + email + '\'' +
+                ", passwordHash" + passwordHash + '\'' +
+                ", firstName" + firstName + '\'' +
+                ", lastName" + lastName + '\'' +
+                ", title" + title + '\'' +
+                ", active=" + active +
+                ", createdAt=" + getCreatedAt() +
+                ", updatedAt=" + getUpdatedAt() +
+                '}';
+    }
 }

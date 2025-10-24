@@ -1,7 +1,9 @@
 package com.abetappteam.abetapp.util;
 
 import com.abetappteam.abetapp.entity.Example;
+import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.dto.ExampleDTO;
+import com.abetappteam.abetapp.dto.UsersDTO;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -110,6 +112,45 @@ public class TestDataBuilder {
         ExampleDTO dto = new ExampleDTO();
         dto.setName(""); // Empty name - should fail validation
         dto.setDescription("x".repeat(501)); // Too long - should fail validation
+        return dto;
+    }
+
+    //USERS TEST DATA
+    //Create default user entity for testing
+    public static Users createUser() {
+        return createUser("test@gmail.com", "password", "Test", "User", "Dr.", true);
+    }
+
+    //Create custom user entity for testing
+    public static Users createUser(String email, String passwordHash, String firstName, String lastName, String title, Boolean active) {
+        Users user = new Users();
+        user.setEmail(email);
+        user.setPasswordHash(passwordHash);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setTitle(title);
+        user.setActive(active);
+        return user;
+    }
+
+    //Create custom user with id
+    public static Users createUserWithId(Long id, String email, String passwordHash, String firstName, String lastName, String title, Boolean active) {
+        Users user = createUser(email, passwordHash, firstName, lastName, title, active);
+        user.setId(id);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        return user;
+    }
+
+    //Create custom user dto
+    public static UsersDTO createUsersDTO(String email, String passwordHash, String firstName, String lastName, String title, Boolean active) {
+        UsersDTO dto = new UsersDTO();
+        dto.setEmail(email);
+        dto.setPasswordHash(passwordHash);
+        dto.setFirstName(firstName);
+        dto.setLastName(lastName);
+        dto.setTitle(title);
+        dto.setActive(active);
         return dto;
     }
 }
