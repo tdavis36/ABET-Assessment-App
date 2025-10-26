@@ -133,13 +133,30 @@ public class TestDataBuilder {
         return user;
     }
 
-    //Create custom user with id
+    //Create custom user entity with id
     public static Users createUserWithId(Long id, String email, String passwordHash, String firstName, String lastName, String title, Boolean active) {
         Users user = createUser(email, passwordHash, firstName, lastName, title, active);
         user.setId(id);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         return user;
+    }
+
+    //Create invalid user
+    public static Users createInvalidUser() {
+        Users user = new Users();
+        user.setEmail("email");            //Must be a valid email
+        user.setPasswordHash(null); //Can't be null
+        user.setFirstName("");         //Can't be empty
+        user.setLastName(null);         //Can't be null
+        user.setTitle("Thisisaveryverylongtitlethatgoesoverthelimitthatwassetforhowlongatitlteshouldbe");   //Too long
+        user.setActive(true);
+        return user;
+    }
+
+    //Create default user dto for testing
+    public static UsersDTO createUsersDTO(){
+        return createUsersDTO("newEmail@gmail.com", "NewPassword", "NewFirstName", "NewLastName", "NewTitle", true);
     }
 
     //Create custom user dto
@@ -152,5 +169,34 @@ public class TestDataBuilder {
         dto.setTitle(title);
         dto.setActive(active);
         return dto;
+    }
+
+    //Create invalid user dto
+    public static UsersDTO createInvalidUsersDTO(){
+        UsersDTO dto = new UsersDTO();
+        dto.setEmail("email");             //Must be a valid email address
+        dto.setPasswordHash(null);  //Can't be null
+        dto.setFirstName("");          //Can't be empty
+        dto.setLastName(null);          //Can't be null
+        dto.setTitle("Thisisaveryverylongtitlethatgoesoverthelimitthatwassetforhowlongatitlteshouldbe"); //Too Long
+        dto.setActive(true);
+        return dto;
+    }
+
+    //Create a list of users, every odd numbered user will be inactive
+    public static List<Users> createUserList(int count) {
+        List<Users> users = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            users.add(createUserWithId(
+                    (long) i,
+                    "user" + i +"@gmail.com",
+                    "Password " + i,
+                    "User" + i,
+                    "Doe" + i,
+                    "Dr.",
+                    i % 2 == 0
+            ));
+        }
+        return users;
     }
 }

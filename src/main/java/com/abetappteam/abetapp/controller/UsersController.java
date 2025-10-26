@@ -3,6 +3,7 @@ package com.abetappteam.abetapp.controller;
 import com.abetappteam.abetapp.dto.ApiResponse;
 import com.abetappteam.abetapp.dto.PagedResponse;
 import com.abetappteam.abetapp.entity.Users;
+import com.abetappteam.abetapp.exception.BadRequestException;
 import com.abetappteam.abetapp.dto.UsersDTO;
 import com.abetappteam.abetapp.service.UsersService;
 
@@ -12,9 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
+//import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 
 
 @RestController
@@ -39,6 +41,17 @@ public class UsersController extends BaseController {
     public ResponseEntity<ApiResponse<Users>> getUser(@PathVariable Long id) {
         Users user = usersService.findById(id);
         return success(user, "User found");
+    }
+
+    //TEMPORARY CODE
+    //Validate Login
+    @GetMapping("/login")
+    public ResponseEntity<Long> login(@RequestParam String email, @RequestParam String password){
+        Users user = usersService.findByEmail(email);
+        if(!user.getPasswordHash().equals(password)) {
+            throw new BadRequestException("Incorrect Password");
+        }
+        return ResponseEntity.ok(user.getId());
     }
 
     //Create User

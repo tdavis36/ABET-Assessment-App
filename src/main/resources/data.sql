@@ -1,11 +1,11 @@
 -- Initial test data for ABET Assessment App H2 database
 
 -- Sample Users
-INSERT INTO users (email, name_first, name_last) VALUES
-                                                           ('john.doe@university.edu', 'John', 'Doe'),
-                                                           ('jane.smith@university.edu', 'Jane', 'Smith'),
-                                                           ('admin@university.edu', 'System', 'Administrator'),
-                                                           ('mary.johnson@university.edu', 'Mary', 'Johnson');
+INSERT INTO users (email, password_hash, name_first, name_last) VALUES
+                                                           ('john.doe@university.edu', 'password1', 'John', 'Doe'),
+                                                           ('jane.smith@university.edu', 'password2', 'Jane', 'Smith'),
+                                                           ('admin@university.edu', 'adminPassword', 'System', 'Administrator'),
+                                                           ('mary.johnson@university.edu', 'password3', 'Mary', 'Johnson');
 
 --Sample Programs
 INSERT INTO program (program_name, institution) VALUES
