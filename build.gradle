@@ -26,6 +26,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'   // Database access
     implementation 'org.springframework.boot:spring-boot-starter-validation' // Request validation
     implementation 'org.springframework.boot:spring-boot-starter-actuator'   // Health checks
+    implementation 'org.springframework.boot:spring-boot-starter-security'   // Security
 
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client' // Database driver
     runtimeOnly 'com.h2database:h2'
@@ -64,6 +65,8 @@ node {
 }
 
 def npmExecutable = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
+def frontendDir = "$projectDir/frontend"
+def frontendDist = "$frontendDir/dist"
 
 tasks.register('installFrontendDeps', Exec) {
     workingDir 'frontend'
@@ -83,22 +86,22 @@ tasks.register('testFrontend', Exec) {
     onlyIf { !skipFrontend }
 }
 
+// Task to build the frontend with Vite
 tasks.register('buildFrontend', Exec) {
-    dependsOn tasks.installFrontendDeps
-    workingDir 'frontend'
-    executable npmExecutable
-    args 'run', 'build'
-    inputs.files(fileTree("frontend/src"))
-    inputs.file("frontend/package.json")
-    outputs.dir("frontend/dist")
-    onlyIf { !skipFrontend }
+    workingDir frontendDir
+    commandLine 'npm', 'run', 'build'
 }
 
+// Task to copy the built frontend into Spring Boot's static resources
 tasks.register('copyFrontend', Copy) {
-    dependsOn tasks.buildFrontend
-    from "frontend/dist"
-    into "src/main/resources/static"
-    onlyIf { !skipFrontend }
+    dependsOn 'buildFrontend'
+    from "${frontendDist}"
+    into "${projectDir}/src/main/resources/static"
+}
+
+// Ensure Spring copies frontend before processing resources
+tasks.named('processResources') {
+    dependsOn 'copyFrontend'
 }
 
 // Configure main tasks
@@ -137,11 +140,12 @@ tasks.register('devFrontend', Exec) {
     onlyIf { !skipFrontend }
 }
 
-tasks.register('devWithBuiltInFrontend') {
+tasks.register('devWithBuiltInFrontend', Exec) {
     group = 'abet-dev'
     description = 'Run with built frontend locally'
     dependsOn 'bootRun'
     doFirst {
+        args = ['--spring.profiles.active=frontend']
         println "Full app: http://localhost:8080"
     }
 }

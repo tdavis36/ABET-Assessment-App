@@ -1,17 +1,51 @@
 <script lang="ts" setup>
-    import { ref } from 'vue';
+import { ref } from 'vue';
 
-    const email_input = ref('');
-    const password_input = ref('');
+const email_input = ref('');
+const password_input = ref('');
 
-    const display_error = true;
-    const error_message = "Email or password is incorrect."
+const display_error = ref(false);
+const error_message = ref('');
 
-    function login(): Number{
-        
-        return 0;
+async function login() {
+  try {
+    // POST credentials to your backend
+    const response = await fetch('/api/users/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: email_input.value,
+        password: password_input.value
+      })
+    });
+
+    if (!response.ok) {
+      // show error if backend returns 4xx/5xx
+      const errText = await response.text();
+      display_error.value = true;
+      error_message.value = errText || "Email or password is incorrect.";
+      return;
     }
 
+    // Parse success response
+    const data = await response.json();
+    console.log('Login success:', data);
+
+    // Example: save token and redirect
+    if (data.token) {
+      localStorage.setItem('authToken', data.token);
+    }
+
+    window.location.href = '/dashboard'; // change as needed
+
+  } catch (error) {
+    console.error('Login error:', error);
+    display_error.value = true;
+    error_message.value = "Unable to reach server.";
+  }
+}
 </script>
 
 <template>
@@ -42,7 +76,7 @@
         margin: auto;
         text-align: left;
     }
-    
+
     .input_div{
         margin-top: 1rem;
         margin-bottom: 1rem;

@@ -3,7 +3,7 @@
         loggedIn:Boolean,
         userID:Number,
     })
-    
+
     const emits = defineEmits(["logout"])
 </script>
 

@@ -16,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Map;
 //import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 
 
@@ -25,6 +27,24 @@ public class UsersController extends BaseController {
 
     @Autowired
     private UsersService usersService;
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<Long>> login(@RequestBody Map<String, String> credentials) {
+        String email = credentials.get("email");
+        String password = credentials.get("password");
+
+        Users user = usersService.findByEmail(email);
+        if (user == null) {
+            throw new BadRequestException("User not found");
+        }
+
+        // ⚠️ temporary: direct string comparison (replace with hashed later)
+        if (!user.getPasswordHash().equals(password)) {
+            throw new BadRequestException("Incorrect password");
+        }
+
+        return success(user.getId(), "Login successful");
+    }
 
     //Get All Users
     @GetMapping
