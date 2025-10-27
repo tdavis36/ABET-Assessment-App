@@ -89,7 +89,9 @@ tasks.register('testFrontend', Exec) {
 // Task to build the frontend with Vite
 tasks.register('buildFrontend', Exec) {
     workingDir frontendDir
-    commandLine 'npm', 'run', 'build'
+    executable npmExecutable
+    args 'run','build'
+    onlyIf { !skipFrontend }
 }
 
 // Task to copy the built frontend into Spring Boot's static resources
