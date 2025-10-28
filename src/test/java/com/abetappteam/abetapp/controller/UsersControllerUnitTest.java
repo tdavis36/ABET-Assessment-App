@@ -1,5 +1,6 @@
 package com.abetappteam.abetapp.controller;
 
+import com.abetappteam.abetapp.config.TestSecurityConfig;
 import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.dto.UsersDTO;
 import com.abetappteam.abetapp.service.UsersService;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 @WebMvcTest(UsersController.class)
+@Import(TestSecurityConfig.class)
 @Execution(ExecutionMode.SAME_THREAD)
 public class UsersControllerUnitTest {
     @Autowired

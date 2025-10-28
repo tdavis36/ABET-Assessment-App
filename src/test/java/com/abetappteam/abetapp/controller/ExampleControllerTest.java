@@ -1,6 +1,6 @@
 package com.abetappteam.abetapp.controller;
 
-import com.abetappteam.abetapp.BaseControllerTest;
+import com.abetappteam.abetapp.config.TestSecurityConfig;
 import com.abetappteam.abetapp.dto.ExampleDTO;
 import com.abetappteam.abetapp.entity.Example;
 import com.abetappteam.abetapp.exception.ResourceNotFoundException;
@@ -14,6 +14,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -32,7 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses @WebMvcTest to test only the web layer with mocked services
  */
 @WebMvcTest(ExampleController.class)
-class ExampleControllerTest extends BaseControllerTest {
+@Import(TestSecurityConfig.class)
+@Execution(ExecutionMode.SAME_THREAD)  // Disable parallel execution - mocks don't work well with parallel tests
+class ExampleControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
