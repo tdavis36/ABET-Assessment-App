@@ -4,7 +4,6 @@
       <h2>{{ institutionName }} ~ Admin Dashboard</h2>
     </header>
 
-    <!-- Courses Section -->
     <div class="section">
       <div class="section-header">
         <h3>Courses</h3>
@@ -28,18 +27,20 @@
       </table>
     </div>
 
-    <!-- Instructors Section -->
     <div class="section">
       <div class="section-header">
         <h3>Instructors</h3>
         <button @click="showInstructorAdd = true">Edit</button>
       </div>
-      <ul>
-        <li v-for="inst in instructors" :key="inst.id">{{ inst.name }}</li>
+
+      <ul class="instructor-list">
+        <li v-for="(inst, index) in instructors" :key="inst.id">
+          <span class="name">{{ inst.name }}</span>
+          <button class="remove-btn" @click="removeInstructor(index)">Remove</button>
+        </li>
       </ul>
     </div>
 
-    <!-- Course Popup -->
     <div v-if="showCoursePopup" class="popup-overlay" @click.self="closeCoursePopup">
       <div class="popup-window">
         <header class="popup-header">
@@ -71,7 +72,6 @@
       </div>
     </div>
 
-    <!-- Instructor Add Popup -->
     <div v-if="showInstructorAdd" class="popup-overlay" @click.self="closeInstructorAdd">
       <div class="popup-window">
         <header class="popup-header">
@@ -129,7 +129,6 @@ export default {
     }
   },
   methods: {
-    // ---- Course Popup ----
     closeCoursePopup() {
       this.showCoursePopup = false;
     },
@@ -143,8 +142,6 @@ export default {
         alert("Failed to save courses.");
       }
     },
-
-    // ---- Instructor Add Popup ----
     closeInstructorAdd() {
       this.showInstructorAdd = false;
     },
@@ -156,6 +153,9 @@ export default {
         });
         this.newInstructorName = "";
       }
+    },
+    removeInstructor(index) {
+      this.instructors.splice(index, 1);
     },
     async saveInstructorChanges() {
       try {
@@ -176,7 +176,7 @@ export default {
   background: #f5f5f5;
   padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .section {
@@ -201,7 +201,7 @@ button {
 }
 
 button:hover {
-  background: #004a7d;
+  background: #93aba8;
 }
 
 table {
@@ -209,7 +209,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   border-bottom: 1px solid #ddd;
   padding: 0.6rem;
   text-align: left;
@@ -219,17 +220,43 @@ th {
   background: #e9e9e9;
 }
 
-ul {
+.instructor-list {
   list-style: none;
   padding: 0;
+  margin-top: 1rem;
 }
 
-li {
+.instructor-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  color: #222;
+  padding: 0.4rem 0;
   border-bottom: 1px solid #ddd;
-  padding: 0.5rem 0;
+  font-size: 1rem;
 }
 
-/* Popup sec */
+.instructor-list li .name {
+  text-decoration: underline;
+}
+
+.remove-btn {
+  text-decoration: none;
+  background: #d83047df;
+  color: #fff;
+  border: none;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s ease;
+}
+
+.remove-btn:hover {
+  background: #b32036;
+}
+
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -248,7 +275,7 @@ li {
   width: 90%;
   max-width: 700px;
   border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
 
@@ -273,6 +300,12 @@ li {
   padding: 1rem 1.2rem;
 }
 
+.popup-body ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 0;
+}
+
 .add-new {
   margin-top: 1rem;
   display: flex;
@@ -287,7 +320,7 @@ li {
 }
 
 .add-btn {
-  background: #004a7d;
+  background: #ccc;
   color: white;
   padding: 0.4rem 0.8rem;
   border: none;

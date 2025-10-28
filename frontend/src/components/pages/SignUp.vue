@@ -46,7 +46,6 @@ async function signup() {
       localStorage.setItem('authToken', data.token)
     }
 
-    // ✅ Redirect user to homepage after success
     router.push('/')
   } catch (error) {
     display_error.value = true
