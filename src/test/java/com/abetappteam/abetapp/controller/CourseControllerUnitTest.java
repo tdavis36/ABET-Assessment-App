@@ -1,5 +1,6 @@
 package com.abetappteam.abetapp.controller;
 
+import com.abetappteam.abetapp.config.TestSecurityConfig;
 import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.entity.CourseEntity;
 import com.abetappteam.abetapp.service.CourseService;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses MockMvc to test the controller layer with mocked service
  */
 @WebMvcTest(CourseController.class)
+@Import(TestSecurityConfig.class)
 @Execution(ExecutionMode.SAME_THREAD)
 class CourseControllerUnitTest {
 
