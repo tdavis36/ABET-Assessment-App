@@ -2,7 +2,6 @@ package com.abetappteam.abetapp.controller;
 
 import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.entity.CourseEntity;
-import com.abetappteam.abetapp.exception.ResourceNotFoundException;
 import com.abetappteam.abetapp.service.CourseService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
