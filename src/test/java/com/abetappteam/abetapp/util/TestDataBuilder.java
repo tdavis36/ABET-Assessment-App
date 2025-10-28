@@ -2,6 +2,8 @@ package com.abetappteam.abetapp.util;
 
 import com.abetappteam.abetapp.entity.Example;
 import com.abetappteam.abetapp.dto.ExampleDTO;
+import com.abetappteam.abetapp.entity.CourseEntity;
+import com.abetappteam.abetapp.dto.CourseDTO;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -73,8 +75,7 @@ public class TestDataBuilder {
                     (long) i,
                     "Example " + i,
                     "Description " + i,
-                    i % 2 == 0
-            ));
+                    i % 2 == 0));
         }
         return examples;
     }
@@ -111,5 +112,59 @@ public class TestDataBuilder {
         dto.setName(""); // Empty name - should fail validation
         dto.setDescription("x".repeat(501)); // Too long - should fail validation
         return dto;
+    }
+
+    /**
+     * Create a CourseEntity with ID (simulating persisted entity)
+     */
+    public static CourseEntity createCourseWithId(Long id, String name, String courseId, Long semesterId,
+            Long programId, Long instructorId, String section, String description) {
+        CourseEntity course = new CourseEntity();
+        course.setId(id);
+        course.setName(name);
+        course.setCourseId(courseId);
+        course.setSemesterId(semesterId);
+        course.setProgramId(programId);
+        course.setInstructorId(instructorId);
+        course.setSection(section);
+        course.setDescription(description);
+        course.setCreatedAt(LocalDateTime.now());
+        course.setUpdatedAt(LocalDateTime.now());
+        return course;
+    }
+
+    /**
+     * Create a CourseDTO for testing
+     */
+    public static CourseDTO createCourseDTO(String name, String courseId, Long semesterId, Long programId,
+            Long instructorId, String section, String description) {
+        CourseDTO dto = new CourseDTO();
+        dto.setName(name);
+        dto.setCourseId(courseId);
+        dto.setSemesterId(semesterId);
+        dto.setProgramId(programId);
+        dto.setInstructorId(instructorId);
+        dto.setSection(section);
+        dto.setDescription(description);
+        return dto;
+    }
+
+    /**
+     * Create a list of CourseEntity objects for testing
+     */
+    public static List<CourseEntity> createCourseList(int count) {
+        List<CourseEntity> courses = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            courses.add(createCourseWithId(
+                    (long) i,
+                    "Course " + i,
+                    "CS" + (100 + i),
+                    1L,
+                    1L,
+                    1L,
+                    "A",
+                    "Description for Course " + i));
+        }
+        return courses;
     }
 }
