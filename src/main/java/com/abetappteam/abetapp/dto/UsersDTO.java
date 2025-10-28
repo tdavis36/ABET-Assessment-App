@@ -2,7 +2,6 @@ package com.abetappteam.abetapp.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 
 //Data Transfer Object for Users
@@ -26,7 +25,6 @@ public class UsersDTO {
     private String lastName;
 
     @Size(min = 1, max = 50, message = "Title must be 1 to 50 characters long")
-    @Column(name = "name_title", nullable = true, length = 50)
     private String title;
 
     private Boolean active;

@@ -3,6 +3,7 @@ package com.abetappteam.abetapp.controller;
 import com.abetappteam.abetapp.dto.ApiResponse;
 import com.abetappteam.abetapp.dto.PagedResponse;
 import com.abetappteam.abetapp.entity.Users;
+import com.abetappteam.abetapp.exception.BadRequestException;
 import com.abetappteam.abetapp.dto.UsersDTO;
 import com.abetappteam.abetapp.service.UsersService;
 
@@ -12,8 +13,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Map;
+//import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
+
 
 @RestController
 @RequestMapping("/api/users")
@@ -22,21 +28,56 @@ public class UsersController extends BaseController {
     @Autowired
     private UsersService usersService;
 
-    //Get User
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<Long>> login(@RequestBody Map<String, String> credentials) {
+        String email = credentials.get("email");
+        String password = credentials.get("password");
+
+        Users user = usersService.findByEmail(email);
+        if (user == null) {
+            throw new BadRequestException("User not found");
+        }
+
+        // ⚠️ temporary: direct string comparison (replace with hashed later)
+        if (!user.getPasswordHash().equals(password)) {
+            throw new BadRequestException("Incorrect password");
+        }
+
+        return success(user.getId(), "Login successful");
+    }
+
+    //Get All Users
+    @GetMapping
+    public ResponseEntity<PagedResponse<Users>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+            Pageable pageable = createPageable(page, size, DEFAULT_SORT_FIELD, DEFAULT_SORT_DIRECTION);
+            Page<Users> users = usersService.findAll(pageable);
+            return pagedSuccess(users);
+        }
+    
+    //Find user by id
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Users>> getUser(@PathVariable Long id) {
         Users user = usersService.findById(id);
         return success(user, "User found");
     }
 
+    //TEMPORARY CODE
+    //Validate Login
+    @GetMapping("/login")
+    public ResponseEntity<Long> login(@RequestParam String email, @RequestParam String password){
+        Users user = usersService.findByEmail(email);
+        if(!user.getPasswordHash().equals(password)) {
+            throw new BadRequestException("Incorrect Password");
+        }
+        return ResponseEntity.ok(user.getId());
+    }
+
     //Create User
     @PostMapping
-    public ResponseEntity<?> createUser(
-            @Valid @RequestBody UsersDTO dto, BindingResult result) {
-
-        if (result.hasErrors()) {
-            return validationError(result);
-        }
+    public ResponseEntity<ApiResponse<Users>> createUser(
+            @Valid @RequestBody UsersDTO dto) {
 
         Users user = usersService.create(dto);
         return created(user);
@@ -56,6 +97,6 @@ public class UsersController extends BaseController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         usersService.delete(id);
-        return success(null, "User delted successfully");
+        return success(null, "User deleted successfully");
     }
 }

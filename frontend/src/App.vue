@@ -14,7 +14,7 @@
 <template>
   <div id="app">
     <header>
-      <NavBar :loggedIn="loggedIn" :userID="userID" @logout="handle_logout"/>
+      <NavBar :loggedIn="loggedIn" :userID="userID" @logout="handle_logout" />
     </header>
 
     <main>
@@ -30,7 +30,7 @@
   text-align: center;
 }
 
-header{
+header {
   margin-bottom: 1rem;
 }
 </style>

@@ -60,9 +60,11 @@ public class UsersService extends BaseService<Users, Long, UsersRepository> {
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
         user.setTitle(dto.getTitle());
+        
         if(dto.getActive() != null){
             user.setActive(dto.getActive());
         }
+        logger.info("Updating user: {}", id);
         return repository.save(user);
     }
 
@@ -71,6 +73,18 @@ public class UsersService extends BaseService<Users, Long, UsersRepository> {
     public Users findByEmail(String email) {
         return repository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email address: " + email));
+    }
+
+    //Find user by first name
+    @Transactional(readOnly = true)
+    public List<Users> searchByFirstName(String searchTerm) {
+        return repository.findByFirstNameContainingIgnoreCase(searchTerm);
+    }
+
+    //Find user by last name
+    @Transactional(readOnly = true)
+    public List<Users> searchByLastName(String searchTerm) {
+        return repository.findByLastNameContainingIgnoreCase(searchTerm);
     }
 
     //Find all active users

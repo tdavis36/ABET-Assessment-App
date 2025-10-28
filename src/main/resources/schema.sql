@@ -1,14 +1,22 @@
 -- H2 Compatible Schema for ABET Assessment App
 -- User table
+DROP TABLE IF EXISTS users;
+
 CREATE TABLE users (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                password_hash VARCHAR(255),
-                name_first VARCHAR(100) NOT NULL,
-                name_last VARCHAR(100) NOT NULL,
-                name_title VARCHAR(50) NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT TRUE
+                       id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                       email VARCHAR(255) UNIQUE NOT NULL,
+                       password_hash VARCHAR(255) NOT NULL,
+                       name_first VARCHAR(100) NOT NULL,
+                       name_last VARCHAR(100) NOT NULL,
+                       name_title VARCHAR(50) NULL,
+                       -- From BaseEntity
+                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                       version BIGINT DEFAULT 0,
+                       deleted BOOLEAN DEFAULT FALSE NOT NULL,
+                       deleted_at TIMESTAMP NULL,
+                       -- Users-specific
+                       is_active BOOLEAN DEFAULT TRUE NOT NULL
 );
 
 -- Program table
@@ -46,8 +54,10 @@ CREATE TABLE semester (
 -- Student outcomes table
 CREATE TABLE student_outcome (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                out_number TINYINT NOT NULL,                --Number represents order of outcomes
-                out_value TINYINT NULL,                     --Value represents number assigned during evaluation
+                out_number TINYINT NOT NULL,
+                -- Number represents order of outcomes
+                out_value TINYINT NULL,
+                -- Value represents number assigned during evaluation
                 out_description TEXT NOT NULL,
                 evaluation TEXT NULL,
                 semester_id BIGINT NOT NULL,
@@ -59,8 +69,10 @@ CREATE TABLE student_outcome (
 -- Performance indicators table
 CREATE TABLE performance_indicator (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                ind_number TINYINT NOT NULL,                --Number represents order of outcomes
-                ind_value TINYINT NULL,                     --Value represents number assigned during evaluation
+                ind_number TINYINT NOT NULL,
+                -- Number represents order of outcomes
+                ind_value TINYINT NULL,
+                -- Value represents number assigned during evaluation
                 ind_description TEXT NOT NULL,
                 evaluation TEXT NULL,
                 student_outcome_id BIGINT NOT NULL,
