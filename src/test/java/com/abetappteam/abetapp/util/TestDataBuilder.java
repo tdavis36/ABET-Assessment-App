@@ -3,6 +3,8 @@ package com.abetappteam.abetapp.util;
 import com.abetappteam.abetapp.entity.Example;
 import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.dto.ExampleDTO;
+import com.abetappteam.abetapp.entity.CourseEntity;
+import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.dto.UsersDTO;
 
 import java.time.LocalDateTime;
@@ -75,8 +77,7 @@ public class TestDataBuilder {
                     (long) i,
                     "Example " + i,
                     "Description " + i,
-                    i % 2 == 0
-            ));
+                    i % 2 == 0));
         }
         return examples;
     }
@@ -115,14 +116,69 @@ public class TestDataBuilder {
         return dto;
     }
 
-    //USERS TEST DATA
-    //Create default user entity for testing
+    /**
+     * Create a CourseEntity with ID (simulating persisted entity)
+     */
+    public static CourseEntity createCourseWithId(Long id, String name, String courseId, Long semesterId,
+            Long programId, Long instructorId, String section, String description) {
+        CourseEntity course = new CourseEntity();
+        course.setId(id);
+        course.setName(name);
+        course.setCourseId(courseId);
+        course.setSemesterId(semesterId);
+        course.setProgramId(programId);
+        course.setInstructorId(instructorId);
+        course.setSection(section);
+        course.setDescription(description);
+        course.setCreatedAt(LocalDateTime.now());
+        course.setUpdatedAt(LocalDateTime.now());
+        return course;
+    }
+
+    /**
+     * Create a CourseDTO for testing
+     */
+    public static CourseDTO createCourseDTO(String name, String courseId, Long semesterId, Long programId,
+            Long instructorId, String section, String description) {
+        CourseDTO dto = new CourseDTO();
+        dto.setName(name);
+        dto.setCourseId(courseId);
+        dto.setSemesterId(semesterId);
+        dto.setProgramId(programId);
+        dto.setInstructorId(instructorId);
+        dto.setSection(section);
+        dto.setDescription(description);
+        return dto;
+    }
+
+    /**
+     * Create a list of CourseEntity objects for testing
+     */
+    public static List<CourseEntity> createCourseList(int count) {
+        List<CourseEntity> courses = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            courses.add(createCourseWithId(
+                    (long) i,
+                    "Course " + i,
+                    "CS" + (100 + i),
+                    1L,
+                    1L,
+                    1L,
+                    "A",
+                    "Description for Course " + i));
+        }
+        return courses;
+    }
+
+    // USERS TEST DATA
+    // Create default user entity for testing
     public static Users createUser() {
         return createUser("test@gmail.com", "password", "Test", "User", "Dr.", true);
     }
 
-    //Create custom user entity for testing
-    public static Users createUser(String email, String passwordHash, String firstName, String lastName, String title, Boolean active) {
+    // Create custom user entity for testing
+    public static Users createUser(String email, String passwordHash, String firstName, String lastName, String title,
+            Boolean active) {
         Users user = new Users();
         user.setEmail(email);
         user.setPasswordHash(passwordHash);
@@ -133,8 +189,9 @@ public class TestDataBuilder {
         return user;
     }
 
-    //Create custom user entity with id
-    public static Users createUserWithId(Long id, String email, String passwordHash, String firstName, String lastName, String title, Boolean active) {
+    // Create custom user entity with id
+    public static Users createUserWithId(Long id, String email, String passwordHash, String firstName, String lastName,
+            String title, Boolean active) {
         Users user = createUser(email, passwordHash, firstName, lastName, title, active);
         user.setId(id);
         user.setCreatedAt(LocalDateTime.now());
@@ -142,25 +199,26 @@ public class TestDataBuilder {
         return user;
     }
 
-    //Create invalid user
+    // Create invalid user
     public static Users createInvalidUser() {
         Users user = new Users();
-        user.setEmail("email");            //Must be a valid email
-        user.setPasswordHash(null); //Can't be null
-        user.setFirstName("");         //Can't be empty
-        user.setLastName(null);         //Can't be null
-        user.setTitle("Thisisaveryverylongtitlethatgoesoverthelimitthatwassetforhowlongatitlteshouldbe");   //Too long
+        user.setEmail("email"); // Must be a valid email
+        user.setPasswordHash(null); // Can't be null
+        user.setFirstName(""); // Can't be empty
+        user.setLastName(null); // Can't be null
+        user.setTitle("Thisisaveryverylongtitlethatgoesoverthelimitthatwassetforhowlongatitlteshouldbe"); // Too long
         user.setActive(true);
         return user;
     }
 
-    //Create default user dto for testing
-    public static UsersDTO createUsersDTO(){
+    // Create default user dto for testing
+    public static UsersDTO createUsersDTO() {
         return createUsersDTO("newEmail@gmail.com", "NewPassword", "NewFirstName", "NewLastName", "NewTitle", true);
     }
 
-    //Create custom user dto
-    public static UsersDTO createUsersDTO(String email, String passwordHash, String firstName, String lastName, String title, Boolean active) {
+    // Create custom user dto
+    public static UsersDTO createUsersDTO(String email, String passwordHash, String firstName, String lastName,
+            String title, Boolean active) {
         UsersDTO dto = new UsersDTO();
         dto.setEmail(email);
         dto.setPasswordHash(passwordHash);
@@ -171,31 +229,30 @@ public class TestDataBuilder {
         return dto;
     }
 
-    //Create invalid user dto
-    public static UsersDTO createInvalidUsersDTO(){
+    // Create invalid user dto
+    public static UsersDTO createInvalidUsersDTO() {
         UsersDTO dto = new UsersDTO();
-        dto.setEmail("email");             //Must be a valid email address
-        dto.setPasswordHash(null);  //Can't be null
-        dto.setFirstName("");          //Can't be empty
-        dto.setLastName(null);          //Can't be null
-        dto.setTitle("Thisisaveryverylongtitlethatgoesoverthelimitthatwassetforhowlongatitlteshouldbe"); //Too Long
+        dto.setEmail("email"); // Must be a valid email address
+        dto.setPasswordHash(null); // Can't be null
+        dto.setFirstName(""); // Can't be empty
+        dto.setLastName(null); // Can't be null
+        dto.setTitle("Thisisaveryverylongtitlethatgoesoverthelimitthatwassetforhowlongatitlteshouldbe"); // Too Long
         dto.setActive(true);
         return dto;
     }
 
-    //Create a list of users, every odd numbered user will be inactive
+    // Create a list of users, every odd numbered user will be inactive
     public static List<Users> createUserList(int count) {
         List<Users> users = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
             users.add(createUserWithId(
                     (long) i,
-                    "user" + i +"@gmail.com",
+                    "user" + i + "@gmail.com",
                     "Password " + i,
                     "User" + i,
                     "Doe" + i,
                     "Dr.",
-                    i % 2 == 0
-            ));
+                    i % 2 == 0));
         }
         return users;
     }
