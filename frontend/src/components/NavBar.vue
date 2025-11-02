@@ -8,6 +8,7 @@ const props = defineProps({
 const isAdmin = true
 
 const emits = defineEmits(["logout"])
+
 </script>
 
 <template>

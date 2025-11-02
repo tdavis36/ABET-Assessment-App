@@ -2,73 +2,49 @@
     const API_BASE = 'http://localhost:8080/api'
     import { ref } from 'vue';
 
-const email_input = ref('');
-const password_input = ref('');
+    import { useRouter } from 'vue-router'
+    const router = useRouter()
 
-    const display_error = true;
-    const error_message = "Email or password is incorrect.";
+    const email_input = ref('');
+    const password_input = ref('');
+
+    const display_error = ref(true);
+    const error_message = ref("Email or password is incorrect.");
 
     const loading = ref(false)
     const error = ref('')
 
-async function login() {
-  try {
-    // POST credentials to your backend
-    const response = await fetch('/api/users/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: email_input.value,
-        password: password_input.value
-      })
-    });
+    const emits = defineEmits(["login"])
 
-    if (!response.ok) {
-      // show error if backend returns 4xx/5xx
-      const errText = await response.text();
-      display_error.value = true;
-      error_message.value = errText || "Email or password is incorrect.";
-      return;
-    }
-
-    async function makeRequest(url: string, options: RequestInit = {}) {
-        loading.value = true
-        error.value = ''
-
-        try {
-            const response = await fetch(url, {
+    async function login() {
+        // POST credentials to your backend
+        const response = await fetch('/api/users/login', {
+            method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                
+                'Content-Type': 'application/json'
             },
-            ...options
+            body: JSON.stringify({
+                email: email_input.value,
+                password: password_input.value
             })
+        });
 
-            if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-            }
+        if (!response.ok) {
+            // show error if backend returns 4xx/5xx
+            const errText = await response.text();
+            display_error.value = true;
+            error_message.value = errText || "Email or password is incorrect.";
+            return;
+        }
+        else{
+            //Send signed in user back to App.vue
+            const json_obj = await response.json()
 
-            const data = await response.json()
-            return data
-        } catch (err) {
-            error.value = err instanceof Error ? err.message : 'Unknown error'
-            throw err
-        } finally {
-            loading.value = false
+            
+            emits("login", json_obj.data)
+            router.push("/")
         }
     }
-
-    async function loginTest(){
-        try {
-            const result = await makeRequest(`${API_BASE}/user/1`)
-            console.log(JSON.stringify(result))
-        } catch (err) {
-            console.error('Login test failed:', err)
-        }
-    }
-
 </script>
 
 <template>
@@ -80,7 +56,7 @@ async function login() {
         <div class="input_div">
             <input id="password" v-model="password_input" placeholder="Password" type="password"></input>
         </div>
-        <div id="submit_div"><button id="submit" @click="loginTest">Submit</button></div>
+        <div id="submit_div"><button id="submit" @click="login">Submit</button></div>
         <p>Don't have an account? Sign up <router-link to="/signup">here</router-link>.</p>
     </div>
 
