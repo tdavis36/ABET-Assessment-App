@@ -9,15 +9,20 @@ import ProgramCoursesPage from '@/components/pages/ProgramCoursesPage.vue'
 import ProgramInstructorsPage from '@/components/pages/ProgramInstructorsPage.vue'
 import LogInPage from '@/components/pages/LogIn.vue'
 import SignUpPage from '@/components/pages/SignUp.vue'
+import AdminDashboard from '@/components/AdminDashboard.vue'
 
 const routes = [
+   {
+    path: '/',
+    redirect: '/dashboard',
+  },
   {
     path: '/test-connection',
     name: 'ConnectionTest',
     component: ConnectionTest,
   },
   {
-    path: '/',
+    path: '/dashboard',
     name: 'Home',
     component: HomePage,
   },
@@ -61,11 +66,18 @@ const routes = [
     name: 'Sign Up',
     component: SignUpPage,
   },
+  {
+    path: '/admin-dashboard',
+    name: 'Admin Dashboard',
+    component: AdminDashboard,
+  },
 ]
+
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: routes, // ← This was missing!
+  routes: routes,
 })
 
 export default router

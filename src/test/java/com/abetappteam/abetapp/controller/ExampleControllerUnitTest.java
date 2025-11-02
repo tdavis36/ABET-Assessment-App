@@ -1,5 +1,6 @@
 package com.abetappteam.abetapp.controller;
 
+import com.abetappteam.abetapp.config.TestSecurityConfig;
 import com.abetappteam.abetapp.dto.ExampleDTO;
 import com.abetappteam.abetapp.entity.Example;
 import com.abetappteam.abetapp.exception.ResourceNotFoundException;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses MockMvc to test the controller layer with mocked service
  */
 @WebMvcTest(ExampleController.class)
+@Import(TestSecurityConfig.class)
 @Execution(ExecutionMode.SAME_THREAD)  // Disable parallel execution - mocks don't work well with parallel tests
 class ExampleControllerUnitTest {
 
@@ -125,6 +128,7 @@ class ExampleControllerUnitTest {
                 .andExpect(jsonPath("$.message").value("Resource created successfully"))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.name").value("Test Example"));
+
         verify(exampleService, times(1)).create(any(ExampleDTO.class));
     }
 
