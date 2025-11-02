@@ -1,11 +1,15 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
+    const API_BASE = 'http://localhost:8080/api'
+    import { ref } from 'vue';
 
 const email_input = ref('');
 const password_input = ref('');
 
-const display_error = ref(false);
-const error_message = ref('');
+    const display_error = true;
+    const error_message = "Email or password is incorrect.";
+
+    const loading = ref(false)
+    const error = ref('')
 
 async function login() {
   try {
@@ -29,23 +33,42 @@ async function login() {
       return;
     }
 
-    // Parse success response
-    const data = await response.json();
-    console.log('Login success:', data);
+    async function makeRequest(url: string, options: RequestInit = {}) {
+        loading.value = true
+        error.value = ''
 
-    // Example: save token and redirect
-    if (data.token) {
-      localStorage.setItem('authToken', data.token);
+        try {
+            const response = await fetch(url, {
+            headers: {
+                'Content-Type': 'application/json',
+                
+            },
+            ...options
+            })
+
+            if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            const data = await response.json()
+            return data
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : 'Unknown error'
+            throw err
+        } finally {
+            loading.value = false
+        }
     }
 
-    window.location.href = '/dashboard'; // change as needed
+    async function loginTest(){
+        try {
+            const result = await makeRequest(`${API_BASE}/user/1`)
+            console.log(JSON.stringify(result))
+        } catch (err) {
+            console.error('Login test failed:', err)
+        }
+    }
 
-  } catch (error) {
-    console.error('Login error:', error);
-    display_error.value = true;
-    error_message.value = "Unable to reach server.";
-  }
-}
 </script>
 
 <template>
@@ -57,7 +80,7 @@ async function login() {
         <div class="input_div">
             <input id="password" v-model="password_input" placeholder="Password" type="password"></input>
         </div>
-        <div id="submit_div"><button id="submit" @click="login">Submit</button></div>
+        <div id="submit_div"><button id="submit" @click="loginTest">Submit</button></div>
         <p>Don't have an account? Sign up <router-link to="/signup">here</router-link>.</p>
     </div>
 
