@@ -8,11 +8,8 @@
     const email_input = ref('');
     const password_input = ref('');
 
-    const display_error = ref(true);
+    const display_error = ref(false);
     const error_message = ref("Email or password is incorrect.");
-
-    const loading = ref(false)
-    const error = ref('')
 
     const emits = defineEmits(["login"])
 
