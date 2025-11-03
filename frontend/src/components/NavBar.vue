@@ -1,14 +1,17 @@
 <script lang="ts" setup>
-const props = defineProps({
-    loggedIn: Boolean,
-    userID: Number,
-})
+    import { ref } from 'vue'
+    
+    const props = defineProps({
+        loggedIn: Boolean,
+        userID:{
+            type: Number,
+            default: NaN
+        },
+        user_first_name: String
+    })
 
-
-const isAdmin = true
-
-const emits = defineEmits(["logout"])
-
+    const isAdmin = true
+    const emits = defineEmits(["logout"])
 </script>
 
 <template>
@@ -43,7 +46,7 @@ const emits = defineEmits(["logout"])
             id="logout"
             @click="$emit('logout')"
         >
-            Logged in as <strong>{{ userID }}</strong> | Log Out
+            Hello, <strong>{{ user_first_name }}</strong> | Log Out
         </router-link>
 
         <router-link

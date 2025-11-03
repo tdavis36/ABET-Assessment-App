@@ -40,7 +40,6 @@
             //Send signed in user back to App.vue
             const json_obj = await response.json()
 
-            
             emits("login", json_obj.data)
             router.push("/")
         }
