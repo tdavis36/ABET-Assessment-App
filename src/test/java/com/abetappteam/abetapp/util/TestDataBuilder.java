@@ -5,7 +5,7 @@ import com.abetappteam.abetapp.entity.Program;
 import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.dto.ExampleDTO;
 import com.abetappteam.abetapp.dto.ProgramDTO;
-import com.abetappteam.abetapp.entity.CourseEntity;
+import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.dto.UsersDTO;
 
@@ -121,9 +121,9 @@ public class TestDataBuilder {
     /**
      * Create a CourseEntity with ID (simulating persisted entity)
      */
-    public static CourseEntity createCourseWithId(Long id, String name, String courseId, Long semesterId,
-            Long programId, Long instructorId, String section, String description) {
-        CourseEntity course = new CourseEntity();
+    public static Course createCourseWithId(Long id, String name, String courseId, Long semesterId,
+                                            Long programId, Long instructorId, String section, String description) {
+        Course course = new Course();
         course.setId(id);
         course.setName(name);
         course.setCourseId(courseId);
@@ -156,8 +156,8 @@ public class TestDataBuilder {
     /**
      * Create a list of CourseEntity objects for testing
      */
-    public static List<CourseEntity> createCourseList(int count) {
-        List<CourseEntity> courses = new ArrayList<>();
+    public static List<Course> createCourseList(int count) {
+        List<Course> courses = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
             courses.add(createCourseWithId(
                     (long) i,

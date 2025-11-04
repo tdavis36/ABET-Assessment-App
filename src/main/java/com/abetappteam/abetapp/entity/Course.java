@@ -10,7 +10,7 @@ import jakarta.validation.constraints.NotNull;
  */
 @Entity
 @Table(name = "courses")
-public class CourseEntity extends BaseEntity {
+public class Course extends BaseEntity {
 
     @NotBlank(message = "Course name is required")
     @Column(nullable = false)
@@ -39,17 +39,17 @@ public class CourseEntity extends BaseEntity {
     private String description;
 
     // Constructors
-    public CourseEntity() {
+    public Course() {
     }
 
-    public CourseEntity(String name, String courseId, Long semesterId, Long programId) {
+    public Course(String name, String courseId, Long semesterId, Long programId) {
         this.name = name;
         this.courseId = courseId;
         this.semesterId = semesterId;
         this.programId = programId;
     }
 
-    public CourseEntity(String name, String courseId, Long semesterId, Long programId, String section) {
+    public Course(String name, String courseId, Long semesterId, Long programId, String section) {
         this.name = name;
         this.courseId = courseId;
         this.semesterId = semesterId;

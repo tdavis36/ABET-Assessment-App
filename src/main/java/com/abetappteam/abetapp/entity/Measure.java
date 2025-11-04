@@ -6,20 +6,20 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
 @Entity
-public class MeasureEntity extends BaseEntity {
+public class Measure extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "course_id")
-    private CourseEntity course;
+    private Course course;
 
     @Column(name = "status")
     private String status;
 
-    public CourseEntity getCourse() {
+    public Course getCourse() {
         return course;
     }
 
-    public void setCourse(CourseEntity course) {
+    public void setCourse(Course course) {
         this.course = course;
     }
 

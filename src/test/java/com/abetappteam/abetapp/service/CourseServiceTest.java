@@ -2,7 +2,7 @@ package com.abetappteam.abetapp.service;
 
 import com.abetappteam.abetapp.BaseServiceTest;
 import com.abetappteam.abetapp.dto.CourseDTO;
-import com.abetappteam.abetapp.entity.CourseEntity;
+import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.exception.BusinessException;
 import com.abetappteam.abetapp.exception.ConflictException;
 import com.abetappteam.abetapp.exception.ResourceNotFoundException;
@@ -36,7 +36,7 @@ class CourseServiceTest extends BaseServiceTest {
     @InjectMocks
     private CourseService courseService;
 
-    private CourseEntity testCourse;
+    private Course testCourse;
     private CourseDTO testCourseDTO;
 
     @BeforeEach
@@ -53,7 +53,7 @@ class CourseServiceTest extends BaseServiceTest {
         when(courseRepository.findById(1L)).thenReturn(Optional.of(testCourse));
 
         // When
-        CourseEntity found = courseService.findById(1L);
+        Course found = courseService.findById(1L);
 
         // Then
         assertThat(found).isNotNull();
@@ -78,15 +78,15 @@ class CourseServiceTest extends BaseServiceTest {
     void shouldCreateCourseWithSection() {
         // Given
         when(courseRepository.existsByCourseIdAndSectionAndSemesterId("CS102", "B", 1L)).thenReturn(false);
-        when(courseRepository.save(any(CourseEntity.class))).thenReturn(testCourse);
+        when(courseRepository.save(any(Course.class))).thenReturn(testCourse);
 
         // When
-        CourseEntity created = courseService.createCourse(testCourseDTO);
+        Course created = courseService.createCourse(testCourseDTO);
 
         // Then
         assertThat(created).isNotNull();
         verify(courseRepository).existsByCourseIdAndSectionAndSemesterId("CS102", "B", 1L);
-        verify(courseRepository).save(any(CourseEntity.class));
+        verify(courseRepository).save(any(Course.class));
     }
 
     @Test
@@ -95,15 +95,15 @@ class CourseServiceTest extends BaseServiceTest {
         CourseDTO dtoWithoutSection = TestDataBuilder.createCourseDTO("Database Systems", "CS102", 1L, 1L, 1L, null,
                 "Description");
         when(courseRepository.findByCourseIdIgnoreCaseAndSemesterId("CS102", 1L)).thenReturn(Optional.empty());
-        when(courseRepository.save(any(CourseEntity.class))).thenReturn(testCourse);
+        when(courseRepository.save(any(Course.class))).thenReturn(testCourse);
 
         // When
-        CourseEntity created = courseService.createCourse(dtoWithoutSection);
+        Course created = courseService.createCourse(dtoWithoutSection);
 
         // Then
         assertThat(created).isNotNull();
         verify(courseRepository).findByCourseIdIgnoreCaseAndSemesterId("CS102", 1L);
-        verify(courseRepository).save(any(CourseEntity.class));
+        verify(courseRepository).save(any(Course.class));
     }
 
     @Test
@@ -137,21 +137,21 @@ class CourseServiceTest extends BaseServiceTest {
         // Given
         when(courseRepository.findById(1L)).thenReturn(Optional.of(testCourse));
         when(courseRepository.findByCourseIdIgnoreCase("CS102")).thenReturn(Optional.empty());
-        when(courseRepository.save(any(CourseEntity.class))).thenReturn(testCourse);
+        when(courseRepository.save(any(Course.class))).thenReturn(testCourse);
 
         // When
-        CourseEntity updated = courseService.updateCourse(1L, testCourseDTO);
+        Course updated = courseService.updateCourse(1L, testCourseDTO);
 
         // Then
         assertThat(updated).isNotNull();
         verify(courseRepository).findById(1L);
-        verify(courseRepository).save(any(CourseEntity.class));
+        verify(courseRepository).save(any(Course.class));
     }
 
     @Test
     void shouldThrowConflictWhenUpdatingWithDuplicateCourseId() {
         // Given
-        CourseEntity anotherCourse = TestDataBuilder.createCourseWithId(2L, "Another Course", "CS102", 1L, 1L, 1L, "A",
+        Course anotherCourse = TestDataBuilder.createCourseWithId(2L, "Another Course", "CS102", 1L, 1L, 1L, "A",
                 "Description");
         when(courseRepository.findById(1L)).thenReturn(Optional.of(testCourse));
         when(courseRepository.findByCourseIdIgnoreCase("CS102")).thenReturn(Optional.of(anotherCourse));
@@ -197,7 +197,7 @@ class CourseServiceTest extends BaseServiceTest {
         when(courseRepository.findByCourseIdIgnoreCase("CS101")).thenReturn(Optional.of(testCourse));
 
         // When
-        CourseEntity found = courseService.findByCourseId("CS101");
+        Course found = courseService.findByCourseId("CS101");
 
         // Then
         assertThat(found).isNotNull();
@@ -222,7 +222,7 @@ class CourseServiceTest extends BaseServiceTest {
         when(courseRepository.findByCourseIdIgnoreCaseAndSection("CS101", "A")).thenReturn(Optional.of(testCourse));
 
         // When
-        CourseEntity found = courseService.getCourseSection("CS101", "A");
+        Course found = courseService.getCourseSection("CS101", "A");
 
         // Then
         assertThat(found).isNotNull();
@@ -245,12 +245,12 @@ class CourseServiceTest extends BaseServiceTest {
     void shouldGetCoursesBySemester() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        List<CourseEntity> courses = TestDataBuilder.createCourseList(3);
-        Page<CourseEntity> page = new PageImpl<>(courses, pageable, 3);
+        List<Course> courses = TestDataBuilder.createCourseList(3);
+        Page<Course> page = new PageImpl<>(courses, pageable, 3);
         when(courseRepository.findBySemesterId(1L, pageable)).thenReturn(page);
 
         // When
-        Page<CourseEntity> found = courseService.getCoursesBySemester(1L, pageable);
+        Page<Course> found = courseService.getCoursesBySemester(1L, pageable);
 
         // Then
         assertThat(found.getContent()).hasSize(3);
@@ -262,12 +262,12 @@ class CourseServiceTest extends BaseServiceTest {
     void shouldGetCoursesByProgram() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        List<CourseEntity> courses = TestDataBuilder.createCourseList(2);
-        Page<CourseEntity> page = new PageImpl<>(courses, pageable, 2);
+        List<Course> courses = TestDataBuilder.createCourseList(2);
+        Page<Course> page = new PageImpl<>(courses, pageable, 2);
         when(courseRepository.findByProgramId(1L, pageable)).thenReturn(page);
 
         // When
-        Page<CourseEntity> found = courseService.getCoursesByProgram(1L, pageable);
+        Page<Course> found = courseService.getCoursesByProgram(1L, pageable);
 
         // Then
         assertThat(found.getContent()).hasSize(2);
@@ -278,12 +278,12 @@ class CourseServiceTest extends BaseServiceTest {
     void shouldGetCoursesByInstructor() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        List<CourseEntity> courses = TestDataBuilder.createCourseList(2);
-        Page<CourseEntity> page = new PageImpl<>(courses, pageable, 2);
+        List<Course> courses = TestDataBuilder.createCourseList(2);
+        Page<Course> page = new PageImpl<>(courses, pageable, 2);
         when(courseRepository.findByInstructorId(1L, pageable)).thenReturn(page);
 
         // When
-        Page<CourseEntity> found = courseService.getCoursesByInstructor(1L, pageable);
+        Page<Course> found = courseService.getCoursesByInstructor(1L, pageable);
 
         // Then
         assertThat(found.getContent()).hasSize(2);
@@ -294,12 +294,12 @@ class CourseServiceTest extends BaseServiceTest {
     void shouldGetCoursesBySemesterAndProgram() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        List<CourseEntity> courses = TestDataBuilder.createCourseList(2);
-        Page<CourseEntity> page = new PageImpl<>(courses, pageable, 2);
+        List<Course> courses = TestDataBuilder.createCourseList(2);
+        Page<Course> page = new PageImpl<>(courses, pageable, 2);
         when(courseRepository.findBySemesterIdAndProgramId(1L, 1L, pageable)).thenReturn(page);
 
         // When
-        Page<CourseEntity> found = courseService.getCoursesBySemesterAndProgram(1L, 1L, pageable);
+        Page<Course> found = courseService.getCoursesBySemesterAndProgram(1L, 1L, pageable);
 
         // Then
         assertThat(found.getContent()).hasSize(2);
@@ -309,11 +309,11 @@ class CourseServiceTest extends BaseServiceTest {
     @Test
     void shouldSearchByNameOrCourseIdOrSection() {
         // Given
-        List<CourseEntity> courses = TestDataBuilder.createCourseList(2);
+        List<Course> courses = TestDataBuilder.createCourseList(2);
         when(courseRepository.searchByNameOrCourseIdOrSection("software")).thenReturn(courses);
 
         // When
-        List<CourseEntity> found = courseService.searchByNameOrCourseIdOrSection("software");
+        List<Course> found = courseService.searchByNameOrCourseIdOrSection("software");
 
         // Then
         assertThat(found).hasSize(2);
@@ -323,11 +323,11 @@ class CourseServiceTest extends BaseServiceTest {
     @Test
     void shouldSearchByNameOrCourseId() {
         // Given
-        List<CourseEntity> courses = TestDataBuilder.createCourseList(2);
+        List<Course> courses = TestDataBuilder.createCourseList(2);
         when(courseRepository.searchByNameOrCourseId("CS101")).thenReturn(courses);
 
         // When
-        List<CourseEntity> found = courseService.searchByNameOrCourseId("CS101");
+        List<Course> found = courseService.searchByNameOrCourseId("CS101");
 
         // Then
         assertThat(found).hasSize(2);
@@ -337,11 +337,11 @@ class CourseServiceTest extends BaseServiceTest {
     @Test
     void shouldGetCoursesByProgramAndSemester() {
         // Given
-        List<CourseEntity> courses = TestDataBuilder.createCourseList(3);
+        List<Course> courses = TestDataBuilder.createCourseList(3);
         when(courseRepository.findByProgramIdAndSemesterId(1L, 1L)).thenReturn(courses);
 
         // When
-        List<CourseEntity> found = courseService.getCoursesByProgramAndSemester(1L, 1L);
+        List<Course> found = courseService.getCoursesByProgramAndSemester(1L, 1L);
 
         // Then
         assertThat(found).hasSize(3);
@@ -365,10 +365,10 @@ class CourseServiceTest extends BaseServiceTest {
     void shouldAssignInstructor() {
         // Given
         when(courseRepository.findById(1L)).thenReturn(Optional.of(testCourse));
-        when(courseRepository.save(any(CourseEntity.class))).thenReturn(testCourse);
+        when(courseRepository.save(any(Course.class))).thenReturn(testCourse);
 
         // When
-        CourseEntity updated = courseService.assignInstructor(1L, 2L);
+        Course updated = courseService.assignInstructor(1L, 2L);
 
         // Then
         assertThat(updated.getInstructorId()).isEqualTo(2L);
@@ -379,10 +379,10 @@ class CourseServiceTest extends BaseServiceTest {
     void shouldRemoveInstructor() {
         // Given
         when(courseRepository.findById(1L)).thenReturn(Optional.of(testCourse));
-        when(courseRepository.save(any(CourseEntity.class))).thenReturn(testCourse);
+        when(courseRepository.save(any(Course.class))).thenReturn(testCourse);
 
         // When
-        CourseEntity updated = courseService.removeInstructor(1L);
+        Course updated = courseService.removeInstructor(1L);
 
         // Then
         assertThat(updated.getInstructorId()).isNull();

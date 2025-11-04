@@ -1,7 +1,7 @@
 package com.abetappteam.abetapp.service;
 
 import com.abetappteam.abetapp.dto.CourseDTO;
-import com.abetappteam.abetapp.entity.CourseEntity;
+import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.exception.BusinessException;
 import com.abetappteam.abetapp.exception.ConflictException;
 import com.abetappteam.abetapp.exception.ResourceNotFoundException;
@@ -19,7 +19,7 @@ import java.util.Optional;
  * Service class for Course entity
  */
 @Service
-public class CourseService extends BaseService<CourseEntity, Long, CourseRepository> {
+public class CourseService extends BaseService<Course, Long, CourseRepository> {
 
     @Autowired
     public CourseService(CourseRepository repository) {
@@ -32,8 +32,8 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
     }
 
     @Transactional
-    public CourseEntity createCourse(String name, String courseId, Long semesterId, Long programId, Long instructorId,
-            String section, String description) {
+    public Course createCourse(String name, String courseId, Long semesterId, Long programId, Long instructorId,
+                               String section, String description) {
         // Check for duplicate course with same course ID and section in same semester
         if (section != null && !section.trim().isEmpty()) {
             if (repository.existsByCourseIdAndSectionAndSemesterId(courseId, section, semesterId)) {
@@ -47,7 +47,7 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
             }
         }
 
-        CourseEntity course = new CourseEntity();
+        Course course = new Course();
         course.setName(name);
         course.setCourseId(courseId);
         course.setSemesterId(semesterId);
@@ -61,16 +61,16 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
     }
 
     @Transactional
-    public CourseEntity createCourse(CourseDTO dto) {
+    public Course createCourse(CourseDTO dto) {
         return createCourse(dto.getName(), dto.getCourseId(), dto.getSemesterId(),
                 dto.getProgramId(), dto.getInstructorId(), dto.getSection(),
                 dto.getDescription());
     }
 
     @Transactional
-    public CourseEntity updateCourse(Long courseId, String name, String courseIdStr, Long instructorId, String section,
-            String description) {
-        CourseEntity course = findById(courseId);
+    public Course updateCourse(Long courseId, String name, String courseIdStr, Long instructorId, String section,
+                               String description) {
+        Course course = findById(courseId);
 
         // Check for duplicate course ID
         if (courseIdStr != null && !courseIdStr.equals(course.getCourseId())) {
@@ -84,7 +84,7 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
 
         // Check for duplicate section
         if (section != null && !section.equals(course.getSection())) {
-            Optional<CourseEntity> existingSections = repository.findByCourseIdIgnoreCase(course.getCourseId());
+            Optional<Course> existingSections = repository.findByCourseIdIgnoreCase(course.getCourseId());
             boolean sectionExists = existingSections.stream()
                     .anyMatch(c -> section.equals(c.getSection()) &&
                             !c.getId().equals(courseId) &&
@@ -111,14 +111,14 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
     }
 
     @Transactional
-    public CourseEntity updateCourse(Long courseId, CourseDTO dto) {
+    public Course updateCourse(Long courseId, CourseDTO dto) {
         return updateCourse(courseId, dto.getName(), dto.getCourseId(), dto.getInstructorId(),
                 dto.getSection(), dto.getDescription());
     }
 
     @Transactional
     public void removeCourse(Long courseId) {
-        CourseEntity course = findById(courseId);
+        Course course = findById(courseId);
 
         if (hasMeasuresInReview(courseId)) {
             throw new BusinessException("Cannot delete course with measures submitted for review");
@@ -130,7 +130,7 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
     }
 
     @Transactional(readOnly = true)
-    public Optional<CourseEntity> getCourseSections(String courseId) {
+    public Optional<Course> getCourseSections(String courseId) {
         logger.debug("Fetching all sections for course ID: {}", courseId);
         return repository.findByCourseIdIgnoreCase(courseId);
     }
@@ -139,7 +139,7 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
      * Get specific course section
      */
     @Transactional(readOnly = true)
-    public CourseEntity getCourseSection(String courseId, String section) {
+    public Course getCourseSection(String courseId, String section) {
         logger.debug("Fetching course section: {} - {}", courseId, section);
         return repository.findByCourseIdIgnoreCaseAndSection(courseId, section)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -147,44 +147,44 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
     }
 
     @Transactional(readOnly = true)
-    public Page<CourseEntity> getCoursesBySemester(Long semesterId, Pageable pageable) {
+    public Page<Course> getCoursesBySemester(Long semesterId, Pageable pageable) {
         logger.debug("Fetching courses for semester ID: {}", semesterId);
         return repository.findBySemesterId(semesterId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<CourseEntity> getCoursesByProgram(Long programId, Pageable pageable) {
+    public Page<Course> getCoursesByProgram(Long programId, Pageable pageable) {
         logger.debug("Fetching courses for program ID: {}", programId);
         return repository.findByProgramId(programId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<CourseEntity> getCoursesByInstructor(Long instructorId, Pageable pageable) {
+    public Page<Course> getCoursesByInstructor(Long instructorId, Pageable pageable) {
         logger.debug("Fetching courses for instructor ID: {}", instructorId);
         return repository.findByInstructorId(instructorId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<CourseEntity> getCoursesBySemesterAndProgram(Long semesterId, Long programId, Pageable pageable) {
+    public Page<Course> getCoursesBySemesterAndProgram(Long semesterId, Long programId, Pageable pageable) {
         logger.debug("Fetching courses for semester {} and program {}", semesterId, programId);
         return repository.findBySemesterIdAndProgramId(semesterId, programId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public List<CourseEntity> getCoursesWithSections() {
+    public List<Course> getCoursesWithSections() {
         logger.debug("Fetching courses with sections");
         return repository.findCoursesWithSections();
     }
 
     @Transactional(readOnly = true)
-    public List<CourseEntity> getCoursesWithoutSections() {
+    public List<Course> getCoursesWithoutSections() {
         logger.debug("Fetching courses without sections");
         return repository.findCoursesWithoutSections();
     }
 
     @Transactional(readOnly = true)
     public MeasureCompletenessResponse calculateMeasureCompleteness(Long courseId) {
-        CourseEntity course = findById(courseId);
+        Course course = findById(courseId);
 
         int totalMeasures = getTotalMeasuresForCourse(courseId);
         int completedMeasures = getCompletedMeasuresForCourse(courseId);
@@ -205,7 +205,7 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
     }
 
     @Transactional(readOnly = true)
-    public CourseEntity findByCourseId(String courseId) {
+    public Course findByCourseId(String courseId) {
         return repository.findByCourseIdIgnoreCase(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + courseId));
     }
@@ -216,25 +216,25 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
     }
 
     @Transactional(readOnly = true)
-    public List<CourseEntity> searchByNameOrCourseIdOrSection(String searchTerm) {
+    public List<Course> searchByNameOrCourseIdOrSection(String searchTerm) {
         logger.debug("Searching courses with term: {}", searchTerm);
         return repository.searchByNameOrCourseIdOrSection(searchTerm);
     }
 
     @Transactional(readOnly = true)
-    public Page<CourseEntity> searchByNameOrCourseIdOrSection(String searchTerm, Pageable pageable) {
+    public Page<Course> searchByNameOrCourseIdOrSection(String searchTerm, Pageable pageable) {
         logger.debug("Searching courses with term: {}", searchTerm);
         return repository.searchByNameOrCourseIdOrSection(searchTerm, pageable);
     }
 
     @Transactional(readOnly = true)
-    public List<CourseEntity> searchByNameOrCourseId(String searchTerm) {
+    public List<Course> searchByNameOrCourseId(String searchTerm) {
         logger.debug("Searching courses with term: {}", searchTerm);
         return repository.searchByNameOrCourseId(searchTerm);
     }
 
     @Transactional(readOnly = true)
-    public List<CourseEntity> getCoursesByProgramAndSemester(Long programId, Long semesterId) {
+    public List<Course> getCoursesByProgramAndSemester(Long programId, Long semesterId) {
         logger.debug("Fetching courses for program {} and semester {}", programId, semesterId);
         return repository.findByProgramIdAndSemesterId(programId, semesterId);
     }
@@ -245,16 +245,16 @@ public class CourseService extends BaseService<CourseEntity, Long, CourseReposit
     }
 
     @Transactional
-    public CourseEntity assignInstructor(Long courseId, Long instructorId) {
-        CourseEntity course = findById(courseId);
+    public Course assignInstructor(Long courseId, Long instructorId) {
+        Course course = findById(courseId);
         course.setInstructorId(instructorId);
         logger.info("Assigning instructor {} to course {}", instructorId, courseId);
         return repository.save(course);
     }
 
     @Transactional
-    public CourseEntity removeInstructor(Long courseId) {
-        CourseEntity course = findById(courseId);
+    public Course removeInstructor(Long courseId) {
+        Course course = findById(courseId);
         course.setInstructorId(null);
         logger.info("Removing instructor from course {}", courseId);
         return repository.save(course);

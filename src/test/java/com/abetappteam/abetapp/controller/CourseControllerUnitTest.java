@@ -2,7 +2,7 @@ package com.abetappteam.abetapp.controller;
 
 import com.abetappteam.abetapp.config.TestSecurityConfig;
 import com.abetappteam.abetapp.dto.CourseDTO;
-import com.abetappteam.abetapp.entity.CourseEntity;
+import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.service.CourseService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,12 +44,12 @@ class CourseControllerUnitTest {
     @MockBean
     private CourseService courseService;
 
-    private CourseEntity testCourse;
+    private Course testCourse;
     private CourseDTO testCourseDTO;
 
     @BeforeEach
     void setUp() {
-        testCourse = new CourseEntity();
+        testCourse = new Course();
         testCourse.setId(1L);
         testCourse.setName("Software Engineering");
         testCourse.setCourseId("CS401");
@@ -66,8 +66,8 @@ class CourseControllerUnitTest {
     @Test
     void shouldGetAllCoursesBySemester() throws Exception {
         // Given
-        List<CourseEntity> courses = List.of(testCourse);
-        Page<CourseEntity> page = new PageImpl<>(courses, PageRequest.of(0, 20), 1);
+        List<Course> courses = List.of(testCourse);
+        Page<Course> page = new PageImpl<>(courses, PageRequest.of(0, 20), 1);
 
         when(courseService.getCoursesBySemester(eq(1L), any(PageRequest.class))).thenReturn(page);
 
@@ -187,7 +187,7 @@ class CourseControllerUnitTest {
     @Test
     void shouldAssignInstructorToCourse() throws Exception {
         // Given
-        CourseEntity updatedCourse = testCourse;
+        Course updatedCourse = testCourse;
         when(courseService.assignInstructor(1L, 2L)).thenReturn(updatedCourse);
 
         // When/Then
@@ -202,7 +202,7 @@ class CourseControllerUnitTest {
     @Test
     void shouldRemoveInstructorFromCourse() throws Exception {
         // Given
-        CourseEntity updatedCourse = testCourse;
+        Course updatedCourse = testCourse;
         when(courseService.removeInstructor(1L)).thenReturn(updatedCourse);
 
         // When/Then
@@ -217,8 +217,8 @@ class CourseControllerUnitTest {
     @Test
     void shouldGetCoursesByProgram() throws Exception {
         // Given
-        List<CourseEntity> courses = List.of(testCourse);
-        Page<CourseEntity> page = new PageImpl<>(courses, PageRequest.of(0, 20), 1);
+        List<Course> courses = List.of(testCourse);
+        Page<Course> page = new PageImpl<>(courses, PageRequest.of(0, 20), 1);
 
         when(courseService.getCoursesByProgram(eq(1L), any(PageRequest.class))).thenReturn(page);
 
@@ -236,8 +236,8 @@ class CourseControllerUnitTest {
     @Test
     void shouldGetCoursesByInstructor() throws Exception {
         // Given
-        List<CourseEntity> courses = List.of(testCourse);
-        Page<CourseEntity> page = new PageImpl<>(courses, PageRequest.of(0, 20), 1);
+        List<Course> courses = List.of(testCourse);
+        Page<Course> page = new PageImpl<>(courses, PageRequest.of(0, 20), 1);
 
         when(courseService.getCoursesByInstructor(eq(2L), any(PageRequest.class))).thenReturn(page);
 
@@ -255,8 +255,8 @@ class CourseControllerUnitTest {
     @Test
     void shouldSearchCourses() throws Exception {
         // Given
-        List<CourseEntity> courses = List.of(testCourse);
-        Page<CourseEntity> page = new PageImpl<>(courses, PageRequest.of(0, 20), 1);
+        List<Course> courses = List.of(testCourse);
+        Page<Course> page = new PageImpl<>(courses, PageRequest.of(0, 20), 1);
 
         when(courseService.searchByNameOrCourseIdOrSection(eq("Software"), any(PageRequest.class))).thenReturn(page);
 

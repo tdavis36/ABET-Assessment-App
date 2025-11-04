@@ -3,7 +3,7 @@ package com.abetappteam.abetapp.controller;
 import com.abetappteam.abetapp.dto.ApiResponse;
 import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.dto.PagedResponse;
-import com.abetappteam.abetapp.entity.CourseEntity;
+import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.service.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -31,7 +31,7 @@ public class CourseController extends BaseController {
      * Get all courses for a specific semester
      */
     @GetMapping
-    public ResponseEntity<PagedResponse<CourseEntity>> getAllCourses(
+    public ResponseEntity<PagedResponse<Course>> getAllCourses(
             @RequestParam Long semesterId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -41,7 +41,7 @@ public class CourseController extends BaseController {
         logger.info("Fetching all courses for semester ID: {}", semesterId);
         zvalidateId(semesterId);
         Pageable pageable = createPageable(page, size, sort, direction);
-        Page<CourseEntity> courses = courseService.getCoursesBySemester(semesterId, pageable);
+        Page<Course> courses = courseService.getCoursesBySemester(semesterId, pageable);
         return pagedSuccess(courses);
     }
 
@@ -49,10 +49,10 @@ public class CourseController extends BaseController {
      * Get a specific course by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CourseEntity>> getCourse(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Course>> getCourse(@PathVariable Long id) {
         logger.info("Fetching course with ID: {}", id);
         zvalidateId(id);
-        CourseEntity course = courseService.findById(id);
+        Course course = courseService.findById(id);
         return success(course, "Course retrieved successfully");
     }
 
@@ -69,7 +69,7 @@ public class CourseController extends BaseController {
         }
 
         logger.info("Creating new course: {} ({})", dto.getName(), dto.getCourseId());
-        CourseEntity course = courseService.createCourse(dto);
+        Course course = courseService.createCourse(dto);
         return created(course);
     }
 
@@ -77,13 +77,13 @@ public class CourseController extends BaseController {
      * Update an existing course
      */
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<CourseEntity>> updateCourse(
+    public ResponseEntity<ApiResponse<Course>> updateCourse(
             @PathVariable Long id,
             @Valid @RequestBody CourseDTO dto) {
 
         logger.info("Updating course with ID: {}", id);
         zvalidateId(id);
-        CourseEntity updated = courseService.updateCourse(id, dto);
+        Course updated = courseService.updateCourse(id, dto);
         return success(updated, "Course updated successfully");
     }
 
@@ -115,14 +115,14 @@ public class CourseController extends BaseController {
      * Assign a course to an instructor
      */
     @PostMapping("/{courseId}/instructors/{instructorId}")
-    public ResponseEntity<ApiResponse<CourseEntity>> assignInstructor(
+    public ResponseEntity<ApiResponse<Course>> assignInstructor(
             @PathVariable Long courseId,
             @PathVariable Long instructorId) {
 
         logger.info("Assigning instructor {} to course {}", instructorId, courseId);
         zvalidateId(courseId);
         zvalidateId(instructorId);
-        CourseEntity updated = courseService.assignInstructor(courseId, instructorId);
+        Course updated = courseService.assignInstructor(courseId, instructorId);
         return success(updated, "Instructor assigned successfully");
     }
 
@@ -130,12 +130,12 @@ public class CourseController extends BaseController {
      * Remove instructor from a course
      */
     @DeleteMapping("/{courseId}/instructors")
-    public ResponseEntity<ApiResponse<CourseEntity>> removeInstructor(
+    public ResponseEntity<ApiResponse<Course>> removeInstructor(
             @PathVariable Long courseId) {
 
         logger.info("Removing instructor from course {}", courseId);
         zvalidateId(courseId);
-        CourseEntity updated = courseService.removeInstructor(courseId);
+        Course updated = courseService.removeInstructor(courseId);
         return success(updated, "Instructor removed successfully");
     }
 
@@ -143,7 +143,7 @@ public class CourseController extends BaseController {
      * Get courses by program
      */
     @GetMapping("/program/{programId}")
-    public ResponseEntity<PagedResponse<CourseEntity>> getCoursesByProgram(
+    public ResponseEntity<PagedResponse<Course>> getCoursesByProgram(
             @PathVariable Long programId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -153,7 +153,7 @@ public class CourseController extends BaseController {
         logger.info("Fetching courses for program ID: {}", programId);
         zvalidateId(programId);
         Pageable pageable = createPageable(page, size, sort, direction);
-        Page<CourseEntity> courses = courseService.getCoursesByProgram(programId, pageable);
+        Page<Course> courses = courseService.getCoursesByProgram(programId, pageable);
         return pagedSuccess(courses);
     }
 
@@ -161,7 +161,7 @@ public class CourseController extends BaseController {
      * Get courses by instructor
      */
     @GetMapping("/instructor/{instructorId}")
-    public ResponseEntity<PagedResponse<CourseEntity>> getCoursesByInstructor(
+    public ResponseEntity<PagedResponse<Course>> getCoursesByInstructor(
             @PathVariable Long instructorId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -171,7 +171,7 @@ public class CourseController extends BaseController {
         logger.info("Fetching courses for instructor ID: {}", instructorId);
         zvalidateId(instructorId);
         Pageable pageable = createPageable(page, size, sort, direction);
-        Page<CourseEntity> courses = courseService.getCoursesByInstructor(instructorId, pageable);
+        Page<Course> courses = courseService.getCoursesByInstructor(instructorId, pageable);
         return pagedSuccess(courses);
     }
 
@@ -179,14 +179,14 @@ public class CourseController extends BaseController {
      * Search courses by name, course ID, or section
      */
     @GetMapping("/search")
-    public ResponseEntity<PagedResponse<CourseEntity>> searchCourses(
+    public ResponseEntity<PagedResponse<Course>> searchCourses(
             @RequestParam String searchTerm,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         logger.info("Searching courses with term: {}", searchTerm);
         Pageable pageable = createPageable(page, size, "name", "asc");
-        Page<CourseEntity> courses = courseService.searchByNameOrCourseIdOrSection(searchTerm, pageable);
+        Page<Course> courses = courseService.searchByNameOrCourseIdOrSection(searchTerm, pageable);
         return pagedSuccess(courses);
     }
 
@@ -194,9 +194,9 @@ public class CourseController extends BaseController {
      * Find course by course ID (e.g., "CS101")
      */
     @GetMapping("/course-id/{courseId}")
-    public ResponseEntity<ApiResponse<CourseEntity>> getCourseByCourseId(@PathVariable String courseId) {
+    public ResponseEntity<ApiResponse<Course>> getCourseByCourseId(@PathVariable String courseId) {
         logger.info("Fetching course by course ID: {}", courseId);
-        CourseEntity course = courseService.findByCourseId(courseId);
+        Course course = courseService.findByCourseId(courseId);
         return success(course, "Course retrieved successfully");
     }
 
@@ -204,11 +204,11 @@ public class CourseController extends BaseController {
      * Get all sections of a course
      */
     @GetMapping("/{courseId}/sections")
-    public ResponseEntity<ApiResponse<Optional<CourseEntity>>> getCourseSections(
+    public ResponseEntity<ApiResponse<Optional<Course>>> getCourseSections(
             @PathVariable String courseId) {
 
         logger.info("Fetching all sections for course ID: {}", courseId);
-        Optional<CourseEntity> sections = courseService.getCourseSections(courseId);
+        Optional<Course> sections = courseService.getCourseSections(courseId);
         return success(sections, "Course sections retrieved successfully");
     }
 
@@ -216,12 +216,12 @@ public class CourseController extends BaseController {
      * Get specific course section
      */
     @GetMapping("/{courseId}/sections/{section}")
-    public ResponseEntity<ApiResponse<CourseEntity>> getCourseSection(
+    public ResponseEntity<ApiResponse<Course>> getCourseSection(
             @PathVariable String courseId,
             @PathVariable String section) {
 
         logger.info("Fetching course section: {} - {}", courseId, section);
-        CourseEntity courseSection = courseService.getCourseSection(courseId, section);
+        Course courseSection = courseService.getCourseSection(courseId, section);
         return success(courseSection, "Course section retrieved successfully");
     }
 
@@ -229,9 +229,9 @@ public class CourseController extends BaseController {
      * Get courses with sections
      */
     @GetMapping("/with-sections")
-    public ResponseEntity<ApiResponse<List<CourseEntity>>> getCoursesWithSections() {
+    public ResponseEntity<ApiResponse<List<Course>>> getCoursesWithSections() {
         logger.info("Fetching courses with sections");
-        List<CourseEntity> courses = courseService.getCoursesWithSections();
+        List<Course> courses = courseService.getCoursesWithSections();
         return success(courses, "Courses with sections retrieved successfully");
     }
 
@@ -239,9 +239,9 @@ public class CourseController extends BaseController {
      * Get courses without sections
      */
     @GetMapping("/without-sections")
-    public ResponseEntity<ApiResponse<List<CourseEntity>>> getCoursesWithoutSections() {
+    public ResponseEntity<ApiResponse<List<Course>>> getCoursesWithoutSections() {
         logger.info("Fetching courses without sections");
-        List<CourseEntity> courses = courseService.getCoursesWithoutSections();
+        List<Course> courses = courseService.getCoursesWithoutSections();
         return success(courses, "Courses without sections retrieved successfully");
     }
 
