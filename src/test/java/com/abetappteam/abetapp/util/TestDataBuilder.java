@@ -1,12 +1,15 @@
 package com.abetappteam.abetapp.util;
 
 import com.abetappteam.abetapp.entity.Example;
+import com.abetappteam.abetapp.entity.SemesterEntity;
 import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.dto.ExampleDTO;
+import com.abetappteam.abetapp.dto.SemesterDTO;
 import com.abetappteam.abetapp.entity.CourseEntity;
 import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.dto.UsersDTO;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -255,5 +258,71 @@ public class TestDataBuilder {
                     i % 2 == 0));
         }
         return users;
+    }
+
+    // SEMESTER TEST DATA
+
+    /**
+     * Create a SemesterEntity with ID
+     */
+    public static SemesterEntity createSemesterWithId(Long id, String name, String code, LocalDate startDate,
+            LocalDate endDate,
+            Integer academicYear, SemesterEntity.SemesterType type, Long programId, String description,
+            Boolean isCurrent) {
+        SemesterEntity semester = new SemesterEntity();
+        semester.setId(id);
+        semester.setName(name);
+        semester.setCode(code);
+        semester.setStartDate(startDate);
+        semester.setEndDate(endDate);
+        semester.setAcademicYear(academicYear);
+        semester.setType(type);
+        semester.setProgramId(programId);
+        semester.setDescription(description);
+        semester.setIsCurrent(isCurrent);
+        semester.setCreatedAt(LocalDateTime.now());
+        semester.setUpdatedAt(LocalDateTime.now());
+        return semester;
+    }
+
+    /**
+     * Create a SemesterDTO with custom values
+     */
+    public static SemesterDTO createSemesterDTO(String name, String code, LocalDate startDate, LocalDate endDate,
+            Integer academicYear, String type, Long programId, String description, Boolean isCurrent) {
+        SemesterDTO dto = new SemesterDTO();
+        dto.setName(name);
+        dto.setCode(code);
+        dto.setStartDate(startDate);
+        dto.setEndDate(endDate);
+        dto.setAcademicYear(academicYear);
+        dto.setType(type);
+        dto.setProgramId(programId);
+        dto.setDescription(description);
+        dto.setIsCurrent(isCurrent);
+        return dto;
+    }
+
+    /**
+     * Create a list of SemesterEntity objects for testing
+     */
+    public static List<SemesterEntity> createSemesterList(int count, Long programId) {
+        List<SemesterEntity> semesters = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            SemesterEntity.SemesterType type = i % 2 == 0 ? SemesterEntity.SemesterType.SPRING
+                    : SemesterEntity.SemesterType.FALL;
+            semesters.add(createSemesterWithId(
+                    (long) i,
+                    type + " 202" + (i % 10),
+                    type + "-202" + (i % 10),
+                    LocalDate.of(2024 + (i % 3), type == SemesterEntity.SemesterType.FALL ? 9 : 1, 1),
+                    LocalDate.of(2024 + (i % 3), type == SemesterEntity.SemesterType.FALL ? 12 : 5, 15),
+                    2024 + (i % 3),
+                    type,
+                    programId,
+                    "Description for " + type + " 202" + (i % 10),
+                    i == 1)); // First one is current
+        }
+        return semesters;
     }
 }
