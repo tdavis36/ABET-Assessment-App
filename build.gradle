@@ -70,6 +70,10 @@ def npmExecutable = System.getProperty('os.name').toLowerCase().contains('window
 def frontendDir = "$projectDir/frontend"
 def frontendDist = "$frontendDir/dist"
 
+tasks.withType(Test).configureEach {
+    jvmArgs '-XX:+EnableDynamicAgentLoading'
+}
+
 tasks.register('installFrontendDeps', Exec) {
     workingDir 'frontend'
     onlyIf { !skipFrontend }

@@ -12,11 +12,7 @@ import java.time.LocalDate;
  */
 @Entity
 @Table(name = "semesters")
-public class SemesterEntity extends BaseEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Semester extends BaseEntity {
 
     @NotBlank(message = "Semester name is required")
     @Size(max = 50, message = "Semester name must not exceed 50 characters")
@@ -59,11 +55,11 @@ public class SemesterEntity extends BaseEntity {
     private Boolean isCurrent = false;
 
     // Constructors
-    public SemesterEntity() {
+    public Semester() {
     }
 
-    public SemesterEntity(String name, String code, LocalDate startDate, LocalDate endDate,
-            Integer academicYear, SemesterType type, Long programId) {
+    public Semester(String name, String code, LocalDate startDate, LocalDate endDate,
+                    Integer academicYear, SemesterType type, Long programId) {
         this.name = name;
         this.code = code;
         this.startDate = startDate;
@@ -104,14 +100,6 @@ public class SemesterEntity extends BaseEntity {
     }
 
     // Getters and setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getName() {
         return name;
     }
@@ -194,8 +182,8 @@ public class SemesterEntity extends BaseEntity {
 
     @Override
     public String toString() {
-        return "SemesterEntity{" +
-                "id=" + id +
+        return "Semester{" +
+                "id=" + getId() +
                 ", name='" + name + '\'' +
                 ", code='" + code + '\'' +
                 ", startDate=" + startDate +
