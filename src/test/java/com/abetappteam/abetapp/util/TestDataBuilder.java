@@ -1,8 +1,10 @@
 package com.abetappteam.abetapp.util;
 
 import com.abetappteam.abetapp.entity.Example;
+import com.abetappteam.abetapp.entity.Program;
 import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.dto.ExampleDTO;
+import com.abetappteam.abetapp.dto.ProgramDTO;
 import com.abetappteam.abetapp.entity.CourseEntity;
 import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.dto.UsersDTO;
@@ -255,5 +257,57 @@ public class TestDataBuilder {
                     i % 2 == 0));
         }
         return users;
+    }
+
+    //PROGRAM TEST DATA
+
+    //Create default program
+    public static Program createProgram(){
+        return createProgram("EU Testing", "Example University", true);
+    }
+
+    //Create custom program
+    public static Program createProgram(String name, String institution, Boolean active){
+        Program program = new Program();
+        program.setName(name);
+        program.setInstitution(institution);
+        program.setActive(active);
+        return program;
+    }
+
+    //Create default ProgramDTO
+    public static ProgramDTO createProgramDTO(){
+        return createProgramDTO("New Program", "New Institution", true);
+    }
+
+    //Create custom ProgramDTO
+    public static ProgramDTO createProgramDTO(String name, String institution, Boolean active){
+        ProgramDTO dto = new ProgramDTO();
+        dto.setName(name);
+        dto.setInstitution(institution);
+        dto.setActive(active);
+        return dto;
+    }
+
+    // Create custom program entity with id
+    public static Program createProgramWithId(Long id, String name, String institution, Boolean active) {
+        Program program = createProgram(name, institution, active);
+        program.setId(id);
+        program.setCreatedAt(LocalDateTime.now());
+        program.setUpdatedAt(LocalDateTime.now());
+        return program;
+    }
+
+    // Create a list of programs belonging to "Example University", every odd numbered program will be inactive
+    public static List<Program> createProgramList(int count) {
+        List<Program> programs = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            programs.add(createProgramWithId(
+                    (long) i,
+                    "Program " + i,
+                    "Example University",
+                    i % 2 == 0));
+        }
+        return programs;
     }
 }
