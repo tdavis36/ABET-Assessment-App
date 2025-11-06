@@ -83,10 +83,10 @@ class CourseRepositoryTest extends BaseRepositoryTest {
 
         // Then
         assertThat(foundByCode).hasSize(1);
-        assertThat(foundByCode.get(0).getCourseCode()).isEqualTo("CS101");
+        assertThat(foundByCode.getFirst().getCourseCode()).isEqualTo("CS101");
 
         assertThat(foundByName).hasSize(1);
-        assertThat(foundByName.get(0).getCourseName()).contains("Database");
+        assertThat(foundByName.getFirst().getCourseName()).contains("Database");
     }
 
     @Test

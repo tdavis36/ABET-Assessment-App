@@ -147,6 +147,12 @@ public class CourseService extends BaseService<Course, Long, CourseRepository> {
     }
 
     @Transactional(readOnly = true)
+    public List<Course> getActiveCoursesByProgramUserId(Long programUserId) {
+        logger.debug("Fetching active courses for program user ID: {}", programUserId);
+        return repository.findActiveCoursesByProgramUserId(programUserId);
+    }
+
+    @Transactional(readOnly = true)
     public MeasureCompletenessResponse calculateMeasureCompleteness(Long courseId) {
         Course course = findById(courseId);
 
