@@ -1,354 +1,244 @@
 <template>
-  <section class="admin-dashboard">
-    <header>
-      <h2>{{ institutionName }} ~ Admin Dashboard</h2>
-    </header>
-
-    <div class="section">
-      <div class="section-header">
-        <h3>Courses</h3>
-        <button @click="showCoursePopup = true">Edit</button>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Course</th>
-            <th>Instructor</th>
-            <th>Measures Completed</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="course in courses" :key="course.id">
-            <td>{{ course.course_code }}</td>
-            <td>{{ course.instructor_name }}</td>
-            <td>{{ course.measures_completed }}/{{ course.measures_total }}</td>
-          </tr>
-        </tbody>
-      </table>
+  <section class="courses-section">
+    <div class="section-header">
+      <h3>Courses</h3>
+      <button class="edit-btn" @click="toggleEdit">
+        {{ editMode ? "Done" : "Edit" }}
+      </button>
     </div>
 
-    <div class="section">
-      <div class="section-header">
-        <h3>Instructors</h3>
-        <button @click="showInstructorAdd = true">Edit</button>
-      </div>
+    <table class="courses-table">
+      <thead>
+        <tr>
+          <th>Course</th>
+          <th>Instructor</th>
+          <th>Measures Completed</th>
+          <th>Submitted (Y/N)</th>
+          <th v-if="editMode">Reject</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(course, index) in courses" :key="index">
+          <td>
+            <input
+              v-if="editMode"
+              v-model="course.name"
+              type="text"
+              class="editable-input"
+            />
+            <span v-else>{{ course.name }}</span>
+          </td>
 
-      <ul class="instructor-list">
-        <li v-for="(inst, index) in instructors" :key="inst.id">
-          <span class="name">{{ inst.name }}</span>
-          <button class="remove-btn" @click="removeInstructor(index)">Remove</button>
-        </li>
-      </ul>
-    </div>
+          <td>
+            <input
+              v-if="editMode"
+              v-model="course.instructor"
+              type="text"
+              class="editable-input"
+            />
+            <span v-else>{{ course.instructor }}</span>
+          </td>
 
-    <div v-if="showCoursePopup" class="popup-overlay" @click.self="closeCoursePopup">
-      <div class="popup-window">
-        <header class="popup-header">
-          <h3>Edit Courses</h3>
-          <button class="close-btn" @click="closeCoursePopup">×</button>
-        </header>
-        <div class="popup-body">
-          <table class="edit-table">
-            <thead>
-              <tr>
-                <th>Course Code</th>
-                <th>Instructor</th>
-                <th>Measures</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="course in courses" :key="course.id">
-                <td><input v-model="course.course_code" /></td>
-                <td><input v-model="course.instructor_name" /></td>
-                <td>{{ course.measures_completed }}/{{ course.measures_total }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <footer class="popup-footer">
-          <button class="save-btn" @click="saveCourseChanges">Save</button>
-          <button class="cancel-btn" @click="closeCoursePopup">Cancel</button>
-        </footer>
-      </div>
-    </div>
+          <td>
+            <template v-if="editMode">
+              <input
+                v-model.number="course.completed"
+                type="number"
+                min="0"
+                class="small-input"
+              />
+              <span>/</span>
+              <input
+                v-model.number="course.total"
+                type="number"
+                min="1"
+                class="small-input"
+              />
+            </template>
+            <template v-else>
+              {{ course.completed }}/{{ course.total }}
+            </template>
+          </td>
 
-    <div v-if="showInstructorAdd" class="popup-overlay" @click.self="closeInstructorAdd">
-      <div class="popup-window">
-        <header class="popup-header">
-          <h3>Edit Instructors</h3>
-          <button class="close-btn" @click="closeInstructorAdd">×</button>
-        </header>
-        <div class="popup-body">
-          <ul>
-            <li v-for="inst in instructors" :key="inst.id">
-              <input v-model="inst.name" />
-            </li>
-          </ul>
-          <div class="add-new">
-            <input v-model="newInstructorName" placeholder="Add new instructor..." />
-            <button class="add-btn" @click="addInstructor">Add</button>
-          </div>
-        </div>
-        <footer class="popup-footer">
-          <button class="save-btn" @click="saveInstructorChanges">Save</button>
-          <button class="cancel-btn" @click="closeInstructorAdd">Cancel</button>
-        </footer>
-      </div>
+          <td>{{ course.submitted }}</td>
+
+          <td v-if="editMode" class="reject-cell">
+            <button
+              class="reject-btn"
+              :class="{ active: course.rejected }"
+              @click="toggleReject(course)"
+            >
+              X
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div v-if="editMode" class="add-row">
+      <input v-model="newCourse.name" type="text" placeholder="Course" />
+      <input v-model="newCourse.instructor" type="text" placeholder="Instructor" />
+      <input
+        v-model.number="newCourse.total"
+        type="number"
+        min="1"
+        placeholder="Measure Count"
+      />
+      <button class="add-btn" @click="addCourse">Add</button>
     </div>
   </section>
 </template>
 
 <script>
-import axios from "axios";
-
 export default {
-  name: "AdminDashboard",
+  name: "ProgramInstructorsPage",
   props: {
-    programId: Number,
+    programId: {
+      type: Number,
+      default: 1,
+    },
   },
   data() {
     return {
-      institutionName: "York College of Pennsylvania",
-      courses: [],
-      instructors: [],
-      showCoursePopup: false,
-      showInstructorAdd: false,
-      newInstructorName: "",
+      editMode: false,
+      courses: [
+        {
+          name: "CS360",
+          instructor: "Dean Zeller",
+          completed: 15,
+          total: 15,
+          submitted: "Y",
+          rejected: false,
+        },
+      ],
+      newCourse: {
+        name: "",
+        instructor: "",
+        completed: 0,
+        total: 1,
+        submitted: "N",
+        rejected: false,
+      },
     };
   },
-  async mounted() {
-    try {
-      const [courseRes, instructorRes] = await Promise.all([
-        axios.get(`/api/courses`, { params: { program_id: this.programId } }),
-        axios.get(`/api/instructors`, { params: { program_id: this.programId } }),
-      ]);
-      this.courses = courseRes.data;
-      this.instructors = instructorRes.data;
-    } catch (err) {
-      console.error("Error loading admin data:", err);
-    }
-  },
   methods: {
-    closeCoursePopup() {
-      this.showCoursePopup = false;
+    toggleEdit() {
+      this.editMode = !this.editMode;
     },
-    async saveCourseChanges() {
-      try {
-        await axios.post(`/api/courses/update`, this.courses);
-        alert("Course changes saved successfully!");
-        this.closeCoursePopup();
-      } catch (err) {
-        console.error("Error saving courses:", err);
-        alert("Failed to save courses.");
+    toggleReject(course) {
+      course.rejected = !course.rejected;
+      if (course.rejected) {
+        course.submitted = "N";
+        course.completed = 0;
       }
     },
-    closeInstructorAdd() {
-      this.showInstructorAdd = false;
-    },
-    addInstructor() {
-      if (this.newInstructorName.trim()) {
-        this.instructors.push({
-          id: Date.now(),
-          name: this.newInstructorName.trim(),
-        });
-        this.newInstructorName = "";
-      }
-    },
-    removeInstructor(index) {
-      this.instructors.splice(index, 1);
-    },
-    async saveInstructorChanges() {
-      try {
-        await axios.post(`/api/instructors/update`, this.instructors);
-        alert("Instructor changes saved successfully!");
-        this.closeInstructorAdd();
-      } catch (err) {
-        console.error("Error saving instructors:", err);
-        alert("Failed to save instructors.");
-      }
+    addCourse() {
+      if (!this.newCourse.name || !this.newCourse.instructor) return;
+      this.courses.push({
+        ...this.newCourse,
+        submitted: "N",
+        rejected: false,
+        completed: 0,
+      });
+      this.newCourse = {
+        name: "",
+        instructor: "",
+        completed: 0,
+        total: 1,
+        submitted: "N",
+        rejected: false,
+      };
     },
   },
 };
 </script>
 
 <style scoped>
-.admin-dashboard {
-  background: #f5f5f5;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.section {
-  margin-top: 2rem;
+.courses-section {
+  display: flex;
+  flex-direction: column;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
 }
 
-button {
-  background: #f6203d;
-  color: #fff;
+.edit-btn {
+  background-color: #b22222;
+  color: white;
   border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
+  border-radius: 6px;
+  padding: 0.3rem 0.8rem;
   cursor: pointer;
-  transition: background 0.2s ease;
+  font-size: 0.9rem;
 }
 
-button:hover {
-  background: #93aba8;
-}
-
-table {
+.courses-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 1rem;
 }
 
-th,
-td {
+.courses-table th {
+  background-color: #eee;
+  text-align: left;
+  padding: 0.6rem;
+  font-weight: 600;
+}
+
+.courses-table td {
   border-bottom: 1px solid #ddd;
   padding: 0.6rem;
-  text-align: left;
+  vertical-align: middle;
 }
 
-th {
-  background: #e9e9e9;
-}
-
-.instructor-list {
-  list-style: none;
-  padding: 0;
-  margin-top: 1rem;
-}
-
-.instructor-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  text-align: left;
-  color: #222;
-  padding: 0.4rem 0;
-  border-bottom: 1px solid #ddd;
-  font-size: 1rem;
-}
-
-.instructor-list li .name {
-  text-decoration: underline;
-}
-
-.remove-btn {
-  text-decoration: none;
-  background: #d83047df;
-  color: #fff;
-  border: none;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: background 0.2s ease;
-}
-
-.remove-btn:hover {
-  background: #b32036;
-}
-
-.popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.popup-window {
-  background: white;
-  width: 90%;
-  max-width: 700px;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-}
-
-.popup-header {
-  background: #d83047df;
-  color: rgb(0, 0, 0);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.8rem 1.2rem;
-}
-
-.close-btn {
-  background: none;
-  color: white;
-  font-size: 1.5rem;
-  border: none;
-  cursor: pointer;
-}
-
-.popup-body {
-  padding: 1rem 1.2rem;
-}
-
-.popup-body ul {
-  list-style-type: none;
-  padding-left: 0;
-  margin: 0;
-}
-
-.add-new {
-  margin-top: 1rem;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.add-new input {
-  flex: 1;
+.editable-input,
+.small-input {
   padding: 0.4rem;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
-.add-btn {
-  background: #ccc;
-  color: white;
-  padding: 0.4rem 0.8rem;
-  border: none;
+.small-input {
+  width: 3rem;
+  text-align: center;
+}
+
+.reject-cell {
+  text-align: center;
+}
+
+.reject-btn {
+  background-color: transparent;
+  border: 1px solid #b22222;
+  color: #b22222;
   border-radius: 4px;
+  padding: 0.2rem 0.6rem;
   cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
 }
 
-.popup-footer {
+.reject-btn.active {
+  background-color: #b22222;
+  color: white;
+}
+
+.add-row {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.6rem;
-  padding: 0.8rem 1.2rem;
-  border-top: 1px solid #ddd;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 1rem;
 }
 
-.save-btn {
-  background: #004a7d;
-  color: #fff;
-  padding: 0.4rem 1rem;
-  border-radius: 4px;
+.add-btn {
+  background-color: #b22222;
+  color: white;
   border: none;
-}
-
-.cancel-btn {
-  background: #888;
-  color: #fff;
+  border-radius: 6px;
   padding: 0.4rem 1rem;
-  border-radius: 4px;
-  border: none;
+  cursor: pointer;
 }
 </style>
