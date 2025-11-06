@@ -32,6 +32,8 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 test {
@@ -67,6 +69,10 @@ node {
 def npmExecutable = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
 def frontendDir = "$projectDir/frontend"
 def frontendDist = "$frontendDir/dist"
+
+tasks.withType(Test).configureEach {
+    jvmArgs '-XX:+EnableDynamicAgentLoading'
+}
 
 tasks.register('installFrontendDeps', Exec) {
     workingDir 'frontend'
@@ -110,7 +116,6 @@ tasks.named('processResources') {
 tasks.named('test') {
     group = 'abet-dev'
     useJUnitPlatform()
-    mustRunAfter tasks.matching { it.name.contains('Frontend') || it.name.contains('frontend') }
 }
 
 tasks.named('bootJar') {
