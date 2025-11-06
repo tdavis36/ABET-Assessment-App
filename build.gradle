@@ -92,6 +92,22 @@ tasks.register('testFrontend', Exec) {
     onlyIf { !skipFrontend }
 }
 
+tasks.register('testFrontendE2e', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'test:e2e'
+    onlyIf { !skipFrontend }
+}
+
+tasks.register('testFrontendE2eDocker', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable 'docker'
+    args 'run', '--rm', '--ipc=host', '-v', './:/work', '-w', '/work', 'mcr.microsoft.com/playwright:v1.56.1-jammy', 'bash', '-c', 'npm ci && npx playwright test'}
+
 // Task to build the frontend with Vite
 tasks.register('buildFrontend', Exec) {
     workingDir frontendDir
