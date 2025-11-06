@@ -152,7 +152,7 @@ tasks.register('devWithBuiltInFrontend', Exec) {
     description = 'Run with built frontend locally'
     dependsOn 'bootRun'
     doFirst {
-        args = ['--spring.profiles.active=frontend']
+        args = ['--spring.profiles.active=builtin']
         println "Full app: http://localhost:8080"
     }
 }
