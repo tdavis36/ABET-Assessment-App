@@ -16,25 +16,25 @@
     });
     const semester_name = ref('');
 
+    /*
     async function initialize(){
         course_id.value = parseInt(route.params.course_id as string, 10)
 
-        /*
         try {
-            const response = await fetch(`/api/users/${user_id}`);
+            const response = await fetch(`/api/users/${course_id.value}`);
             const data = await response.json(); // Await the JSON parsing
             console.log('Fetched JSON data:', data);
-            user_name.value = {
-                first: data.data.firstName,
-                full: data.data.fullName
-            }
-            console.log('First name:', data.data.firstName)
+            /*course_obj.value = {
+                id: data.data.firstName,
+                course_code: data.data.fullName
+            }*//*
         } catch (error) {
             console.error('Error fetching or parsing data:', error);
-        }*/
+        }
     }
 
     initialize();
+    */
 </script>
 
 <template>
