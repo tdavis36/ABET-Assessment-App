@@ -13,76 +13,94 @@ import java.util.Optional;
 
 /**
  * Repository for Course entity
+ * Based on schema: course table with fields (id, course_code, course_name, course_description, semester_id, created_at, is_active)
  */
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
 
-        Page<Course> findBySemesterId(Long semesterId, Pageable pageable);
+    // ========== Semester queries ==========
+    Page<Course> findBySemesterId(Long semesterId, Pageable pageable);
 
-        Page<Course> findByProgramId(Long programId, Pageable pageable);
+    List<Course> findBySemesterId(Long semesterId);
 
-        Page<Course> findByInstructorId(Long instructorId, Pageable pageable);
+    long countBySemesterId(Long semesterId);
 
-        Page<Course> findBySemesterIdAndProgramId(Long semesterId, Long programId, Pageable pageable);
+    // ========== Active status queries ==========
+    Page<Course> findBySemesterIdAndIsActive(Long semesterId, Boolean isActive, Pageable pageable);
 
-        Optional<Course> findByCourseIdIgnoreCase(String courseId);
+    List<Course> findBySemesterIdAndIsActive(Long semesterId, Boolean isActive);
 
-        boolean existsByCourseIdIgnoreCase(String courseId);
+    List<Course> findByIsActive(Boolean isActive);
 
-        Optional<Course> findByCourseIdIgnoreCaseAndSemesterId(String courseId, Long semesterId);
+    long countBySemesterIdAndIsActive(Long semesterId, Boolean isActive);
 
-        List<Course> findByNameContainingIgnoreCase(String nameFragment);
+    // ========== Course code queries ==========
+    Optional<Course> findByCourseCodeIgnoreCase(String courseCode);
 
-        List<Course> findByProgramIdAndSemesterId(Long programId, Long semesterId);
+    boolean existsByCourseCodeIgnoreCase(String courseCode);
 
-        long countByProgramId(Long programId);
+    Optional<Course> findByCourseCodeIgnoreCaseAndSemesterId(String courseCode, Long semesterId);
 
-        @Query("SELECT c FROM Course c WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(c.courseId) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-        List<Course> searchByNameOrCourseId(@Param("searchTerm") String searchTerm);
+    boolean existsByCourseCodeAndSemesterId(String courseCode, Long semesterId);
 
-        // Section-related methods
-        Optional<Course> findByCourseIdIgnoreCaseAndSection(String courseId, String section);
+    List<Course> findByCourseCode(String courseCode);
 
-        List<Course> findBySection(String section);
+    // ========== Course name queries ==========
+    List<Course> findByCourseNameContainingIgnoreCase(String nameFragment);
 
-        List<Course> findBySectionContainingIgnoreCase(String sectionFragment);
+    // ========== Search queries ==========
+    @Query("SELECT c FROM Course c WHERE LOWER(c.courseName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(c.courseCode) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    List<Course> searchByNameOrCourseCode(@Param("searchTerm") String searchTerm);
 
-        @Query("SELECT c FROM Course c WHERE c.section IS NOT NULL AND c.section != ''")
-        List<Course> findCoursesWithSections();
+    @Query("SELECT c FROM Course c WHERE LOWER(c.courseName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(c.courseCode) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<Course> searchByNameOrCourseCode(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-        @Query("SELECT c FROM Course c WHERE c.section IS NULL OR c.section = ''")
-        List<Course> findCoursesWithoutSections();
+    @Query("SELECT c FROM Course c WHERE c.semesterId = :semesterId AND (LOWER(c.courseName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(c.courseCode) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+    List<Course> searchByNameOrCourseCodeAndSemester(@Param("searchTerm") String searchTerm, @Param("semesterId") Long semesterId);
 
-        List<Course> findByInstructorIdAndSection(Long instructorId, String section);
+    @Query("SELECT c FROM Course c WHERE c.semesterId = :semesterId AND c.isActive = :isActive AND (LOWER(c.courseName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(c.courseCode) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+    Page<Course> searchByNameOrCourseCodeAndSemesterAndIsActive(@Param("searchTerm") String searchTerm, @Param("semesterId") Long semesterId, @Param("isActive") Boolean isActive, Pageable pageable);
 
-        /**
-         * Check if section already exists for a course in the same semester
-         */
-        @Query("SELECT COUNT(c) > 0 FROM Course c WHERE LOWER(c.courseId) = LOWER(:courseId) AND LOWER(c.section) = LOWER(:section) AND c.semesterId = :semesterId")
-        boolean existsByCourseIdAndSectionAndSemesterId(
-                        @Param("courseId") String courseId,
-                        @Param("section") String section,
-                        @Param("semesterId") Long semesterId);
+    // ========== Instructor relationship queries (via course_instructor table) ==========
+    // Note: These queries use the course_instructor junction table
+    @Query("SELECT c FROM Course c JOIN CourseInstructor ci ON c.id = ci.courseId WHERE ci.programUserId = :programUserId AND c.isActive = true")
+    List<Course> findActiveCoursesByProgramUserId(@Param("programUserId") Long programUserId);
 
-        @Query("SELECT c FROM Course c WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(c.courseId) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(c.section) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-        List<Course> searchByNameOrCourseIdOrSection(@Param("searchTerm") String searchTerm);
+    @Query("SELECT c FROM Course c JOIN CourseInstructor ci ON c.id = ci.courseId WHERE ci.programUserId = :programUserId")
+    List<Course> findCoursesByProgramUserId(@Param("programUserId") Long programUserId);
 
-        @Query("SELECT c FROM Course c WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(c.courseId) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(c.section) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-        Page<Course> searchByNameOrCourseIdOrSection(@Param("searchTerm") String searchTerm, Pageable pageable);
+    @Query("SELECT c FROM Course c JOIN CourseInstructor ci ON c.id = ci.courseId WHERE ci.programUserId = :programUserId AND c.semesterId = :semesterId")
+    List<Course> findCoursesByProgramUserIdAndSemesterId(@Param("programUserId") Long programUserId, @Param("semesterId") Long semesterId);
 
-        // Methods for measure completeness calculations
-        @Query("SELECT COUNT(m) FROM Measure m WHERE m.course.id = :courseId")
-        int countTotalMeasuresByCourseId(@Param("courseId") Long courseId);
+    // ========== Methods for measure completeness calculations ==========
+    // Based on schema: course -> course_indicator -> measure
+    // Relationship: measure.courseIndicator_id -> course_indicator.id, course_indicator.course_id -> course.id
+    @Query(value = "SELECT COUNT(m.id) FROM measure m " +
+            "JOIN course_indicator ci ON m.courseIndicator_id = ci.id " +
+            "WHERE ci.course_id = :courseId AND m.is_active = true", nativeQuery = true)
+    int countTotalMeasuresByCourseId(@Param("courseId") Long courseId);
 
-        @Query("SELECT COUNT(m) FROM Measure m WHERE m.course.id = :courseId AND m.status = 'COMPLETED'")
-        int countCompletedMeasuresByCourseId(@Param("courseId") Long courseId);
+    @Query(value = "SELECT COUNT(m.id) FROM measure m " +
+            "JOIN course_indicator ci ON m.courseIndicator_id = ci.id " +
+            "WHERE ci.course_id = :courseId AND m.is_active = true " +
+            "AND (m.met IS NOT NULL OR m.exceeded IS NOT NULL OR m.below IS NOT NULL)", nativeQuery = true)
+    int countCompletedMeasuresByCourseId(@Param("courseId") Long courseId);
 
-        @Query("SELECT COUNT(m) FROM Measure m WHERE m.course.id = :courseId AND m.status = 'IN_PROGRESS'")
-        int countInProgressMeasuresByCourseId(@Param("courseId") Long courseId);
+    @Query(value = "SELECT COUNT(m.id) FROM measure m " +
+            "JOIN course_indicator ci ON m.courseIndicator_id = ci.id " +
+            "WHERE ci.course_id = :courseId AND m.is_active = true " +
+            "AND m.met IS NULL AND m.exceeded IS NULL AND m.below IS NULL", nativeQuery = true)
+    int countInProgressMeasuresByCourseId(@Param("courseId") Long courseId);
 
-        @Query("SELECT COUNT(m) FROM Measure m WHERE m.course.id = :courseId AND m.status = 'SUBMITTED'")
-        int countSubmittedMeasuresByCourseId(@Param("courseId") Long courseId);
+    @Query(value = "SELECT COUNT(m.id) FROM measure m " +
+            "JOIN course_indicator ci ON m.courseIndicator_id = ci.id " +
+            "WHERE ci.course_id = :courseId AND m.is_active = true " +
+            "AND m.fcar IS NOT NULL", nativeQuery = true)
+    int countSubmittedMeasuresByCourseId(@Param("courseId") Long courseId);
 
-        @Query("SELECT COUNT(m) FROM Measure m WHERE m.course.id = :courseId AND m.status IN ('SUBMITTED', 'IN_REVIEW')")
-        int countMeasuresInReviewByCourseId(@Param("courseId") Long courseId);
+    @Query(value = "SELECT COUNT(m.id) FROM measure m " +
+            "JOIN course_indicator ci ON m.courseIndicator_id = ci.id " +
+            "WHERE ci.course_id = :courseId AND m.is_active = true " +
+            "AND m.fcar IS NOT NULL AND m.recommended_action IS NOT NULL", nativeQuery = true)
+    int countMeasuresInReviewByCourseId(@Param("courseId") Long courseId);
 }

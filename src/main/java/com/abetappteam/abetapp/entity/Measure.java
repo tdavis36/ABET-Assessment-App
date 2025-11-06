@@ -9,7 +9,7 @@ import jakarta.persistence.ManyToOne;
 public class Measure extends BaseEntity {
 
     @ManyToOne
-    @JoinColumn(name = "course_id")
+    @JoinColumn(name = "courseindicator_id")
     private Course course;
 
     @Column(name = "status")

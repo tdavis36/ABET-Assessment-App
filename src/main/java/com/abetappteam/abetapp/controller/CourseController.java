@@ -14,11 +14,10 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * controller for course entity operations
- * Manages courses, sections, and measure completeness
+ * Controller for course entity operations
+ * Manages courses and measure completeness
  */
 @RestController
 @RequestMapping("/api/courses")
@@ -35,11 +34,11 @@ public class CourseController extends BaseController {
             @RequestParam Long semesterId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "name") String sort,
+            @RequestParam(defaultValue = "courseName") String sort,
             @RequestParam(defaultValue = "asc") String direction) {
 
         logger.info("Fetching all courses for semester ID: {}", semesterId);
-        zvalidateId(semesterId);
+        validateId(semesterId);
         Pageable pageable = createPageable(page, size, sort, direction);
         Page<Course> courses = courseService.getCoursesBySemester(semesterId, pageable);
         return pagedSuccess(courses);
@@ -51,7 +50,7 @@ public class CourseController extends BaseController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Course>> getCourse(@PathVariable Long id) {
         logger.info("Fetching course with ID: {}", id);
-        zvalidateId(id);
+        validateId(id);
         Course course = courseService.findById(id);
         return success(course, "Course retrieved successfully");
     }
@@ -68,7 +67,7 @@ public class CourseController extends BaseController {
             return validationError(result);
         }
 
-        logger.info("Creating new course: {} ({})", dto.getName(), dto.getCourseId());
+        logger.info("Creating new course: {} ({})", dto.getCourseName(), dto.getCourseCode());
         Course course = courseService.createCourse(dto);
         return created(course);
     }
@@ -82,7 +81,7 @@ public class CourseController extends BaseController {
             @Valid @RequestBody CourseDTO dto) {
 
         logger.info("Updating course with ID: {}", id);
-        zvalidateId(id);
+        validateId(id);
         Course updated = courseService.updateCourse(id, dto);
         return success(updated, "Course updated successfully");
     }
@@ -93,9 +92,33 @@ public class CourseController extends BaseController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> removeCourse(@PathVariable Long id) {
         logger.info("Removing course with ID: {}", id);
-        zvalidateId(id);
+        validateId(id);
         courseService.removeCourse(id);
         return success(null, "Course removed successfully");
+    }
+
+    /**
+     * Deactivate a course
+     */
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<ApiResponse<Course>> deactivateCourse(@PathVariable Long id) {
+        logger.info("Deactivating course with ID: {}", id);
+        validateId(id);
+        courseService.deactivateCourse(id);
+        Course course = courseService.findById(id);
+        return success(course, "Course deactivated successfully");
+    }
+
+    /**
+     * Activate a course
+     */
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<ApiResponse<Course>> activateCourse(@PathVariable Long id) {
+        logger.info("Activating course with ID: {}", id);
+        validateId(id);
+        courseService.activateCourse(id);
+        Course course = courseService.findById(id);
+        return success(course, "Course activated successfully");
     }
 
     /**
@@ -106,77 +129,31 @@ public class CourseController extends BaseController {
             @PathVariable Long courseId) {
 
         logger.info("Checking measure completeness for course ID: {}", courseId);
-        zvalidateId(courseId);
+        validateId(courseId);
         CourseService.MeasureCompletenessResponse completeness = courseService.calculateMeasureCompleteness(courseId);
         return success(completeness, "Measure completeness retrieved successfully");
     }
 
     /**
-     * Assign a course to an instructor
+     * Get active courses by semester
      */
-    @PostMapping("/{courseId}/instructors/{instructorId}")
-    public ResponseEntity<ApiResponse<Course>> assignInstructor(
-            @PathVariable Long courseId,
-            @PathVariable Long instructorId) {
-
-        logger.info("Assigning instructor {} to course {}", instructorId, courseId);
-        zvalidateId(courseId);
-        zvalidateId(instructorId);
-        Course updated = courseService.assignInstructor(courseId, instructorId);
-        return success(updated, "Instructor assigned successfully");
-    }
-
-    /**
-     * Remove instructor from a course
-     */
-    @DeleteMapping("/{courseId}/instructors")
-    public ResponseEntity<ApiResponse<Course>> removeInstructor(
-            @PathVariable Long courseId) {
-
-        logger.info("Removing instructor from course {}", courseId);
-        zvalidateId(courseId);
-        Course updated = courseService.removeInstructor(courseId);
-        return success(updated, "Instructor removed successfully");
-    }
-
-    /**
-     * Get courses by program
-     */
-    @GetMapping("/program/{programId}")
-    public ResponseEntity<PagedResponse<Course>> getCoursesByProgram(
-            @PathVariable Long programId,
+    @GetMapping("/active")
+    public ResponseEntity<PagedResponse<Course>> getActiveCourses(
+            @RequestParam Long semesterId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "name") String sort,
+            @RequestParam(defaultValue = "courseName") String sort,
             @RequestParam(defaultValue = "asc") String direction) {
 
-        logger.info("Fetching courses for program ID: {}", programId);
-        zvalidateId(programId);
+        logger.info("Fetching active courses for semester ID: {}", semesterId);
+        validateId(semesterId);
         Pageable pageable = createPageable(page, size, sort, direction);
-        Page<Course> courses = courseService.getCoursesByProgram(programId, pageable);
+        Page<Course> courses = courseService.getActiveCoursesBySemester(semesterId, pageable);
         return pagedSuccess(courses);
     }
 
     /**
-     * Get courses by instructor
-     */
-    @GetMapping("/instructor/{instructorId}")
-    public ResponseEntity<PagedResponse<Course>> getCoursesByInstructor(
-            @PathVariable Long instructorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "name") String sort,
-            @RequestParam(defaultValue = "asc") String direction) {
-
-        logger.info("Fetching courses for instructor ID: {}", instructorId);
-        zvalidateId(instructorId);
-        Pageable pageable = createPageable(page, size, sort, direction);
-        Page<Course> courses = courseService.getCoursesByInstructor(instructorId, pageable);
-        return pagedSuccess(courses);
-    }
-
-    /**
-     * Search courses by name, course ID, or section
+     * Search courses by name or course code
      */
     @GetMapping("/search")
     public ResponseEntity<PagedResponse<Course>> searchCourses(
@@ -185,78 +162,95 @@ public class CourseController extends BaseController {
             @RequestParam(defaultValue = "20") int size) {
 
         logger.info("Searching courses with term: {}", searchTerm);
-        Pageable pageable = createPageable(page, size, "name", "asc");
-        Page<Course> courses = courseService.searchByNameOrCourseIdOrSection(searchTerm, pageable);
+        Pageable pageable = createPageable(page, size, "courseName", "asc");
+        Page<Course> courses = courseService.searchByNameOrCourseCode(searchTerm, pageable);
         return pagedSuccess(courses);
     }
 
     /**
-     * Find course by course ID (e.g., "CS101")
+     * Find course by course code (e.g., "CS101")
      */
-    @GetMapping("/course-id/{courseId}")
-    public ResponseEntity<ApiResponse<Course>> getCourseByCourseId(@PathVariable String courseId) {
-        logger.info("Fetching course by course ID: {}", courseId);
-        Course course = courseService.findByCourseId(courseId);
+    @GetMapping("/code/{courseCode}")
+    public ResponseEntity<ApiResponse<Course>> getCourseByCourseCode(@PathVariable String courseCode) {
+        logger.info("Fetching course by course code: {}", courseCode);
+        Course course = courseService.findByCourseCode(courseCode);
         return success(course, "Course retrieved successfully");
     }
 
     /**
-     * Get all sections of a course
+     * Check if course code exists
      */
-    @GetMapping("/{courseId}/sections")
-    public ResponseEntity<ApiResponse<Optional<Course>>> getCourseSections(
-            @PathVariable String courseId) {
-
-        logger.info("Fetching all sections for course ID: {}", courseId);
-        Optional<Course> sections = courseService.getCourseSections(courseId);
-        return success(sections, "Course sections retrieved successfully");
+    @GetMapping("/code/{courseCode}/exists")
+    public ResponseEntity<ApiResponse<Boolean>> checkCourseCodeExists(@PathVariable String courseCode) {
+        logger.info("Checking if course code exists: {}", courseCode);
+        boolean exists = courseService.existsByCourseCode(courseCode);
+        return success(exists, "Course code existence checked successfully");
     }
 
     /**
-     * Get specific course section
+     * Count courses in a semester
      */
-    @GetMapping("/{courseId}/sections/{section}")
-    public ResponseEntity<ApiResponse<Course>> getCourseSection(
-            @PathVariable String courseId,
-            @PathVariable String section) {
-
-        logger.info("Fetching course section: {} - {}", courseId, section);
-        Course courseSection = courseService.getCourseSection(courseId, section);
-        return success(courseSection, "Course section retrieved successfully");
+    @GetMapping("/count")
+    public ResponseEntity<ApiResponse<Long>> countCoursesBySemester(@RequestParam Long semesterId) {
+        logger.info("Counting courses for semester ID: {}", semesterId);
+        validateId(semesterId);
+        long count = courseService.countBySemester(semesterId);
+        return success(count, "Course count retrieved successfully");
     }
 
     /**
-     * Get courses with sections
+     * Count active courses in a semester
      */
-    @GetMapping("/with-sections")
-    public ResponseEntity<ApiResponse<List<Course>>> getCoursesWithSections() {
-        logger.info("Fetching courses with sections");
-        List<Course> courses = courseService.getCoursesWithSections();
-        return success(courses, "Courses with sections retrieved successfully");
+    @GetMapping("/count/active")
+    public ResponseEntity<ApiResponse<Long>> countActiveCoursesBySemester(@RequestParam Long semesterId) {
+        logger.info("Counting active courses for semester ID: {}", semesterId);
+        validateId(semesterId);
+        long count = courseService.countActiveBySemester(semesterId);
+        return success(count, "Active course count retrieved successfully");
     }
 
-    /**
-     * Get courses without sections
-     */
-    @GetMapping("/without-sections")
-    public ResponseEntity<ApiResponse<List<Course>>> getCoursesWithoutSections() {
-        logger.info("Fetching courses without sections");
-        List<Course> courses = courseService.getCoursesWithoutSections();
-        return success(courses, "Courses without sections retrieved successfully");
+
+    // Instructor assignments
+    @PostMapping("/{courseId}/instructors/{programUserId}")
+    public ResponseEntity<Void> assignInstructor(
+            @PathVariable Long courseId,
+            @PathVariable Long programUserId) {
+        courseService.assignInstructor(courseId, programUserId);
+        return ResponseEntity.ok().build();
     }
 
-    /**
-     * Check if section exists
-     */
-    @GetMapping("/{courseId}/sections/{section}/exists")
-    public ResponseEntity<ApiResponse<Boolean>> checkSectionExists(
-            @PathVariable String courseId,
-            @PathVariable String section,
-            @RequestParam Long semesterId) {
+    @DeleteMapping("/{courseId}/instructors/{programUserId}")
+    public ResponseEntity<Void> removeInstructor(
+            @PathVariable Long courseId,
+            @PathVariable Long programUserId) {
+        courseService.removeInstructor(courseId, programUserId);
+        return ResponseEntity.ok().build();
+    }
 
-        logger.info("Checking if section exists: {} - {} in semester {}", courseId, section, semesterId);
-        zvalidateId(semesterId);
-        boolean exists = courseService.sectionExists(courseId, section, semesterId);
-        return success(exists, "Section existence checked successfully");
+    @GetMapping("/{courseId}/instructors")
+    public ResponseEntity<List<Long>> getInstructors(@PathVariable Long courseId) {
+        return ResponseEntity.ok(courseService.getInstructorIds(courseId));
+    }
+
+    // Indicator assignments
+    @PostMapping("/{courseId}/indicators/{indicatorId}")
+    public ResponseEntity<Void> assignIndicator(
+            @PathVariable Long courseId,
+            @PathVariable Long indicatorId) {
+        courseService.assignIndicator(courseId, indicatorId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{courseId}/indicators/{indicatorId}")
+    public ResponseEntity<Void> removeIndicator(
+            @PathVariable Long courseId,
+            @PathVariable Long indicatorId) {
+        courseService.removeIndicator(courseId, indicatorId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{courseId}/indicators")
+    public ResponseEntity<List<Long>> getIndicators(@PathVariable Long courseId) {
+        return ResponseEntity.ok(courseService.getIndicatorIds(courseId));
     }
 }

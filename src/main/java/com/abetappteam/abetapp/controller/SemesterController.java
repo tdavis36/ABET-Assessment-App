@@ -42,7 +42,7 @@ public class SemesterController extends BaseController {
             @RequestParam(defaultValue = "desc") String direction) {
 
         logger.info("Fetching all semesters for program ID: {}", programId);
-        zvalidateId(programId);
+        validateId(programId);
         Pageable pageable = createPageable(page, size, sort, direction);
         Page<Semester> semesters = semesterService.getSemestersByProgram(programId, pageable);
         return pagedSuccess(semesters);
@@ -54,7 +54,7 @@ public class SemesterController extends BaseController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Semester>> getSemester(@PathVariable Long id) {
         logger.info("Fetching semester with ID: {}", id);
-        zvalidateId(id);
+        validateId(id);
         Semester semester = semesterService.findById(id);
         return success(semester, "Semester retrieved successfully");
     }
@@ -85,7 +85,7 @@ public class SemesterController extends BaseController {
             @Valid @RequestBody SemesterDTO dto) {
 
         logger.info("Updating semester with ID: {}", id);
-        zvalidateId(id);
+        validateId(id);
         Semester updated = semesterService.updateSemester(id, dto);
         return success(updated, "Semester updated successfully");
     }
@@ -96,7 +96,7 @@ public class SemesterController extends BaseController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> removeSemester(@PathVariable Long id) {
         logger.info("Removing semester with ID: {}", id);
-        zvalidateId(id);
+        validateId(id);
         semesterService.removeSemester(id);
         return success(null, "Semester removed successfully");
     }
@@ -160,7 +160,7 @@ public class SemesterController extends BaseController {
     @GetMapping("/program/{programId}/current")
     public ResponseEntity<ApiResponse<Object>> getCurrentSemesterByProgram(@PathVariable Long programId) {
         logger.info("Fetching current semester for program ID: {}", programId);
-        zvalidateId(programId);
+        validateId(programId);
         Optional<Semester> currentSemester = semesterService.getCurrentSemesterByProgram(programId);
 
         if (currentSemester.isPresent()) {
@@ -177,7 +177,7 @@ public class SemesterController extends BaseController {
     @PostMapping("/{id}/set-current")
     public ResponseEntity<ApiResponse<Semester>> setAsCurrentSemester(@PathVariable Long id) {
         logger.info("Setting semester {} as current", id);
-        zvalidateId(id);
+        validateId(id);
         Semester updated = semesterService.setAsCurrentSemester(id);
         return success(updated, "Semester set as current successfully");
     }
@@ -191,7 +191,7 @@ public class SemesterController extends BaseController {
             @PathVariable String status) {
 
         logger.info("Updating semester {} status to: {}", id, status);
-        zvalidateId(id);
+        validateId(id);
         SemesterStatus newStatus = SemesterStatus.valueOf(status.toUpperCase());
         Semester updated = semesterService.updateSemesterStatus(id, newStatus);
         return success(updated, "Semester status updated successfully");
@@ -204,7 +204,7 @@ public class SemesterController extends BaseController {
     public ResponseEntity<ApiResponse<List<Semester>>> getActiveAndUpcomingSemesters(
             @PathVariable Long programId) {
         logger.info("Fetching active and upcoming semesters for program ID: {}", programId);
-        zvalidateId(programId);
+        validateId(programId);
         List<Semester> semesters = semesterService.getActiveAndUpcomingSemestersByProgram(programId);
         return success(semesters, "Active and upcoming semesters retrieved successfully");
     }
@@ -263,7 +263,7 @@ public class SemesterController extends BaseController {
     @GetMapping("/program/{programId}/academic-years")
     public ResponseEntity<ApiResponse<List<Integer>>> getDistinctAcademicYears(@PathVariable Long programId) {
         logger.info("Fetching distinct academic years for program ID: {}", programId);
-        zvalidateId(programId);
+        validateId(programId);
         List<Integer> academicYears = semesterService.getDistinctAcademicYearsByProgram(programId);
         return success(academicYears, "Distinct academic years retrieved successfully");
     }
@@ -274,7 +274,7 @@ public class SemesterController extends BaseController {
     @GetMapping("/{id}/has-courses")
     public ResponseEntity<ApiResponse<Boolean>> hasCourses(@PathVariable Long id) {
         logger.info("Checking if semester {} has courses", id);
-        zvalidateId(id);
+        validateId(id);
         boolean hasCourses = semesterService.hasCourses(id);
         return success(hasCourses, "Course existence checked successfully");
     }
@@ -285,7 +285,7 @@ public class SemesterController extends BaseController {
     @GetMapping("/{id}/course-count")
     public ResponseEntity<ApiResponse<Long>> countCoursesBySemester(@PathVariable Long id) {
         logger.info("Counting courses in semester {}", id);
-        zvalidateId(id);
+        validateId(id);
         long courseCount = semesterService.countCoursesBySemester(id);
         return success(courseCount, "Course count retrieved successfully");
     }
@@ -299,7 +299,7 @@ public class SemesterController extends BaseController {
             @PathVariable String status) {
 
         logger.info("Counting semesters for program {} with status {}", programId, status);
-        zvalidateId(programId);
+        validateId(programId);
         SemesterStatus semesterStatus = SemesterStatus.valueOf(status.toUpperCase());
         long count = semesterService.countByProgramAndStatus(programId, semesterStatus);
         return success(count, "Semester count retrieved successfully");
@@ -321,7 +321,7 @@ public class SemesterController extends BaseController {
     @DeleteMapping("/program/{programId}/clear-current")
     public ResponseEntity<ApiResponse<Void>> clearCurrentSemesterFlag(@PathVariable Long programId) {
         logger.info("Clearing current semester flag for program ID: {}", programId);
-        zvalidateId(programId);
+        validateId(programId);
         semesterService.clearCurrentSemesterFlag(programId);
         return success(null, "Current semester flag cleared successfully");
     }

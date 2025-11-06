@@ -6,83 +6,66 @@ import jakarta.validation.constraints.NotNull;
 
 /**
  * Entity representing a Course in the ABET app
- * Courses are assigned to instructors and can have multiple sections
+ * Courses are assigned to instructors through the CourseInstructor table
  */
 @Entity
-@Table(name = "courses")
+@Table(name = "course")
 public class Course extends BaseEntity {
 
-    @NotBlank(message = "Course name is required")
-    @Column(nullable = false)
-    private String name;
+    @NotBlank(message = "Course code is required")
+    @Column(name = "course_code", nullable = false, length = 20)
+    private String courseCode;
 
-    @NotBlank(message = "Course ID is required")
-    @Column(name = "course_id", nullable = false, unique = true)
-    private String courseId;
+    @NotBlank(message = "Course name is required")
+    @Column(name = "course_name", nullable = false)
+    private String courseName;
+
+    @NotBlank(message = "Course description is required")
+    @Column(name = "course_description", nullable = false, columnDefinition = "TEXT")
+    private String courseDescription;
 
     @NotNull(message = "Semester ID is required")
     @Column(name = "semester_id", nullable = false)
     private Long semesterId;
 
-    @NotNull(message = "Program ID is required")
-    @Column(name = "program_id", nullable = false)
-    private Long programId;
-
-    @Column(name = "instructor_id")
-    private Long instructorId;
-
-    @Column(name = "section")
-    private String section;
-
-    // Optional: Course description
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
     // Constructors
     public Course() {
     }
 
-    public Course(String name, String courseId, Long semesterId, Long programId) {
-        this.name = name;
-        this.courseId = courseId;
+    public Course(String courseCode, String courseName, String courseDescription, Long semesterId) {
+        this.courseCode = courseCode;
+        this.courseName = courseName;
+        this.courseDescription = courseDescription;
         this.semesterId = semesterId;
-        this.programId = programId;
-    }
-
-    public Course(String name, String courseId, Long semesterId, Long programId, String section) {
-        this.name = name;
-        this.courseId = courseId;
-        this.semesterId = semesterId;
-        this.programId = programId;
-        this.section = section;
-    }
-
-    public String getFullCourseId() {
-        if (section != null && !section.trim().isEmpty()) {
-            return courseId + "-" + section;
-        }
-        return courseId;
-    }
-
-    public boolean hasSection() {
-        return section != null && !section.trim().isEmpty();
+        this.isActive = true;
     }
 
     // Getters and Setters
-    public String getName() {
-        return name;
+    public String getCourseCode() {
+        return courseCode;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setCourseCode(String courseCode) {
+        this.courseCode = courseCode;
     }
 
-    public String getCourseId() {
-        return courseId;
+    public String getCourseName() {
+        return courseName;
     }
 
-    public void setCourseId(String courseId) {
-        this.courseId = courseId;
+    public void setCourseName(String courseName) {
+        this.courseName = courseName;
+    }
+
+    public String getCourseDescription() {
+        return courseDescription;
+    }
+
+    public void setCourseDescription(String courseDescription) {
+        this.courseDescription = courseDescription;
     }
 
     public Long getSemesterId() {
@@ -93,49 +76,23 @@ public class Course extends BaseEntity {
         this.semesterId = semesterId;
     }
 
-    public Long getProgramId() {
-        return programId;
+    public Boolean getIsActive() {
+        return isActive;
     }
 
-    public void setProgramId(Long programId) {
-        this.programId = programId;
-    }
-
-    public Long getInstructorId() {
-        return instructorId;
-    }
-
-    public void setInstructorId(Long instructorId) {
-        this.instructorId = instructorId;
-    }
-
-    public String getSection() {
-        return section;
-    }
-
-    public void setSection(String section) {
-        this.section = section;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
     }
 
     @Override
     public String toString() {
-        return "CourseEntity{" +
+        return "Course{" +
                 "id=" + getId() +
-                ", name='" + name + '\'' +
-                ", courseId='" + courseId + '\'' +
-                ", section='" + section + '\'' +
+                ", courseCode='" + courseCode + '\'' +
+                ", courseName='" + courseName + '\'' +
+                ", courseDescription='" + courseDescription + '\'' +
                 ", semesterId=" + semesterId +
-                ", programId=" + programId +
-                ", instructorId=" + instructorId +
-                ", description='" + description + '\'' +
+                ", isActive=" + isActive +
                 ", createdAt=" + getCreatedAt() +
                 ", updatedAt=" + getUpdatedAt() +
                 '}';
