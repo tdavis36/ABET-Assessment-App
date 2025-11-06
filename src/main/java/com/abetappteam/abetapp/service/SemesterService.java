@@ -1,9 +1,9 @@
 package com.abetappteam.abetapp.service;
 
 import com.abetappteam.abetapp.dto.SemesterDTO;
-import com.abetappteam.abetapp.entity.SemesterEntity;
-import com.abetappteam.abetapp.entity.SemesterEntity.SemesterStatus;
-import com.abetappteam.abetapp.entity.SemesterEntity.SemesterType;
+import com.abetappteam.abetapp.entity.Semester;
+import com.abetappteam.abetapp.entity.Semester.SemesterStatus;
+import com.abetappteam.abetapp.entity.Semester.SemesterType;
 import com.abetappteam.abetapp.exception.BusinessException;
 import com.abetappteam.abetapp.exception.ConflictException;
 import com.abetappteam.abetapp.exception.ResourceNotFoundException;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * Service class for Semester entity
  */
 @Service
-public class SemesterService extends BaseService<SemesterEntity, Long, SemesterRepository> {
+public class SemesterService extends BaseService<Semester, Long, SemesterRepository> {
 
     @Autowired
     public SemesterService(SemesterRepository repository) {
@@ -36,11 +36,11 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
     }
 
     @Transactional
-    public SemesterEntity createSemester(String name, String code, LocalDate startDate, LocalDate endDate,
-            Integer academicYear, SemesterType type, Long programId,
-            String description, Boolean isCurrent) {
+    public Semester createSemester(String name, String code, LocalDate startDate, LocalDate endDate,
+                                   Integer academicYear, SemesterType type, Long programId,
+                                   String description, Boolean isCurrent) {
         // Check for duplicate semester code in the same program
-        Optional<SemesterEntity> existingSemester = repository.findByCodeIgnoreCaseAndProgramId(code, programId);
+        Optional<Semester> existingSemester = repository.findByCodeIgnoreCaseAndProgramId(code, programId);
         if (existingSemester.isPresent()) {
             throw new ConflictException("Semester with code '" + code + "' already exists in this program");
         }
@@ -55,7 +55,7 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
             throw new BusinessException("Academic year must be between 2000 and 2100");
         }
 
-        SemesterEntity semester = new SemesterEntity();
+        Semester semester = new Semester();
         semester.setName(name);
         semester.setCode(code);
         semester.setStartDate(startDate);
@@ -78,7 +78,7 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
     }
 
     @Transactional
-    public SemesterEntity createSemester(SemesterDTO dto) {
+    public Semester createSemester(SemesterDTO dto) {
         SemesterType type = SemesterType.valueOf(dto.getType().toUpperCase());
         return createSemester(dto.getName(), dto.getCode(), dto.getStartDate(), dto.getEndDate(),
                 dto.getAcademicYear(), type, dto.getProgramId(), dto.getDescription(),
@@ -86,10 +86,10 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
     }
 
     @Transactional
-    public SemesterEntity updateSemester(Long semesterId, String name, String code, LocalDate startDate,
-            LocalDate endDate, Integer academicYear, SemesterType type,
-            String description, Boolean isCurrent) {
-        SemesterEntity semester = findById(semesterId);
+    public Semester updateSemester(Long semesterId, String name, String code, LocalDate startDate,
+                                   LocalDate endDate, Integer academicYear, SemesterType type,
+                                   String description, Boolean isCurrent) {
+        Semester semester = findById(semesterId);
 
         // Check if semester is editable
         if (!semester.isEditable()) {
@@ -147,7 +147,7 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
     }
 
     @Transactional
-    public SemesterEntity updateSemester(Long semesterId, SemesterDTO dto) {
+    public Semester updateSemester(Long semesterId, SemesterDTO dto) {
         SemesterType type = dto.getType() != null ? SemesterType.valueOf(dto.getType().toUpperCase()) : null;
         return updateSemester(semesterId, dto.getName(), dto.getCode(), dto.getStartDate(),
                 dto.getEndDate(), dto.getAcademicYear(), type, dto.getDescription(),
@@ -156,7 +156,7 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
 
     @Transactional
     public void removeSemester(Long semesterId) {
-        SemesterEntity semester = findById(semesterId);
+        Semester semester = findById(semesterId);
 
         // Check if semester has courses
         if (repository.hasCourses(semesterId)) {
@@ -168,57 +168,57 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
     }
 
     @Transactional(readOnly = true)
-    public Page<SemesterEntity> getSemestersByProgram(Long programId, Pageable pageable) {
+    public Page<Semester> getSemestersByProgram(Long programId, Pageable pageable) {
         logger.debug("Fetching semesters for program ID: {}", programId);
         return repository.findByProgramId(programId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public List<SemesterEntity> getSemestersByProgram(Long programId) {
+    public List<Semester> getSemestersByProgram(Long programId) {
         logger.debug("Fetching all semesters for program ID: {}", programId);
         return repository.findByProgramId(programId);
     }
 
     @Transactional(readOnly = true)
-    public Page<SemesterEntity> getSemestersByAcademicYear(Integer academicYear, Pageable pageable) {
+    public Page<Semester> getSemestersByAcademicYear(Integer academicYear, Pageable pageable) {
         logger.debug("Fetching semesters for academic year: {}", academicYear);
         return repository.findByAcademicYear(academicYear, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<SemesterEntity> getSemestersByType(SemesterType type, Pageable pageable) {
+    public Page<Semester> getSemestersByType(SemesterType type, Pageable pageable) {
         logger.debug("Fetching semesters of type: {}", type);
         return repository.findByType(type, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<SemesterEntity> getSemestersByStatus(SemesterStatus status, Pageable pageable) {
+    public Page<Semester> getSemestersByStatus(SemesterStatus status, Pageable pageable) {
         logger.debug("Fetching semesters with status: {}", status);
         return repository.findByStatus(status, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<SemesterEntity> getSemestersByProgramAndAcademicYear(Long programId, Integer academicYear,
-            Pageable pageable) {
+    public Page<Semester> getSemestersByProgramAndAcademicYear(Long programId, Integer academicYear,
+                                                               Pageable pageable) {
         logger.debug("Fetching semesters for program {} and academic year {}", programId, academicYear);
         return repository.findByProgramIdAndAcademicYear(programId, academicYear, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<SemesterEntity> getSemestersByProgramAndType(Long programId, SemesterType type, Pageable pageable) {
+    public Page<Semester> getSemestersByProgramAndType(Long programId, SemesterType type, Pageable pageable) {
         logger.debug("Fetching semesters for program {} and type {}", programId, type);
         return repository.findByProgramIdAndType(programId, type, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<SemesterEntity> getSemestersByProgramAndStatus(Long programId, SemesterStatus status,
-            Pageable pageable) {
+    public Page<Semester> getSemestersByProgramAndStatus(Long programId, SemesterStatus status,
+                                                         Pageable pageable) {
         logger.debug("Fetching semesters for program {} and status {}", programId, status);
         return repository.findByProgramIdAndStatus(programId, status, pageable);
     }
 
     @Transactional(readOnly = true)
-    public SemesterEntity findByCode(String code) {
+    public Semester findByCode(String code) {
         return repository.findByCodeIgnoreCase(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Semester not found with code: " + code));
     }
@@ -229,37 +229,37 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
     }
 
     @Transactional(readOnly = true)
-    public List<SemesterEntity> searchByNameOrCode(String searchTerm) {
+    public List<Semester> searchByNameOrCode(String searchTerm) {
         logger.debug("Searching semesters with term: {}", searchTerm);
         return repository.searchByNameOrCode(searchTerm);
     }
 
     @Transactional(readOnly = true)
-    public Page<SemesterEntity> searchByNameOrCode(String searchTerm, Pageable pageable) {
+    public Page<Semester> searchByNameOrCode(String searchTerm, Pageable pageable) {
         logger.debug("Searching semesters with term: {}", searchTerm);
         return repository.searchByNameOrCode(searchTerm, pageable);
     }
 
     @Transactional(readOnly = true)
-    public List<SemesterEntity> getActiveSemestersOnDate(LocalDate date) {
+    public List<Semester> getActiveSemestersOnDate(LocalDate date) {
         logger.debug("Fetching active semesters on date: {}", date);
         return repository.findActiveSemestersOnDate(date);
     }
 
     @Transactional(readOnly = true)
-    public Optional<SemesterEntity> getCurrentSemesterByProgram(Long programId) {
+    public Optional<Semester> getCurrentSemesterByProgram(Long programId) {
         logger.debug("Fetching current semester for program: {}", programId);
         return repository.findCurrentSemesterByProgram(programId);
     }
 
     @Transactional(readOnly = true)
-    public List<SemesterEntity> getCurrentSemesters() {
+    public List<Semester> getCurrentSemesters() {
         logger.debug("Fetching all current semesters");
         return repository.findByIsCurrentTrue();
     }
 
     @Transactional(readOnly = true)
-    public List<SemesterEntity> getActiveAndUpcomingSemestersByProgram(Long programId) {
+    public List<Semester> getActiveAndUpcomingSemestersByProgram(Long programId) {
         logger.debug("Fetching active and upcoming semesters for program: {}", programId);
         return repository.findActiveAndUpcomingSemestersByProgram(programId);
     }
@@ -267,9 +267,9 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
     @Transactional(readOnly = true)
     public List<Integer> getDistinctAcademicYearsByProgram(Long programId) {
         logger.debug("Fetching distinct academic years for program: {}", programId);
-        List<SemesterEntity> semesters = repository.findByProgramId(programId);
+        List<Semester> semesters = repository.findByProgramId(programId);
         return semesters.stream()
-                .map(SemesterEntity::getAcademicYear)
+                .map(Semester::getAcademicYear)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
@@ -286,8 +286,8 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
     }
 
     @Transactional
-    public SemesterEntity updateSemesterStatus(Long semesterId, SemesterStatus newStatus) {
-        SemesterEntity semester = findById(semesterId);
+    public Semester updateSemesterStatus(Long semesterId, SemesterStatus newStatus) {
+        Semester semester = findById(semesterId);
 
         // Validate status transition
         validateStatusTransition(semester.getStatus(), newStatus);
@@ -298,8 +298,8 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
     }
 
     @Transactional
-    public SemesterEntity setAsCurrentSemester(Long semesterId) {
-        SemesterEntity semester = findById(semesterId);
+    public Semester setAsCurrentSemester(Long semesterId) {
+        Semester semester = findById(semesterId);
         setAsCurrentSemester(semester);
         return repository.save(semester);
     }
@@ -321,14 +321,14 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
     }
 
     // Helper methods for business logic
-    private void setAsCurrentSemester(SemesterEntity semester) {
+    private void setAsCurrentSemester(Semester semester) {
         // Clear current flag from all semesters in the program
         repository.clearCurrentSemesterFlag(semester.getProgramId());
         // Set current flag on this semester
         semester.setIsCurrent(true);
     }
 
-    private void updateSemesterStatus(SemesterEntity semester) {
+    private void updateSemesterStatus(Semester semester) {
         LocalDate today = LocalDate.now();
         if (today.isBefore(semester.getStartDate())) {
             semester.setStatus(SemesterStatus.UPCOMING);
@@ -355,8 +355,8 @@ public class SemesterService extends BaseService<SemesterEntity, Long, SemesterR
      */
     @Transactional
     public void updateAllSemesterStatuses() {
-        List<SemesterEntity> allSemesters = repository.findAll();
-        for (SemesterEntity semester : allSemesters) {
+        List<Semester> allSemesters = repository.findAll();
+        for (Semester semester : allSemesters) {
             if (semester.isEditable()) { // Only update upcoming and active semesters
                 updateSemesterStatus(semester);
                 repository.save(semester);

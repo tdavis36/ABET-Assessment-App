@@ -1,4 +1,7 @@
 -- H2 Compatible Schema for ABET Assessment App
+CREATE SCHEMA IF NOT EXISTS public;
+SET SCHEMA PUBLIC;
+
 -- User table
 DROP TABLE IF EXISTS users;
 

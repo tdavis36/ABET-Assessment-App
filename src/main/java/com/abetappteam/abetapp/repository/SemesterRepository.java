@@ -1,11 +1,12 @@
 package com.abetappteam.abetapp.repository;
 
-import com.abetappteam.abetapp.entity.SemesterEntity;
-import com.abetappteam.abetapp.entity.SemesterEntity.SemesterStatus;
-import com.abetappteam.abetapp.entity.SemesterEntity.SemesterType;
+import com.abetappteam.abetapp.entity.Semester;
+import com.abetappteam.abetapp.entity.Semester.SemesterStatus;
+import com.abetappteam.abetapp.entity.Semester.SemesterType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,104 +19,105 @@ import java.util.Optional;
  * Repository for Semester entity
  */
 @Repository
-public interface SemesterRepository extends JpaRepository<SemesterEntity, Long> {
+public interface SemesterRepository extends JpaRepository<Semester, Long> {
 
     // Basic find methods
-    Page<SemesterEntity> findByProgramId(Long programId, Pageable pageable);
+    Page<Semester> findByProgramId(Long programId, Pageable pageable);
 
-    List<SemesterEntity> findByProgramId(Long programId);
+    List<Semester> findByProgramId(Long programId);
 
-    Page<SemesterEntity> findByAcademicYear(Integer academicYear, Pageable pageable);
+    Page<Semester> findByAcademicYear(Integer academicYear, Pageable pageable);
 
-    List<SemesterEntity> findByAcademicYear(Integer academicYear);
+    List<Semester> findByAcademicYear(Integer academicYear);
 
-    Page<SemesterEntity> findByType(SemesterType type, Pageable pageable);
+    Page<Semester> findByType(SemesterType type, Pageable pageable);
 
-    List<SemesterEntity> findByType(SemesterType type);
+    List<Semester> findByType(SemesterType type);
 
-    Page<SemesterEntity> findByStatus(SemesterStatus status, Pageable pageable);
+    Page<Semester> findByStatus(SemesterStatus status, Pageable pageable);
 
-    List<SemesterEntity> findByStatus(SemesterStatus status);
+    List<Semester> findByStatus(SemesterStatus status);
 
     // Combined field queries
-    Page<SemesterEntity> findByProgramIdAndAcademicYear(Long programId, Integer academicYear, Pageable pageable);
+    Page<Semester> findByProgramIdAndAcademicYear(Long programId, Integer academicYear, Pageable pageable);
 
-    List<SemesterEntity> findByProgramIdAndAcademicYear(Long programId, Integer academicYear);
+    List<Semester> findByProgramIdAndAcademicYear(Long programId, Integer academicYear);
 
-    Page<SemesterEntity> findByProgramIdAndType(Long programId, SemesterType type, Pageable pageable);
+    Page<Semester> findByProgramIdAndType(Long programId, SemesterType type, Pageable pageable);
 
-    List<SemesterEntity> findByProgramIdAndType(Long programId, SemesterType type);
+    List<Semester> findByProgramIdAndType(Long programId, SemesterType type);
 
-    Page<SemesterEntity> findByProgramIdAndStatus(Long programId, SemesterStatus status, Pageable pageable);
+    Page<Semester> findByProgramIdAndStatus(Long programId, SemesterStatus status, Pageable pageable);
 
-    List<SemesterEntity> findByProgramIdAndStatus(Long programId, SemesterStatus status);
+    List<Semester> findByProgramIdAndStatus(Long programId, SemesterStatus status);
 
     // Unique constraint methods
-    Optional<SemesterEntity> findByCodeIgnoreCase(String code);
+    Optional<Semester> findByCodeIgnoreCase(String code);
 
     boolean existsByCodeIgnoreCase(String code);
 
-    Optional<SemesterEntity> findByCodeIgnoreCaseAndProgramId(String code, Long programId);
+    Optional<Semester> findByCodeIgnoreCaseAndProgramId(String code, Long programId);
 
     // Search methods
-    List<SemesterEntity> findByNameContainingIgnoreCase(String nameFragment);
+    List<Semester> findByNameContainingIgnoreCase(String nameFragment);
 
-    @Query("SELECT s FROM SemesterEntity s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(s.code) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    List<SemesterEntity> searchByNameOrCode(@Param("searchTerm") String searchTerm);
+    @Query("SELECT s FROM Semester s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(s.code) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    List<Semester> searchByNameOrCode(@Param("searchTerm") String searchTerm);
 
-    @Query("SELECT s FROM SemesterEntity s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(s.code) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    Page<SemesterEntity> searchByNameOrCode(@Param("searchTerm") String searchTerm, Pageable pageable);
+    @Query("SELECT s FROM Semester s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(s.code) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<Semester> searchByNameOrCode(@Param("searchTerm") String searchTerm, Pageable pageable);
 
     // Date range queries
-    List<SemesterEntity> findByStartDateAfter(LocalDate date);
+    List<Semester> findByStartDateAfter(LocalDate date);
 
-    List<SemesterEntity> findByEndDateBefore(LocalDate date);
+    List<Semester> findByEndDateBefore(LocalDate date);
 
-    List<SemesterEntity> findByStartDateBetween(LocalDate start, LocalDate end);
+    List<Semester> findByStartDateBetween(LocalDate start, LocalDate end);
 
-    List<SemesterEntity> findByEndDateBetween(LocalDate start, LocalDate end);
+    List<Semester> findByEndDateBetween(LocalDate start, LocalDate end);
 
-    @Query("SELECT s FROM SemesterEntity s WHERE :date BETWEEN s.startDate AND s.endDate")
-    List<SemesterEntity> findActiveSemestersOnDate(@Param("date") LocalDate date);
+    @Query("SELECT s FROM Semester s WHERE :date BETWEEN s.startDate AND s.endDate")
+    List<Semester> findActiveSemestersOnDate(@Param("date") LocalDate date);
 
     // Current semester queries
-    Optional<SemesterEntity> findByIsCurrentTrueAndProgramId(Long programId);
+    Optional<Semester> findByIsCurrentTrueAndProgramId(Long programId);
 
-    List<SemesterEntity> findByIsCurrentTrue();
+    List<Semester> findByIsCurrentTrue();
 
-    @Query("SELECT s FROM SemesterEntity s WHERE s.isCurrent = true AND s.programId = :programId")
-    Optional<SemesterEntity> findCurrentSemesterByProgram(@Param("programId") Long programId);
+    @Query("SELECT s FROM Semester s WHERE s.isCurrent = true AND s.programId = :programId")
+    Optional<Semester> findCurrentSemesterByProgram(@Param("programId") Long programId);
 
     // Status-based utility methods
-    @Query("SELECT COUNT(s) FROM SemesterEntity s WHERE s.programId = :programId AND s.status = :status")
+    @Query("SELECT COUNT(s) FROM Semester s WHERE s.programId = :programId AND s.status = :status")
     long countByProgramIdAndStatus(@Param("programId") Long programId, @Param("status") SemesterStatus status);
 
     long countByProgramId(Long programId);
 
-    @Query("SELECT s FROM SemesterEntity s WHERE s.programId = :programId AND s.status IN ('ACTIVE', 'UPCOMING') ORDER BY s.startDate ASC")
-    List<SemesterEntity> findActiveAndUpcomingSemestersByProgram(@Param("programId") Long programId);
+    @Query("SELECT s FROM Semester s WHERE s.programId = :programId AND s.status IN ('ACTIVE', 'UPCOMING') ORDER BY s.startDate ASC")
+    List<Semester> findActiveAndUpcomingSemestersByProgram(@Param("programId") Long programId);
 
     // Academic year range queries
-    @Query("SELECT s FROM SemesterEntity s WHERE s.programId = :programId AND s.academicYear BETWEEN :startYear AND :endYear")
-    List<SemesterEntity> findByProgramIdAndAcademicYearRange(
+    @Query("SELECT s FROM Semester s WHERE s.programId = :programId AND s.academicYear BETWEEN :startYear AND :endYear")
+    List<Semester> findByProgramIdAndAcademicYearRange(
             @Param("programId") Long programId,
             @Param("startYear") Integer startYear,
             @Param("endYear") Integer endYear);
 
     // Methods for assessment generation validation
-    @Query("SELECT COUNT(c) > 0 FROM CourseEntity c WHERE c.semesterId = :semesterId")
+    @Query("SELECT COUNT(c) > 0 FROM Course c WHERE c.semesterId = :semesterId")
     boolean hasCourses(@Param("semesterId") Long semesterId);
 
-    @Query("SELECT COUNT(c) FROM CourseEntity c WHERE c.semesterId = :semesterId")
+    @Query("SELECT COUNT(c) FROM Course c WHERE c.semesterId = :semesterId")
     long countCoursesBySemesterId(@Param("semesterId") Long semesterId);
 
     // Bulk status update methods
-    @Query("UPDATE SemesterEntity s SET s.status = :newStatus WHERE s.id = :semesterId")
+    @Query("UPDATE Semester s SET s.status = :newStatus WHERE s.id = :semesterId")
     void updateSemesterStatus(@Param("semesterId") Long semesterId, @Param("newStatus") SemesterStatus newStatus);
 
-    @Query("UPDATE SemesterEntity s SET s.isCurrent = false WHERE s.programId = :programId")
+    @Query("UPDATE Semester s SET s.isCurrent = false WHERE s.programId = :programId")
     void clearCurrentSemesterFlag(@Param("programId") Long programId);
 
-    @Query("UPDATE SemesterEntity s SET s.isCurrent = true WHERE s.id = :semesterId AND s.programId = :programId")
+    @Modifying
+    @Query("UPDATE Semester s SET s.isCurrent = true WHERE s.id = :semesterId AND s.programId = :programId")
     void setCurrentSemester(@Param("semesterId") Long semesterId, @Param("programId") Long programId);
 }

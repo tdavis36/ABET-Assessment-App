@@ -106,7 +106,7 @@ public abstract class BaseController {
     /**
      * Validate required path variables
      */
-    protected void zvalidateId(Long id) {
+    protected void validateId(Long id) {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("Invalid ID provided");
         }

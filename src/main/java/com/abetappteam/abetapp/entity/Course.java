@@ -1,31 +1,41 @@
-package com.abetappteam.abetapp.dto;
+package com.abetappteam.abetapp.entity;
 
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-public class CourseDTO {
-
-    private Long id;
+/**
+ * Entity representing a Course in the ABET app
+ * Courses are assigned to instructors through the CourseInstructor table
+ */
+@Entity
+@Table(name = "course")
+public class Course extends BaseEntity {
 
     @NotBlank(message = "Course code is required")
+    @Column(name = "course_code", nullable = false, length = 20)
     private String courseCode;
 
     @NotBlank(message = "Course name is required")
+    @Column(name = "course_name", nullable = false)
     private String courseName;
 
     @NotBlank(message = "Course description is required")
+    @Column(name = "course_description", nullable = false, columnDefinition = "TEXT")
     private String courseDescription;
 
     @NotNull(message = "Semester ID is required")
+    @Column(name = "semester_id", nullable = false)
     private Long semesterId;
 
-    private Boolean isActive;
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
     // Constructors
-    public CourseDTO() {
+    public Course() {
     }
 
-    public CourseDTO(String courseCode, String courseName, String courseDescription, Long semesterId) {
+    public Course(String courseCode, String courseName, String courseDescription, Long semesterId) {
         this.courseCode = courseCode;
         this.courseName = courseName;
         this.courseDescription = courseDescription;
@@ -33,15 +43,7 @@ public class CourseDTO {
         this.isActive = true;
     }
 
-    // Getters and setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
+    // Getters and Setters
     public String getCourseCode() {
         return courseCode;
     }
@@ -84,13 +86,15 @@ public class CourseDTO {
 
     @Override
     public String toString() {
-        return "CourseDTO{" +
-                "id=" + id +
+        return "Course{" +
+                "id=" + getId() +
                 ", courseCode='" + courseCode + '\'' +
                 ", courseName='" + courseName + '\'' +
                 ", courseDescription='" + courseDescription + '\'' +
                 ", semesterId=" + semesterId +
                 ", isActive=" + isActive +
+                ", createdAt=" + getCreatedAt() +
+                ", updatedAt=" + getUpdatedAt() +
                 '}';
     }
 }
