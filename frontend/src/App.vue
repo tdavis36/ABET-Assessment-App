@@ -29,7 +29,6 @@
         first: data.data.firstName,
         full: data.data.fullName
       }
-      console.log('First name:', data.data.firstName)
     } catch (error) {
       console.error('Error fetching or parsing data:', error);
     }

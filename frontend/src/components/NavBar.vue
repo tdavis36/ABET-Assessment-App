@@ -29,38 +29,27 @@
       Instructor Dashboard
     </router-link>
 
-    <!-- Log In / Log Out -->
+    
     <router-link
-      v-if="loggedIn"
-      to="/"
-      class="nav_button"
-      id="logout"
-      @click="$emit('logout')"
+        v-if="loggedIn"
+        to="/"
+        class="nav_button"
+        id="logout"
+        @click="$emit('logout')"
     >
-      Logged in as <strong>{{ userID }}</strong> | Log Out
+        Hello, <strong>{{ user_first_name }}</strong> | Log Out
     </router-link>
 
-    
-        <router-link
-            v-if="loggedIn"
-            to="/"
-            class="nav_button"
-            id="logout"
-            @click="$emit('logout')"
-        >
-            Hello, <strong>{{ user_first_name }}</strong> | Log Out
-        </router-link>
-
-        <router-link
-            v-else
-            to="/login"
-            class="nav_button"
-            id="login"
-        >
-            Log In
-        </router-link>
-    </div>
-    <h1 hidden>This hidden element checks if the site loaded</h1>
+    <router-link
+        v-else
+        to="/login"
+        class="nav_button"
+        id="login"
+    >
+        Log In
+    </router-link>
+  </div>
+  <h1 hidden>This hidden element checks if the site loaded</h1>
 </template>
 
 
