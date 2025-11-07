@@ -26,6 +26,27 @@ public class CourseController extends BaseController {
     @Autowired
     private CourseService courseService;
 
+    @GetMapping("/instructor")
+    public ResponseEntity<ApiResponse<List<Course>>> getCoursesByInstructor(
+            @RequestParam Long programUserId) {
+
+        logger.info("Fetching courses for instructor with program user ID: {}", programUserId);
+        validateId(programUserId);
+        List<Course> courses = courseService.getActiveCoursesByProgramUserId(programUserId);
+        return success(courses, "Courses retrieved successfully for instructor");
+    }
+
+    /**
+     * Get a specific course by ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<Course>> getCourse(@PathVariable Long id) {
+        logger.info("Fetching course with ID: {}", id);
+        validateId(id);
+        Course course = courseService.findById(id);
+        return success(course, "Course retrieved successfully");
+    }
+
     /**
      * Get all courses for a specific semester
      */
@@ -42,17 +63,6 @@ public class CourseController extends BaseController {
         Pageable pageable = createPageable(page, size, sort, direction);
         Page<Course> courses = courseService.getCoursesBySemester(semesterId, pageable);
         return pagedSuccess(courses);
-    }
-
-    /**
-     * Get a specific course by ID
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Course>> getCourse(@PathVariable Long id) {
-        logger.info("Fetching course with ID: {}", id);
-        validateId(id);
-        Course course = courseService.findById(id);
-        return success(course, "Course retrieved successfully");
     }
 
     /**

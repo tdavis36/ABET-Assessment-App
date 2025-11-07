@@ -1,5 +1,8 @@
 <template>
   <section class="combined-dashboard">
+    <header class="dashboard-header">
+      <h1>Administrator Dashboard</h1>
+    </header>
  
     <ProgramInstructorsPage :programId="programId" />
 
