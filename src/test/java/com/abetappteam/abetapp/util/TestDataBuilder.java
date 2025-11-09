@@ -1,6 +1,7 @@
 package com.abetappteam.abetapp.util;
 
 import com.abetappteam.abetapp.entity.Program;
+import com.abetappteam.abetapp.entity.ProgramUser;
 import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.dto.ProgramDTO;
 import com.abetappteam.abetapp.entity.Course;
@@ -277,5 +278,31 @@ public class TestDataBuilder {
                     i % 2 == 0));
         }
         return programs;
+    }
+
+
+    //PROGRAMUSER TEST DATA
+
+    //Create ProgramUser
+    public static ProgramUser createProgramUser(){
+        return createProgramUser(false, 1l, 1l, true);
+    }
+
+    //Create Custom ProgramUser
+    public static ProgramUser createProgramUser(Boolean isAdmin, Long programId, Long userId, Boolean isActive){
+        ProgramUser pUser = new ProgramUser();
+        pUser.setProgramId(programId);
+        pUser.setUserId(userId);
+        pUser.setIsActive(isActive);
+        pUser.setAdminStatus(isAdmin);
+        return pUser;
+    }
+
+    //Create Custom ProgramUser with Id
+    public static ProgramUser createProgramUserWithId(Long id, Boolean isAdmin, Long programId, Long userId, Boolean isActive){
+        ProgramUser pUser = createProgramUser(isAdmin, programId, userId, isActive);
+        pUser.setId(id);
+        pUser.setCreatedAt(LocalDateTime.now());
+        return pUser;
     }
 }
