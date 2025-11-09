@@ -12,7 +12,7 @@
         course_description: '',
         semester_id: '',
         created_at: '',
-        is_active: ''
+        is_active: false
     });
     const semester_name = ref('');
 
@@ -24,13 +24,21 @@
             const response = await fetch(`/api/courses/${course_id.value}`);
             const data = await response.json(); // Await the JSON parsing
             console.log('Fetched JSON data:', data);
-            /*course_obj.value = {
-                id: data.data.firstName,
-                course_code: data.data.fullName
-            }*/
+            course_obj.value = {
+                id: data.data.id,
+                course_code: data.data.courseCode,
+                course_name: data.data.courseName,
+                course_description: data.data.courseDescription,
+                semester_id: data.data.semesterId,
+                created_at: data.data.createdAt,
+                is_active: data.data.isActive
+            }
         } catch (error) {
             console.error('Error fetching or parsing data:', error);
         }
+
+
+
     }
 
     initialize();
@@ -38,5 +46,11 @@
 </script>
 
 <template>
-    <p>Course id {{ route.params.course_id }}</p>
+    <p>Course ID {{ route.params.course_id }}</p>
+    <p>Course Code: {{ course_obj.course_code }}</p>
+    <p>Course Name: {{ course_obj.course_name }}</p>
+    <p>Course Description: {{ course_obj.course_description }}</p>
+    <p>Semester ID: {{ course_obj.semester_id }}</p>
+    <p>Created At: {{ course_obj.created_at }}</p>
+    <p>Is Active: {{ course_obj.is_active }}</p>
 </template>
