@@ -2,9 +2,9 @@ package com.abetappteam.abetapp.service;
 
 import com.abetappteam.abetapp.BaseServiceTest;
 import com.abetappteam.abetapp.dto.SemesterDTO;
-import com.abetappteam.abetapp.entity.SemesterEntity;
-import com.abetappteam.abetapp.entity.SemesterEntity.SemesterStatus;
-import com.abetappteam.abetapp.entity.SemesterEntity.SemesterType;
+import com.abetappteam.abetapp.entity.Semester;
+import com.abetappteam.abetapp.entity.Semester.SemesterStatus;
+import com.abetappteam.abetapp.entity.Semester.SemesterType;
 import com.abetappteam.abetapp.exception.BusinessException;
 import com.abetappteam.abetapp.exception.ConflictException;
 import com.abetappteam.abetapp.exception.ResourceNotFoundException;
@@ -40,7 +40,7 @@ class SemesterServiceTest extends BaseServiceTest {
     @InjectMocks
     private SemesterService semesterService;
 
-    private SemesterEntity testSemester;
+    private Semester testSemester;
     private SemesterDTO testSemesterDTO;
 
     @BeforeEach
@@ -60,7 +60,7 @@ class SemesterServiceTest extends BaseServiceTest {
         when(semesterRepository.findById(1L)).thenReturn(Optional.of(testSemester));
 
         // When
-        SemesterEntity found = semesterService.findById(1L);
+        Semester found = semesterService.findById(1L);
 
         // Then
         assertThat(found).isNotNull();
@@ -85,15 +85,15 @@ class SemesterServiceTest extends BaseServiceTest {
         // Given
         when(semesterRepository.findByCodeIgnoreCaseAndProgramId("SPRING-2025", 1L))
                 .thenReturn(Optional.empty());
-        when(semesterRepository.save(any(SemesterEntity.class))).thenReturn(testSemester);
+        when(semesterRepository.save(any(Semester.class))).thenReturn(testSemester);
 
         // When
-        SemesterEntity created = semesterService.createSemester(testSemesterDTO);
+        Semester created = semesterService.createSemester(testSemesterDTO);
 
         // Then
         assertThat(created).isNotNull();
         verify(semesterRepository).findByCodeIgnoreCaseAndProgramId("SPRING-2025", 1L);
-        verify(semesterRepository).save(any(SemesterEntity.class));
+        verify(semesterRepository).save(any(Semester.class));
     }
 
     @Test
@@ -132,21 +132,21 @@ class SemesterServiceTest extends BaseServiceTest {
         when(semesterRepository.findById(1L)).thenReturn(Optional.of(testSemester));
         when(semesterRepository.findByCodeIgnoreCaseAndProgramId("SPRING-2025", 1L))
                 .thenReturn(Optional.empty());
-        when(semesterRepository.save(any(SemesterEntity.class))).thenReturn(testSemester);
+        when(semesterRepository.save(any(Semester.class))).thenReturn(testSemester);
 
         // When
-        SemesterEntity updated = semesterService.updateSemester(1L, testSemesterDTO);
+        Semester updated = semesterService.updateSemester(1L, testSemesterDTO);
 
         // Then
         assertThat(updated).isNotNull();
         verify(semesterRepository).findById(1L);
-        verify(semesterRepository).save(any(SemesterEntity.class));
+        verify(semesterRepository).save(any(Semester.class));
     }
 
     @Test
     void shouldThrowConflictWhenUpdatingWithDuplicateCode() {
         // Given
-        SemesterEntity anotherSemester = TestDataBuilder.createSemesterWithId(2L, "Spring 2025", "SPRING-2025",
+        Semester anotherSemester = TestDataBuilder.createSemesterWithId(2L, "Spring 2025", "SPRING-2025",
                 LocalDate.of(2025, 1, 15), LocalDate.of(2025, 5, 15),
                 2025, SemesterType.SPRING, 1L, "Another semester", false);
 
@@ -207,12 +207,12 @@ class SemesterServiceTest extends BaseServiceTest {
     void shouldGetSemestersByProgram() {
         // Given
         Pageable pageable = PageRequest.of(0, 10);
-        List<SemesterEntity> semesters = TestDataBuilder.createSemesterList(3, 1L);
-        Page<SemesterEntity> page = new PageImpl<>(semesters, pageable, 3);
+        List<Semester> semesters = TestDataBuilder.createSemesterList(3, 1L);
+        Page<Semester> page = new PageImpl<>(semesters, pageable, 3);
         when(semesterRepository.findByProgramId(1L, pageable)).thenReturn(page);
 
         // When
-        Page<SemesterEntity> found = semesterService.getSemestersByProgram(1L, pageable);
+        Page<Semester> found = semesterService.getSemestersByProgram(1L, pageable);
 
         // Then
         assertThat(found.getContent()).hasSize(3);
@@ -226,7 +226,7 @@ class SemesterServiceTest extends BaseServiceTest {
         when(semesterRepository.findByCodeIgnoreCase("FALL-2024")).thenReturn(Optional.of(testSemester));
 
         // When
-        SemesterEntity found = semesterService.findByCode("FALL-2024");
+        Semester found = semesterService.findByCode("FALL-2024");
 
         // Then
         assertThat(found).isNotNull();
@@ -237,16 +237,16 @@ class SemesterServiceTest extends BaseServiceTest {
     @Test
     void shouldGetCurrentSemesters() {
         // Given
-        List<SemesterEntity> currentSemesters = TestDataBuilder.createSemesterList(2, 1L);
+        List<Semester> currentSemesters = TestDataBuilder.createSemesterList(2, 1L);
         currentSemesters.forEach(sem -> sem.setIsCurrent(true));
         when(semesterRepository.findByIsCurrentTrue()).thenReturn(currentSemesters);
 
         // When
-        List<SemesterEntity> found = semesterService.getCurrentSemesters();
+        List<Semester> found = semesterService.getCurrentSemesters();
 
         // Then
         assertThat(found).hasSize(2);
-        assertThat(found).allMatch(SemesterEntity::getIsCurrent);
+        assertThat(found).allMatch(Semester::getIsCurrent);
         verify(semesterRepository).findByIsCurrentTrue();
     }
 
@@ -254,10 +254,10 @@ class SemesterServiceTest extends BaseServiceTest {
     void shouldUpdateSemesterStatus() {
         // Given
         when(semesterRepository.findById(1L)).thenReturn(Optional.of(testSemester));
-        when(semesterRepository.save(any(SemesterEntity.class))).thenReturn(testSemester);
+        when(semesterRepository.save(any(Semester.class))).thenReturn(testSemester);
 
         // When
-        SemesterEntity updated = semesterService.updateSemesterStatus(1L, SemesterStatus.ACTIVE);
+        Semester updated = semesterService.updateSemesterStatus(1L, SemesterStatus.ACTIVE);
 
         // Then
         assertThat(updated.getStatus()).isEqualTo(SemesterStatus.ACTIVE);
@@ -268,11 +268,11 @@ class SemesterServiceTest extends BaseServiceTest {
     void shouldSetAsCurrentSemester() {
         // Given
         when(semesterRepository.findById(1L)).thenReturn(Optional.of(testSemester));
-        when(semesterRepository.save(any(SemesterEntity.class))).thenReturn(testSemester);
+        when(semesterRepository.save(any(Semester.class))).thenReturn(testSemester);
         doNothing().when(semesterRepository).clearCurrentSemesterFlag(1L);
 
         // When
-        SemesterEntity updated = semesterService.setAsCurrentSemester(1L);
+        Semester updated = semesterService.setAsCurrentSemester(1L);
 
         // Then
         assertThat(updated.getIsCurrent()).isTrue();

@@ -7,6 +7,8 @@ import com.abetappteam.abetapp.dto.ProgramDTO;
 import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.dto.UsersDTO;
+import com.abetappteam.abetapp.entity.Semester;
+import com.abetappteam.abetapp.dto.SemesterDTO;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -313,13 +315,13 @@ public class TestDataBuilder {
     // SEMESTER TEST DATA
 
     /**
-     * Create a SemesterEntity with ID
+     * Create a Semester with ID
      */
-    public static SemesterEntity createSemesterWithId(Long id, String name, String code, LocalDate startDate,
+    public static Semester createSemesterWithId(Long id, String name, String code, LocalDate startDate,
             LocalDate endDate,
-            Integer academicYear, SemesterEntity.SemesterType type, Long programId, String description,
+            Integer academicYear, Semester.SemesterType type, Long programId, String description,
             Boolean isCurrent) {
-        SemesterEntity semester = new SemesterEntity();
+        Semester semester = new Semester();
         semester.setId(id);
         semester.setName(name);
         semester.setCode(code);
@@ -354,19 +356,19 @@ public class TestDataBuilder {
     }
 
     /**
-     * Create a list of SemesterEntity objects for testing
+     * Create a list of Semester objects for testing
      */
-    public static List<SemesterEntity> createSemesterList(int count, Long programId) {
-        List<SemesterEntity> semesters = new ArrayList<>();
+    public static List<Semester> createSemesterList(int count, Long programId) {
+        List<Semester> semesters = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
-            SemesterEntity.SemesterType type = i % 2 == 0 ? SemesterEntity.SemesterType.SPRING
-                    : SemesterEntity.SemesterType.FALL;
+            Semester.SemesterType type = i % 2 == 0 ? Semester.SemesterType.SPRING
+                    : Semester.SemesterType.FALL;
             semesters.add(createSemesterWithId(
                     (long) i,
                     type + " 202" + (i % 10),
                     type + "-202" + (i % 10),
-                    LocalDate.of(2024 + (i % 3), type == SemesterEntity.SemesterType.FALL ? 9 : 1, 1),
-                    LocalDate.of(2024 + (i % 3), type == SemesterEntity.SemesterType.FALL ? 12 : 5, 15),
+                    LocalDate.of(2024 + (i % 3), type == Semester.SemesterType.FALL ? 9 : 1, 1),
+                    LocalDate.of(2024 + (i % 3), type == Semester.SemesterType.FALL ? 12 : 5, 15),
                     2024 + (i % 3),
                     type,
                     programId,
@@ -377,24 +379,24 @@ public class TestDataBuilder {
     }
 
     /**
-     * Create a SemesterEntity with custom values
+     * Create a Semester with custom values
      */
-    public static SemesterEntity createSemester(String name, String code, LocalDate startDate,
-            LocalDate endDate, Integer academicYear, SemesterEntity.SemesterType type, Long programId) {
-        SemesterEntity semester = new SemesterEntity(name, code, startDate, endDate, academicYear, type, programId);
+    public static Semester createSemester(String name, String code, LocalDate startDate,
+            LocalDate endDate, Integer academicYear, Semester.SemesterType type, Long programId) {
+        Semester semester = new Semester(name, code, startDate, endDate, academicYear, type, programId);
         semester.setDescription("Test semester description");
         semester.setIsCurrent(false);
-        semester.setStatus(SemesterEntity.SemesterStatus.UPCOMING);
+        semester.setStatus(Semester.SemesterStatus.UPCOMING);
         return semester;
     }
 
     /**
-     * Create a SemesterEntity with status
+     * Create a Semester with status
      */
-    public static SemesterEntity createSemesterWithStatus(String name, String code, LocalDate startDate,
-            LocalDate endDate, Integer academicYear, SemesterEntity.SemesterType type, Long programId,
-            SemesterEntity.SemesterStatus status) {
-        SemesterEntity semester = createSemester(name, code, startDate, endDate, academicYear, type, programId);
+    public static Semester createSemesterWithStatus(String name, String code, LocalDate startDate,
+            LocalDate endDate, Integer academicYear, Semester.SemesterType type, Long programId,
+            Semester.SemesterStatus status) {
+        Semester semester = createSemester(name, code, startDate, endDate, academicYear, type, programId);
         semester.setStatus(status);
         return semester;
     }
@@ -402,15 +404,15 @@ public class TestDataBuilder {
     /**
      * Create a current semester
      */
-    public static SemesterEntity createCurrentSemester() {
-        SemesterEntity semester = createSemester("Spring 2024", "SPRING-2024",
+    public static Semester createCurrentSemester() {
+        Semester semester = createSemester("Spring 2024", "SPRING-2024",
                 LocalDate.now().minusDays(30),
                 LocalDate.now().plusDays(30),
                 2024,
-                SemesterEntity.SemesterType.SPRING,
+                Semester.SemesterType.SPRING,
                 1L);
         semester.setIsCurrent(true);
-        semester.setStatus(SemesterEntity.SemesterStatus.ACTIVE);
+        semester.setStatus(Semester.SemesterStatus.ACTIVE);
         return semester;
     }
 }
