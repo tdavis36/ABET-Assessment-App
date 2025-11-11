@@ -10,6 +10,7 @@ import ProgramInstructorsPage from '@/components/pages/ProgramInstructorsPage.vu
 import LogInPage from '@/components/pages/LogIn.vue'
 import SignUpPage from '@/components/pages/SignUp.vue'
 import AdminDashboard from '@/components/AdminDashboard.vue'
+import ExamplePage from "@/components/pages/ExamplePage.vue";
 
 const routes = [
    {
@@ -71,6 +72,11 @@ const routes = [
     name: 'Admin Dashboard',
     component: AdminDashboard,
   },
+  {
+    path: '/examples',
+    name: 'Examples',
+    component: ExamplePage
+  }
 ]
 
 

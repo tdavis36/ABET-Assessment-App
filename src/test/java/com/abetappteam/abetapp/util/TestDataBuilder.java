@@ -7,7 +7,10 @@ import com.abetappteam.abetapp.dto.ProgramDTO;
 import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.dto.UsersDTO;
+import com.abetappteam.abetapp.entity.Semester;
+import com.abetappteam.abetapp.dto.SemesterDTO;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +41,8 @@ public class TestDataBuilder {
     /**
      * Create a Course entity with ID (simulating persisted entity)
      */
-    public static Course createCourseWithId(Long id, String courseCode, String courseName, String courseDescription, Long semesterId) {
+    public static Course createCourseWithId(Long id, String courseCode, String courseName, String courseDescription,
+            Long semesterId) {
         Course course = new Course();
         course.setId(id);
         course.setCourseCode(courseCode);
@@ -68,7 +72,8 @@ public class TestDataBuilder {
     /**
      * Create a CourseDTO for testing
      */
-    public static CourseDTO createCourseDTO(String courseCode, String courseName, String courseDescription, Long semesterId) {
+    public static CourseDTO createCourseDTO(String courseCode, String courseName, String courseDescription,
+            Long semesterId) {
         return new CourseDTO(courseCode, courseName, courseDescription, semesterId);
     }
 
@@ -149,7 +154,7 @@ public class TestDataBuilder {
 
     // Create custom user entity for testing
     public static Users createUser(String email, String passwordHash, String firstName, String lastName, String title,
-                                   Boolean active) {
+            Boolean active) {
         Users user = new Users();
         user.setEmail(email);
         user.setPasswordHash(passwordHash);
@@ -162,7 +167,7 @@ public class TestDataBuilder {
 
     // Create custom user entity with id
     public static Users createUserWithId(Long id, String email, String passwordHash, String firstName, String lastName,
-                                         String title, Boolean active) {
+            String title, Boolean active) {
         Users user = createUser(email, passwordHash, firstName, lastName, title, active);
         user.setId(id);
         user.setCreatedAt(LocalDateTime.now());
@@ -189,7 +194,7 @@ public class TestDataBuilder {
 
     // Create custom user dto
     public static UsersDTO createUsersDTO(String email, String passwordHash, String firstName, String lastName,
-                                          String title, Boolean active) {
+            String title, Boolean active) {
         UsersDTO dto = new UsersDTO();
         dto.setEmail(email);
         dto.setPasswordHash(passwordHash);
@@ -228,15 +233,15 @@ public class TestDataBuilder {
         return users;
     }
 
-    //PROGRAM TEST DATA
+    // PROGRAM TEST DATA
 
-    //Create default program
-    public static Program createProgram(){
+    // Create default program
+    public static Program createProgram() {
         return createProgram("EU Testing", "Example University", true);
     }
 
-    //Create custom program
-    public static Program createProgram(String name, String institution, Boolean active){
+    // Create custom program
+    public static Program createProgram(String name, String institution, Boolean active) {
         Program program = new Program();
         program.setName(name);
         program.setInstitution(institution);
@@ -244,13 +249,13 @@ public class TestDataBuilder {
         return program;
     }
 
-    //Create default ProgramDTO
-    public static ProgramDTO createProgramDTO(){
+    // Create default ProgramDTO
+    public static ProgramDTO createProgramDTO() {
         return createProgramDTO("New Program", "New Institution", true);
     }
 
-    //Create custom ProgramDTO
-    public static ProgramDTO createProgramDTO(String name, String institution, Boolean active){
+    // Create custom ProgramDTO
+    public static ProgramDTO createProgramDTO(String name, String institution, Boolean active) {
         ProgramDTO dto = new ProgramDTO();
         dto.setName(name);
         dto.setInstitution(institution);
@@ -267,7 +272,8 @@ public class TestDataBuilder {
         return program;
     }
 
-    // Create a list of programs belonging to "Example University", every odd numbered program will be inactive
+    // Create a list of programs belonging to "Example University", every odd
+    // numbered program will be inactive
     public static List<Program> createProgramList(int count) {
         List<Program> programs = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
@@ -280,16 +286,15 @@ public class TestDataBuilder {
         return programs;
     }
 
+    // PROGRAMUSER TEST DATA
 
-    //PROGRAMUSER TEST DATA
-
-    //Create ProgramUser
-    public static ProgramUser createProgramUser(){
+    // Create ProgramUser
+    public static ProgramUser createProgramUser() {
         return createProgramUser(false, 1l, 1l, true);
     }
 
-    //Create Custom ProgramUser
-    public static ProgramUser createProgramUser(Boolean isAdmin, Long programId, Long userId, Boolean isActive){
+    // Create Custom ProgramUser
+    public static ProgramUser createProgramUser(Boolean isAdmin, Long programId, Long userId, Boolean isActive) {
         ProgramUser pUser = new ProgramUser();
         pUser.setProgramId(programId);
         pUser.setUserId(userId);
@@ -298,11 +303,116 @@ public class TestDataBuilder {
         return pUser;
     }
 
-    //Create Custom ProgramUser with Id
-    public static ProgramUser createProgramUserWithId(Long id, Boolean isAdmin, Long programId, Long userId, Boolean isActive){
+    // Create Custom ProgramUser with Id
+    public static ProgramUser createProgramUserWithId(Long id, Boolean isAdmin, Long programId, Long userId,
+            Boolean isActive) {
         ProgramUser pUser = createProgramUser(isAdmin, programId, userId, isActive);
         pUser.setId(id);
         pUser.setCreatedAt(LocalDateTime.now());
         return pUser;
+    }
+
+    // SEMESTER TEST DATA
+
+    /**
+     * Create a Semester with ID
+     */
+    public static Semester createSemesterWithId(Long id, String name, String code, LocalDate startDate,
+            LocalDate endDate,
+            Integer academicYear, Semester.SemesterType type, Long programId, String description,
+            Boolean isCurrent) {
+        Semester semester = new Semester();
+        semester.setId(id);
+        semester.setName(name);
+        semester.setCode(code);
+        semester.setStartDate(startDate);
+        semester.setEndDate(endDate);
+        semester.setAcademicYear(academicYear);
+        semester.setType(type);
+        semester.setProgramId(programId);
+        semester.setDescription(description);
+        semester.setIsCurrent(isCurrent);
+        semester.setCreatedAt(LocalDateTime.now());
+        semester.setUpdatedAt(LocalDateTime.now());
+        return semester;
+    }
+
+    /**
+     * Create a SemesterDTO with custom values
+     */
+    public static SemesterDTO createSemesterDTO(String name, String code, LocalDate startDate, LocalDate endDate,
+            Integer academicYear, String type, Long programId, String description, Boolean isCurrent) {
+        SemesterDTO dto = new SemesterDTO();
+        dto.setName(name);
+        dto.setCode(code);
+        dto.setStartDate(startDate);
+        dto.setEndDate(endDate);
+        dto.setAcademicYear(academicYear);
+        dto.setType(type);
+        dto.setProgramId(programId);
+        dto.setDescription(description);
+        dto.setIsCurrent(isCurrent);
+        return dto;
+    }
+
+    /**
+     * Create a list of Semester objects for testing
+     */
+    public static List<Semester> createSemesterList(int count, Long programId) {
+        List<Semester> semesters = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            Semester.SemesterType type = i % 2 == 0 ? Semester.SemesterType.SPRING
+                    : Semester.SemesterType.FALL;
+            semesters.add(createSemesterWithId(
+                    (long) i,
+                    type + " 202" + (i % 10),
+                    type + "-202" + (i % 10),
+                    LocalDate.of(2024 + (i % 3), type == Semester.SemesterType.FALL ? 9 : 1, 1),
+                    LocalDate.of(2024 + (i % 3), type == Semester.SemesterType.FALL ? 12 : 5, 15),
+                    2024 + (i % 3),
+                    type,
+                    programId,
+                    "Description for " + type + " 202" + (i % 10),
+                    i == 1)); // First one is current
+        }
+        return semesters;
+    }
+
+    /**
+     * Create a Semester with custom values
+     */
+    public static Semester createSemester(String name, String code, LocalDate startDate,
+            LocalDate endDate, Integer academicYear, Semester.SemesterType type, Long programId) {
+        Semester semester = new Semester(name, code, startDate, endDate, academicYear, type, programId);
+        semester.setDescription("Test semester description");
+        semester.setIsCurrent(false);
+        semester.setStatus(Semester.SemesterStatus.UPCOMING);
+        return semester;
+    }
+
+    /**
+     * Create a Semester with status
+     */
+    public static Semester createSemesterWithStatus(String name, String code, LocalDate startDate,
+            LocalDate endDate, Integer academicYear, Semester.SemesterType type, Long programId,
+            Semester.SemesterStatus status) {
+        Semester semester = createSemester(name, code, startDate, endDate, academicYear, type, programId);
+        semester.setStatus(status);
+        return semester;
+    }
+
+    /**
+     * Create a current semester
+     */
+    public static Semester createCurrentSemester() {
+        Semester semester = createSemester("Spring 2024", "SPRING-2024",
+                LocalDate.now().minusDays(30),
+                LocalDate.now().plusDays(30),
+                2024,
+                Semester.SemesterType.SPRING,
+                1L);
+        semester.setIsCurrent(true);
+        semester.setStatus(Semester.SemesterStatus.ACTIVE);
+        return semester;
     }
 }

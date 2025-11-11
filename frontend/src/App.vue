@@ -1,6 +1,7 @@
 <script lang="ts" setup>
   import { ref } from 'vue'
   import NavBar from '@/components/NavBar.vue'
+  import GlobalToast from '@/components/ui/GlobalToast.vue'
 
   const userID = ref(NaN)
   const user_name = ref({
@@ -44,6 +45,7 @@
     <main>
       <router-view @login="handle_login"/>
     </main>
+    <GlobalToast />
   </div>
 </template>
 
@@ -52,6 +54,7 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  font-family: Noto Sans, system-ui, -apple-system, sans-serif;
 }
 
 header {
