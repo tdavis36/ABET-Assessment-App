@@ -1,7 +1,7 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
-    id 'org.springframework.boot' version '3.2.0'
+    id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'java'
     id 'com.github.node-gradle.node' version '7.0.1'
@@ -59,7 +59,27 @@ bootRun {
     ]
 }
 
-def skipFrontend = project.hasProperty('skipFrontend') && project.property('skipFrontend') == 'true'
+// Use ext property so it can be modified during configuration
+project.ext.skipFrontend = project.hasProperty('skipFrontend') && project.property('skipFrontend') == 'true'
+
+// Helper to enable frontend for specific tasks
+gradle.taskGraph.whenReady { graph ->
+    def frontendTasks = [
+            'installFrontendDeps',
+            'buildFrontend',
+            'copyFrontend',
+            'testFrontend',
+            'testFrontendE2e',
+            'testFrontendE2eDocker',
+            'devFrontend'
+    ]
+
+    frontendTasks.each { taskName ->
+        if (graph.hasTask(":${taskName}")) {
+            project.ext.skipFrontend = false
+        }
+    }
+}
 
 node {
     version = '20.19.0'
@@ -76,22 +96,15 @@ tasks.withType(Test).configureEach {
     jvmArgs '-XX:+EnableDynamicAgentLoading'
 }
 
+// FRONTEND BUILD TASKS
+// Cleans and then installs the dependencies
 tasks.register('installFrontendDeps', Exec) {
     workingDir 'frontend'
-    onlyIf { !skipFrontend }
+    onlyIf { !project.ext.skipFrontend }
     executable npmExecutable
     args 'ci'
     inputs.file('frontend/package-lock.json')
     outputs.dir('frontend/node_modules')
-}
-
-tasks.register('testFrontend', Exec) {
-    group = 'abet-dev'
-    dependsOn tasks.installFrontendDeps
-    workingDir 'frontend'
-    executable npmExecutable
-    args 'run', 'test:unit'
-    onlyIf { !skipFrontend }
 }
 
 // Task to build the frontend with Vite
@@ -99,7 +112,17 @@ tasks.register('buildFrontend', Exec) {
     workingDir frontendDir
     executable npmExecutable
     args 'run','build'
-    onlyIf { !skipFrontend }
+    onlyIf { !project.ext.skipFrontend }
+
+    // Caching configuration
+    inputs.files(fileTree("frontend/src"))
+    inputs.file("frontend/package.json")
+    inputs.file("frontend/package-lock.json")
+    inputs.file("frontend/vite.config.ts")
+    inputs.file("frontend/tsconfig.json")
+    inputs.file("frontend/index.html")
+    outputs.dir(frontendDist)
+    outputs.cacheIf { true }
 }
 
 // Task to copy the built frontend into Spring Boot's static resources
@@ -107,25 +130,61 @@ tasks.register('copyFrontend', Copy) {
     dependsOn 'buildFrontend'
     from "${frontendDist}"
     into "${projectDir}/src/main/resources/static"
+    onlyIf { !project.ext.skipFrontend }
 }
 
 // Ensure Spring copies frontend before processing resources
 tasks.named('processResources') {
     dependsOn 'copyFrontend'
+    onlyIf { !project.ext.skipFrontend }
 }
 
-// Configure main tasks
+// TESTS
+// Run backend tests
 tasks.named('test') {
     group = 'abet-dev'
     useJUnitPlatform()
+    outputs.upToDateWhen { false }
 }
 
-tasks.named('bootJar') {
-    if (!skipFrontend) {
-        dependsOn tasks.copyFrontend
-    }
+// Run frontend unit tests
+tasks.register('testFrontend', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'test:unit'
+    onlyIf { !project.ext.skipFrontend }
+
+    // Caching configuration
+    inputs.files(fileTree("frontend/src"))
+    inputs.files(fileTree("frontend/tests"))
+    inputs.file("frontend/package.json")
+    inputs.file("frontend/vitest.config.ts")
+    outputs.dir("frontend/coverage")
+    outputs.cacheIf { true }
 }
 
+// Run frontend e2e tests
+tasks.register('testFrontendE2e', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'test:e2e'
+    onlyIf { !project.ext.skipFrontend }
+}
+
+// Run frontend e2e tests in docker
+tasks.register('testFrontendE2eDocker', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable 'docker'
+    args 'run', '--rm', '--ipc=host', '-p', '9323', '-v', './:/work', '-w', '/work', 'mcr.microsoft.com/playwright:v1.56.1-jammy', 'bash', '-c', 'npm ci && npx playwright test'
+}
+
+// MAIN TASKS
 // Development tasks
 tasks.register('dev') {
     group = 'abet-dev'
@@ -146,7 +205,7 @@ tasks.register('devFrontend', Exec) {
     inputs.files(fileTree("frontend/src"))
     inputs.file("frontend/package.json")
     outputs.dir("frontend/dist")
-    onlyIf { !skipFrontend }
+    onlyIf { !project.ext.skipFrontend }
 }
 
 tasks.register('devWithBuiltInFrontend') {
