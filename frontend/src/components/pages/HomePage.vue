@@ -1,6 +1,18 @@
 <template>
   <main class="homepage">
-    <!-- Section 1 — Title Header -->
+    
+    <header class="dashboard-header">
+      <h1>Administrator Dashboard</h1>
+    </header>
+
+    <!-- Admin Dashboard -->
+    <ProgramInstructorsPage :programId="1" />
+
+    <hr class="section-divider" />
+
+    <!-- Instructor Dashboard -->
+    <InstructorViewPage :programId="1" />
+
     <section class="title-section">
       <h1>ABET Assessment App — Homepage</h1>
       <p>
@@ -10,7 +22,6 @@
       </p>
     </section>
 
-    <!-- Section 2 — Foundational Terms -->
     <section class="content-section">
       <h2>Fundamental Assessment Concepts</h2>
 
@@ -41,7 +52,6 @@
         </div>
       </div>
 
-      <!-- Performance Indicator block centered below both columns -->
       <div class="center-block">
         <h3>Performance Indicator</h3>
         <p>
@@ -59,7 +69,6 @@
       </div>
     </section>
 
-    <!-- Section 3 — Reporting Framework -->
     <section class="content-section alt">
       <h2>Reports and Measurement</h2>
       <div class="two-column">
@@ -91,7 +100,6 @@
       </div>
     </section>
 
-    <!-- Section 4 — Academic and Ethical Foundations -->
     <section class="content-section">
       <h2>Core Educational Principles</h2>
       <div class="two-column">
@@ -127,7 +135,6 @@
       </div>
     </section>
 
-    <!-- Section 5 — Footer -->
     <footer class="footer">
       <hr />
       <p>© 2025 ABET Assessment App</p>
@@ -136,10 +143,20 @@
   </main>
 </template>
 
-<script lang="ts" setup></script>
+<script>
+import ProgramInstructorsPage from "@/components/pages/ProgramInstructorsPage.vue";
+import InstructorViewPage from "@/components/pages/InstructorViewPage.vue";
+
+export default {
+  name: "HomePage",
+  components: {
+    ProgramInstructorsPage,
+    InstructorViewPage,
+  },
+};
+</script>
 
 <style scoped>
-/* Overall layout */
 .homepage {
   font-family:
     system-ui,
@@ -156,115 +173,23 @@
   max-width: 1200px;
 }
 
-/* Section spacing */
-.title-section,
-.content-section {
-  margin-bottom: 3rem;
-}
 
-.title-section h1 {
-  font-size: 2.2rem;
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.dashboard-header h1 {
+  font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 1rem;
-  text-align: center;
+  color: #000000;
+  margin: 0;
 }
 
-.title-section p {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  text-align: center;
-  max-width: 800px;
-  margin: 0 auto;
-}
 
-/* Section headers */
-.content-section h2 {
-  font-size: 1.6rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 0.5rem;
-}
-
-/* Alternating background for readability */
-.content-section.alt {
-  background-color: #f9f9f9;
-  padding: 2rem;
-  border-radius: 4px;
-}
-
-/* Two-column layout */
-.two-column {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-}
-
-@media (min-width: 768px) {
-  .two-column {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-/* Headings and text */
-h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-p {
-  margin-bottom: 0.8rem;
-  line-height: 1.6;
-}
-
-/* Centered Performance Indicator block */
-.center-block {
-  text-align: center;
-  max-width: 700px;
-  margin: 3rem auto 0 auto;
-}
-
-.center-block h3 {
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.center-block p {
-  margin-bottom: 0.6rem;
-  line-height: 1.6;
-}
-
-/* Example outcome section */
-.example-outcome {
-  margin-top: 1.2rem;
-  text-align: center;
-}
-
-.example-outcome .italic {
-  font-style: italic;
-  margin-bottom: 0.6rem;
-}
-
-.example-outcome p {
-  margin: 0.3rem 0;
-}
-
-/* Footer */
-.footer {
-  text-align: center;
-  color: #555;
-  font-size: 0.9rem;
-  margin-top: 3rem;
-}
-
-.footer hr {
+.section-divider {
   border: none;
-  border-top: 1px solid #ccc;
-  margin-bottom: 1rem;
-  width: 100%;
+  border-top: 2px dashed rgba(178, 34, 34, 0.35); 
+  margin: 2.5rem auto;   /* space between dashbaords*/
+  width: 80%;
 }
 </style>

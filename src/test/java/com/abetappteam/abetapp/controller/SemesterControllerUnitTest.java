@@ -3,9 +3,9 @@ package com.abetappteam.abetapp.controller;
 import com.abetappteam.abetapp.config.TestSecurityConfig;
 import com.abetappteam.abetapp.BaseControllerTest;
 import com.abetappteam.abetapp.dto.SemesterDTO;
-import com.abetappteam.abetapp.entity.SemesterEntity;
-import com.abetappteam.abetapp.entity.SemesterEntity.SemesterStatus;
-import com.abetappteam.abetapp.entity.SemesterEntity.SemesterType;
+import com.abetappteam.abetapp.entity.Semester;
+import com.abetappteam.abetapp.entity.Semester.SemesterStatus;
+import com.abetappteam.abetapp.entity.Semester.SemesterType;
 import com.abetappteam.abetapp.service.SemesterService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,12 +39,12 @@ class SemesterControllerUnitTest extends BaseControllerTest {
     @MockBean
     private SemesterService semesterService;
 
-    private SemesterEntity testSemester;
+    private Semester testSemester;
     private SemesterDTO testSemesterDTO;
 
     @BeforeEach
     void setUp() {
-        testSemester = new SemesterEntity();
+        testSemester = new Semester();
         testSemester.setId(1L);
         testSemester.setName("Fall 2025");
         testSemester.setCode("FALL-2025");
@@ -72,8 +72,8 @@ class SemesterControllerUnitTest extends BaseControllerTest {
     @Test
     void shouldGetAllSemestersByProgram() throws Exception {
         // Given
-        List<SemesterEntity> semesters = List.of(testSemester);
-        Page<SemesterEntity> page = new PageImpl<>(semesters, PageRequest.of(0, 20), 1);
+        List<Semester> semesters = List.of(testSemester);
+        Page<Semester> page = new PageImpl<>(semesters, PageRequest.of(0, 20), 1);
 
         when(semesterService.getSemestersByProgram(eq(1L), any(PageRequest.class))).thenReturn(page);
 
@@ -166,8 +166,8 @@ class SemesterControllerUnitTest extends BaseControllerTest {
     @Test
     void shouldGetSemestersByType() throws Exception {
         // Given
-        List<SemesterEntity> semesters = List.of(testSemester);
-        Page<SemesterEntity> page = new PageImpl<>(semesters, PageRequest.of(0, 20), 1);
+        List<Semester> semesters = List.of(testSemester);
+        Page<Semester> page = new PageImpl<>(semesters, PageRequest.of(0, 20), 1);
 
         when(semesterService.getSemestersByType(eq(SemesterType.FALL), any(PageRequest.class))).thenReturn(page);
 
@@ -240,7 +240,7 @@ class SemesterControllerUnitTest extends BaseControllerTest {
     @Test
     void shouldGetActiveAndUpcomingSemesters() throws Exception {
         // Given
-        List<SemesterEntity> semesters = List.of(testSemester);
+        List<Semester> semesters = List.of(testSemester);
         when(semesterService.getActiveAndUpcomingSemestersByProgram(1L)).thenReturn(semesters);
 
         // When/Then
@@ -256,8 +256,8 @@ class SemesterControllerUnitTest extends BaseControllerTest {
     @Test
     void shouldSearchSemesters() throws Exception {
         // Given
-        List<SemesterEntity> semesters = List.of(testSemester);
-        Page<SemesterEntity> page = new PageImpl<>(semesters, PageRequest.of(0, 20), 1);
+        List<Semester> semesters = List.of(testSemester);
+        Page<Semester> page = new PageImpl<>(semesters, PageRequest.of(0, 20), 1);
 
         when(semesterService.searchByNameOrCode(eq("Fall"), any(PageRequest.class))).thenReturn(page);
 

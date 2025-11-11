@@ -1,3 +1,5 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
 plugins {
     id 'org.springframework.boot' version '3.2.0'
     id 'io.spring.dependency-management' version '1.1.7'
@@ -69,6 +71,10 @@ node {
 def npmExecutable = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
 def frontendDir = "$projectDir/frontend"
 def frontendDist = "$frontendDir/dist"
+
+tasks.withType(Test).configureEach {
+    jvmArgs '-XX:+EnableDynamicAgentLoading'
+}
 
 tasks.register('installFrontendDeps', Exec) {
     workingDir 'frontend'
@@ -143,14 +149,15 @@ tasks.register('devFrontend', Exec) {
     onlyIf { !skipFrontend }
 }
 
-tasks.register('devWithBuiltInFrontend', Exec) {
+tasks.register('devWithBuiltInFrontend') {
     group = 'abet-dev'
     description = 'Run with built frontend locally'
-    dependsOn 'bootRun'
     doFirst {
-        args = ['--spring.profiles.active=frontend']
-        println "Full app: http://localhost:8080"
+        tasks.bootRun.configure {
+            args = ['--spring.profiles.active=dev-builtin']
+        }
     }
+    finalizedBy 'bootRun'
 }
 
 // Docker development tasks
