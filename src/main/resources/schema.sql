@@ -2,7 +2,15 @@
 CREATE SCHEMA IF NOT EXISTS public;
 SET SCHEMA PUBLIC;
 
--- User table
+DROP TABLE IF EXISTS measure;
+DROP TABLE IF EXISTS course_indicator;
+DROP TABLE IF EXISTS course_instructor;
+DROP TABLE IF EXISTS course;
+DROP TABLE IF EXISTS performance_indicator;
+DROP TABLE IF EXISTS student_outcome;
+DROP TABLE IF EXISTS semester;
+DROP TABLE IF EXISTS program_user;
+DROP TABLE IF EXISTS program;
 DROP TABLE IF EXISTS users;
 
 CREATE TABLE users (

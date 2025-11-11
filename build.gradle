@@ -1,7 +1,7 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
-    id 'org.springframework.boot' version '3.2.0'
+    id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'java'
     id 'com.github.node-gradle.node' version '7.0.1'
@@ -110,6 +110,22 @@ tasks.register('testFrontendE2eDocker', Exec) {
     executable 'docker'
     args 'run', '--rm', '--ipc=host', '-v', './:/work', '-w', '/work', 'mcr.microsoft.com/playwright:v1.56.1-jammy', 'bash', '-c', 'npm ci && npx playwright test'}
 
+tasks.register('testFrontendE2e', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'test:e2e'
+    onlyIf { !skipFrontend }
+}
+
+tasks.register('testFrontendE2eDocker', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable 'docker'
+    args 'run', '--rm', '--ipc=host', '-p', '9323', '-v', './:/work', '-w', '/work', 'mcr.microsoft.com/playwright:v1.56.1-jammy', 'bash', '-c', 'npm ci && npx playwright test'}
+
 // Task to build the frontend with Vite
 tasks.register('buildFrontend', Exec) {
     workingDir frontendDir
@@ -132,8 +148,10 @@ tasks.named('processResources') {
 
 // Configure main tasks
 tasks.named('test') {
-    group = 'abet-dev'
-    useJUnitPlatform()
+    if (skipFrontend) {
+        group = 'abet-dev'
+        useJUnitPlatform()
+    }
 }
 
 tasks.named('bootJar') {

@@ -1,8 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import App from '../App.vue'
+import App from '@/App.vue'
+import { routerStubs } from './helpers/router'
 
 describe('App', () => {
+  it('renders properly', () => {
+    const wrapper = mount(App, {
+      global: {
+        stubs: routerStubs,
+      },
+    })
+
+    expect(wrapper.text()).toContain('Abet Assessment App')
   it('renders properly', () => {
     const wrapper = mount(App, {
       global: {
@@ -51,4 +60,5 @@ describe('App', () => {
     expect(navBar.props('loggedIn')).toBe(false)
     expect(navBar.props('userID')).toBe(0)
   })
+})
 })
