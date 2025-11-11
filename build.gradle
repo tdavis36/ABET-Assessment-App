@@ -143,10 +143,6 @@ tasks.register('devFrontend', Exec) {
     workingDir 'frontend'
     executable npmExecutable
     args 'run', 'dev'
-    inputs.files(fileTree("frontend/src"))
-    inputs.file("frontend/package.json")
-    outputs.dir("frontend/dist")
-    onlyIf { !skipFrontend }
 }
 
 tasks.register('devWithBuiltInFrontend') {
