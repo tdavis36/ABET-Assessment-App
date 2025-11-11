@@ -12,6 +12,8 @@ describe('App', () => {
     })
 
     expect(wrapper.text()).toContain('Abet Assessment App')
+  })
+
   it('renders properly', () => {
     const wrapper = mount(App, {
       global: {
@@ -60,5 +62,4 @@ describe('App', () => {
     expect(navBar.props('loggedIn')).toBe(false)
     expect(navBar.props('userID')).toBe(0)
   })
-})
 })

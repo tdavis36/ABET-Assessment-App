@@ -28,6 +28,7 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  font-family: Noto Sans, system-ui, -apple-system, sans-serif;
 }
 
 header {
