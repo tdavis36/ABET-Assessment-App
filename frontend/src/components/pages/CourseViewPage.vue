@@ -1,6 +1,7 @@
 <script lang="ts" setup>
     import { ref } from 'vue';
     import { useRoute } from 'vue-router';
+    import InstructorListing from '@/components/InstructorListing.vue';
 
     const route = useRoute()
 
@@ -100,8 +101,7 @@
         <p id="description">{{ course_obj.course_description }}</p>
 
         <div id="instructors">
-            Instructors
-            <div v-for="iid in instructor_ids">Placeholder: {{ iid }}</div>
+            Instructors: <InstructorListing v-for="iid in instructor_ids" :iid="iid"></InstructorListing>
         </div>
 
         <div id="performance-indicators">
@@ -141,10 +141,7 @@
     #description{
         font-style: italic;
         color: rgb(85, 85, 85);
-    }
-
-    #instructors{
-        margin: 1rem;
+        margin-bottom: 1.5rem;
     }
 
     #performance-indicators{
