@@ -2,10 +2,11 @@
     import { ref } from 'vue';
     import { useRoute } from 'vue-router';
     import InstructorListing from '@/components/InstructorListing.vue';
+    import IndicatorListing from '@/components/IndicatorListing.vue';
 
     const route = useRoute()
 
-    /*
+    
     const course_id = ref(NaN);
     const course_obj = ref({
         id: NaN,
@@ -19,9 +20,10 @@
     const semester_name = ref('');
     const instructor_ids = ref([]);
     const instructor_names = ref(['']);
-    const indicator_ids = ref([])*/
+    const indicator_ids = ref([])
 
     //--------TEST DATA--------
+    /*
     const course_id = ref(1);
     const course_obj = ref({
         id: 1,
@@ -34,7 +36,7 @@
     });
     const semester_name = ref('Fall 2025');
     const instructor_ids = ref([1, 2]);
-    const indicator_ids = ref([1,2])
+    const indicator_ids = ref([1,2])*/
     //--------------------------
     
     async function initialize(){
@@ -87,7 +89,7 @@
         }
     }
 
-    //initialize();
+    initialize();
     
 </script>
 
@@ -105,7 +107,7 @@
         </div>
 
         <div id="performance-indicators">
-            <div v-for="piid in indicator_ids">Placeholder: {{ piid }}</div>
+            <IndicatorListing v-for="piid in indicator_ids" :piid="piid"></IndicatorListing>
         </div>
     </div>
 </template>
