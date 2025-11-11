@@ -325,4 +325,42 @@ public class TestDataBuilder {
         }
         return semesters;
     }
+
+    /**
+     * Create a SemesterEntity with custom values
+     */
+    public static SemesterEntity createSemester(String name, String code, LocalDate startDate,
+            LocalDate endDate, Integer academicYear, SemesterEntity.SemesterType type, Long programId) {
+        SemesterEntity semester = new SemesterEntity(name, code, startDate, endDate, academicYear, type, programId);
+        semester.setDescription("Test semester description");
+        semester.setIsCurrent(false);
+        semester.setStatus(SemesterEntity.SemesterStatus.UPCOMING);
+        return semester;
+    }
+
+    /**
+     * Create a SemesterEntity with status
+     */
+    public static SemesterEntity createSemesterWithStatus(String name, String code, LocalDate startDate,
+            LocalDate endDate, Integer academicYear, SemesterEntity.SemesterType type, Long programId,
+            SemesterEntity.SemesterStatus status) {
+        SemesterEntity semester = createSemester(name, code, startDate, endDate, academicYear, type, programId);
+        semester.setStatus(status);
+        return semester;
+    }
+
+    /**
+     * Create a current semester
+     */
+    public static SemesterEntity createCurrentSemester() {
+        SemesterEntity semester = createSemester("Spring 2024", "SPRING-2024",
+                LocalDate.now().minusDays(30),
+                LocalDate.now().plusDays(30),
+                2024,
+                SemesterEntity.SemesterType.SPRING,
+                1L);
+        semester.setIsCurrent(true);
+        semester.setStatus(SemesterEntity.SemesterStatus.ACTIVE);
+        return semester;
+    }
 }
