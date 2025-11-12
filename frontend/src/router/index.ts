@@ -33,17 +33,17 @@ const routes = [
     component: SummaryPage,
   },
   {
-    path: '/:program_id/fcar/:measure_id',
+    path: '/fcar/:measure_id',
     name: 'FCAR',
     component: FCARPage,
   },
   {
-    path: '/:program_id/course/:course_id',
+    path: '/course/:course_id',
     name: 'Course',
     component: CourseViewPage,
   },
   {
-    path: '/:program_id/instructor/:instructor_id',
+    path: '/instructor/:instructor_id',
     name: 'Instructor',
     component: InstructorViewPage,
   },

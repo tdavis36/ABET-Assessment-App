@@ -1,13 +1,17 @@
 <script lang="ts" setup>
-const props = defineProps({
-    loggedIn: Boolean,
-    userID: Number,
-})
+    import { ref } from 'vue'
+    
+    const props = defineProps({
+        loggedIn: Boolean,
+        userID:{
+            type: Number,
+            default: NaN
+        },
+        user_first_name: String
+    })
 
-
-const isAdmin = true
-
-const emits = defineEmits(["logout"])
+    const isAdmin = true
+    const emits = defineEmits(["logout"])
 </script>
 <template>
   <div id="navbar">
@@ -25,24 +29,24 @@ const emits = defineEmits(["logout"])
       Instructor Dashboard
     </router-link>
 
-    <!-- Log In / Log Out -->
+    
     <router-link
-      v-if="loggedIn"
-      to="/"
-      class="nav_button"
-      id="logout"
-      @click="$emit('logout')"
+        v-if="loggedIn"
+        to="/"
+        class="nav_button"
+        id="logout"
+        @click="$emit('logout')"
     >
-      Logged in as <strong>{{ userID }}</strong> | Log Out
+        Hello, <strong>{{ user_first_name }}</strong> | Log Out
     </router-link>
 
     <router-link
-      v-else
-      to="/login"
-      class="nav_button"
-      id="login"
+        v-else
+        to="/login"
+        class="nav_button"
+        id="login"
     >
-      Log In
+        Log In
     </router-link>
   </div>
   <h1 hidden>This hidden element checks if the site loaded</h1>

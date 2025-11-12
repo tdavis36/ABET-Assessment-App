@@ -3,23 +3,47 @@
   import NavBar from '@/components/NavBar.vue'
   import GlobalToast from '@/components/ui/GlobalToast.vue'
 
-  const userID = ref(310297)
-  const loggedIn = ref(true)
+  const userID = ref(NaN)
+  const user_name = ref({
+    first: '',
+    full: ''
+  })
+  const loggedIn = ref(false)
 
   function handle_logout(){
-    userID.value = 0
+    userID.value = NaN;
     loggedIn.value = false;
+  }
+
+  function handle_login(user_id: number){
+    userID.value = user_id
+    loggedIn.value = true;
+    retrieve_user_info(userID.value)
+  }
+
+  async function retrieve_user_info(user_id:number){
+    try {
+      const response = await fetch(`/api/users/${user_id}`);
+      const data = await response.json(); // Await the JSON parsing
+      console.log('Fetched JSON data:', data);
+      user_name.value = {
+        first: data.data.firstName,
+        full: data.data.fullName
+      }
+    } catch (error) {
+      console.error('Error fetching or parsing data:', error);
+    }
   }
 </script>
 
 <template>
   <div id="app">
     <header>
-      <NavBar :loggedIn="loggedIn" :userID="userID" @logout="handle_logout" />
+      <NavBar :loggedIn="loggedIn" :userID="userID" :user_first_name="user_name.first" @logout="handle_logout" />
     </header>
 
     <main>
-      <router-view />
+      <router-view @login="handle_login"/>
     </main>
     <GlobalToast />
   </div>
