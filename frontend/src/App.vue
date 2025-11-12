@@ -1,63 +1,59 @@
 <script lang="ts" setup>
-  import { ref } from 'vue'
-  import NavBar from '@/components/NavBar.vue'
-  import GlobalToast from '@/components/ui/GlobalToast.vue'
+import { ref } from 'vue'
+import NavBar from '@/components/NavBar.vue'
+import GlobalToast from '@/components/ui/GlobalToast.vue'
+import '@/assets/styles/variables.css'
 
-  const userID = ref(NaN)
-  const user_name = ref({
-    first: '',
-    full: ''
-  })
-  const loggedIn = ref(false)
+const userID = ref(310297)
+const loggedIn = ref(true)
 
-  function handle_logout(){
-    userID.value = NaN;
-    loggedIn.value = false;
-  }
-
-  function handle_login(user_id: number){
-    userID.value = user_id
-    loggedIn.value = true;
-    retrieve_user_info(userID.value)
-  }
-
-  async function retrieve_user_info(user_id:number){
-    try {
-      const response = await fetch(`/api/users/${user_id}`);
-      const data = await response.json(); // Await the JSON parsing
-      console.log('Fetched JSON data:', data);
-      user_name.value = {
-        first: data.data.firstName,
-        full: data.data.fullName
-      }
-    } catch (error) {
-      console.error('Error fetching or parsing data:', error);
-    }
-  }
+function handle_logout(){
+  userID.value = 0
+  loggedIn.value = false;
+}
 </script>
 
 <template>
   <div id="app">
     <header>
-      <NavBar :loggedIn="loggedIn" :userID="userID" :user_first_name="user_name.first" @logout="handle_logout" />
+      <NavBar :loggedIn="loggedIn" :userID="userID" @logout="handle_logout" />
     </header>
 
     <main>
-      <router-view @login="handle_login"/>
+      <router-view />
     </main>
     <GlobalToast />
   </div>
 </template>
 
 <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 #app {
-  margin: 0 auto;
-  padding: 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   text-align: center;
-  font-family: Noto Sans, system-ui, -apple-system, sans-serif;
+  font-family: var(--font-family-sans), sans-serif;
+  background-color: var(--color-bg-primary);
 }
 
 header {
-  margin-bottom: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  box-shadow: var(--shadow-md);
+}
+
+main {
+  flex: 1;
+  padding: var(--spacing-xl);
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
 }
 </style>

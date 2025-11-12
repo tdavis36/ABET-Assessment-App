@@ -2,96 +2,98 @@
   <section class="courses-section">
     <div class="section-header">
       <h3>Courses</h3>
-      <button class="edit-btn" @click="toggleEdit">
+      <BaseButton class="edit-btn" @click="toggleEdit">
         {{ editMode ? "Done" : "Edit" }}
-      </button>
+      </BaseButton>
     </div>
 
     <table class="courses-table">
       <thead>
-        <tr>
-          <th>Course</th>
-          <th>Instructor</th>
-          <th>Measures Completed</th>
-          <th>Submitted (Y/N)</th>
-          <th v-if="editMode">Reject</th>
-        </tr>
+      <tr>
+        <th>Course</th>
+        <th>Instructor</th>
+        <th>Measures Completed</th>
+        <th>Submitted (Y/N)</th>
+        <th v-if="editMode">Reject</th>
+      </tr>
       </thead>
       <tbody>
-        <tr v-for="(course, index) in courses" :key="index">
-          <td>
+      <tr v-for="(course, index) in courses" :key="index">
+        <td>
+          <input
+            v-if="editMode"
+            v-model="course.name"
+            type="text"
+            class="editable-input"
+          />
+          <span v-else>{{ course.name }}</span>
+        </td>
+
+        <td>
+          <input
+            v-if="editMode"
+            v-model="course.instructor"
+            type="text"
+            class="editable-input"
+          />
+          <span v-else>{{ course.instructor }}</span>
+        </td>
+
+        <td>
+          <template v-if="editMode">
             <input
-              v-if="editMode"
-              v-model="course.name"
-              type="text"
-              class="editable-input"
+              v-model.number="course.completed"
+              type="number"
+              min="0"
+              class="small-input"
             />
-            <span v-else>{{ course.name }}</span>
-          </td>
-
-          <td>
+            <span>/</span>
             <input
-              v-if="editMode"
-              v-model="course.instructor"
-              type="text"
-              class="editable-input"
+              v-model.number="course.total"
+              type="number"
+              min="1"
+              class="small-input"
             />
-            <span v-else>{{ course.instructor }}</span>
-          </td>
+          </template>
+          <template v-else>
+            {{ course.completed }}/{{ course.total }}
+          </template>
+        </td>
 
-          <td>
-            <template v-if="editMode">
-              <input
-                v-model.number="course.completed"
-                type="number"
-                min="0"
-                class="small-input"
-              />
-              <span>/</span>
-              <input
-                v-model.number="course.total"
-                type="number"
-                min="1"
-                class="small-input"
-              />
-            </template>
-            <template v-else>
-              {{ course.completed }}/{{ course.total }}
-            </template>
-          </td>
+        <td>{{ course.submitted }}</td>
 
-          <td>{{ course.submitted }}</td>
-
-          <td v-if="editMode" class="reject-cell">
-            <button
-              class="reject-btn"
-              :class="{ active: course.rejected }"
-              @click="toggleReject(course)"
-            >
-              X
-            </button>
-          </td>
-        </tr>
+        <td v-if="editMode" class="reject-cell">
+          <BaseButton
+            class="reject-btn"
+            :class="{ active: course.rejected }"
+            @click="toggleReject(course)"
+          >
+            X
+          </BaseButton>
+        </td>
+      </tr>
       </tbody>
     </table>
 
     <div v-if="editMode" class="add-row">
-      <input v-model="newCourse.name" type="text" placeholder="Course" />
-      <input v-model="newCourse.instructor" type="text" placeholder="Instructor" />
-      <input
+      <BaseInput v-model="newCourse.name" type="text" placeholder="Course" />
+      <BaseInput v-model="newCourse.instructor" type="text" placeholder="Instructor" />
+      <BaseInput
         v-model.number="newCourse.total"
         type="number"
         min="1"
         placeholder="Measure Count"
       />
-      <button class="add-btn" @click="addCourse">Add</button>
+      <BaseButton class="add-btn" @click="addCourse">Add</BaseButton>
     </div>
   </section>
 </template>
 
 <script>
+import {BaseButton, BaseInput} from "@/components/ui/index.ts";
 export default {
   name: "ProgramInstructorsPage",
+  components: {BaseInput, BaseButton},
   props: {
     programId: {
       type: Number,
@@ -157,6 +159,10 @@ export default {
 .courses-section {
   display: flex;
   flex-direction: column;
+  background-color: var(--color-bg-secondary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
 }
 
 .section-header {
@@ -166,8 +172,8 @@ export default {
 }
 
 .edit-btn {
-  background-color: #b22222;
-  color: white;
+  background-color: var(--color-primary);
+  color: var(--color-text-primary);
   border: none;
   border-radius: 6px;
   padding: 0.3rem 0.8rem;
@@ -176,20 +182,21 @@ export default {
 }
 
 .courses-table {
+  background-color: var(--color-bg-secondary);
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
 }
 
 .courses-table th {
-  background-color: #eee;
+  background-color: var(--color-bg-tertiary);
   text-align: left;
   padding: 0.6rem;
   font-weight: 600;
 }
 
 .courses-table td {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--color-border-light);
   padding: 0.6rem;
   vertical-align: middle;
 }
@@ -197,7 +204,7 @@ export default {
 .editable-input,
 .small-input {
   padding: 0.4rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border-light);
   border-radius: 4px;
 }
 
@@ -212,8 +219,8 @@ export default {
 
 .reject-btn {
   background-color: transparent;
-  border: 1px solid #b22222;
-  color: #b22222;
+  border: 1px solid var(--color-border-dark);
+  color: var(--color-error-dark);
   border-radius: 4px;
   padding: 0.2rem 0.6rem;
   cursor: pointer;
@@ -223,7 +230,7 @@ export default {
 
 .reject-btn.active {
   background-color: #b22222;
-  color: white;
+  color: var(--color-text-primary);
 }
 
 .add-row {
@@ -234,8 +241,8 @@ export default {
 }
 
 .add-btn {
-  background-color: #b22222;
-  color: white;
+  background-color: var(--color-primary);
+  color: var(--color-text-primary);
   border: none;
   border-radius: 6px;
   padding: 0.4rem 1rem;

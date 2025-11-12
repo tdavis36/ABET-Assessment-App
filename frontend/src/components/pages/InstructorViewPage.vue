@@ -1,9 +1,5 @@
 <template>
   <section class="instructor-dashboard">
-    <header>
-      <h2>{{ institutionName }} ~ Instructor Dashboard</h2>
-    </header>
-
     <div class="courses">
       <h3>My Courses</h3>
       <table>
@@ -56,14 +52,14 @@ export default {
 
 <style scoped>
 .instructor-dashboard {
-  background: #ffe1e1;
-  padding: 1.5rem;
+  background: var(--color-bg-secondary);
+  padding: 1rem;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 h2 {
-  font-size: 1.4rem;
+  font-size: var(--font-size-2xl);
   margin-bottom: 1rem;
 }
 
@@ -73,12 +69,12 @@ table {
 }
 
 th, td {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--color-border-dark);
   padding: 0.6rem;
   text-align: left;
 }
 
 th {
-  background: #f1f1f1;
+  background: var(--color-bg-tertiary);
 }
 </style>
