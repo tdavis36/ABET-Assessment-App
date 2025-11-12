@@ -215,7 +215,7 @@ const showInfoToast = () => {
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
-  color: #1f2937;
+  color: var(--color-text-primary);
 }
 
 .button-grid {

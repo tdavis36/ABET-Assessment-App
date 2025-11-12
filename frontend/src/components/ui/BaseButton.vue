@@ -93,49 +93,49 @@ const buttonClasses = computed(() => {
 
 /* Variants */
 .button-primary {
-  background-color: #3b82f6;
+  background-color: var(--color-primary);
   color: white;
 }
 
 .button-primary:hover:not(.button-disabled) {
-  background-color: #2563eb;
+  background-color: var(--color-primary-dark);
 }
 
 .button-secondary {
-  background-color: #6b7280;
+  background-color: var(--color-bg-secondary);
   color: white;
 }
 
 .button-secondary:hover:not(.button-disabled) {
-  background-color: #4b5563;
+  background-color: var(--color-bg-tertiary);
 }
 
 .button-success {
-  background-color: #10b981;
+  background-color: var(--color-success);
   color: white;
 }
 
 .button-success:hover:not(.button-disabled) {
-  background-color: #059669;
+  background-color: var(--color-success-dark);
 }
 
 .button-danger {
-  background-color: #ef4444;
+  background-color: var(--color-error);
   color: white;
 }
 
 .button-danger:hover:not(.button-disabled) {
-  background-color: #dc2626;
+  background-color: var(--color-error-dark);
 }
 
 .button-ghost {
   background-color: transparent;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: var(--color-text-tertiary);
+  border: 1px solid var(--color-border-light);
 }
 
 .button-ghost:hover:not(.button-disabled) {
-  background-color: #f3f4f6;
+  background-color: var(--color-bg-tertiary);
 }
 
 /* States */

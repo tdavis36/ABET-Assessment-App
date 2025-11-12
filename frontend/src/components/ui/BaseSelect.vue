@@ -107,14 +107,14 @@ const selectClasses = computed(() => {
 }
 
 .select-label {
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-primary);
   margin-bottom: 0.25rem;
 }
 
 .required-indicator {
-  color: #ef4444;
+  color: var(--color-error);
   margin-left: 0.125rem;
 }
 
@@ -125,13 +125,13 @@ const selectClasses = computed(() => {
 .base-select {
   width: 100%;
   padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   line-height: 1.5;
-  color: #1f2937;
-  background-color: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  transition: all 0.2s ease-in-out;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-md);
+  transition: var(--transition-base);
   font-family: inherit;
   cursor: pointer;
   appearance: none;
@@ -139,21 +139,21 @@ const selectClasses = computed(() => {
 
 .base-select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .select-error {
-  border-color: #ef4444;
+  border-color: var(--color-error);
 }
 
 .select-error:focus {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  border-color: var(--color-error-dark);
+  box-shadow: var(--shadow-md);
 }
 
 .select-disabled {
-  background-color: #f3f4f6;
+  background-color: var(--color-bg-tertiary);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -165,7 +165,7 @@ const selectClasses = computed(() => {
   transform: translateY(-50%);
   width: 1.25rem;
   height: 1.25rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   pointer-events: none;
 }
 
@@ -175,14 +175,14 @@ const selectClasses = computed(() => {
 }
 
 .error-message {
-  font-size: 0.875rem;
-  color: #ef4444;
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
   margin: 0;
 }
 
 .hint-message {
-  font-size: 0.875rem;
-  color: #6b7280;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
   margin: 0;
 }
 </style>

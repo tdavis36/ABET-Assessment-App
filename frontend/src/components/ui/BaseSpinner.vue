@@ -47,8 +47,8 @@ const spinnerClasses = computed(() => {
 
 .spinner-circle {
   border-radius: 50%;
-  border: 3px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
   animation: spin 0.8s linear infinite;
 }
 
@@ -72,7 +72,7 @@ const spinnerClasses = computed(() => {
 
 .spinner-text {
   color: #6b7280;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 

@@ -45,18 +45,18 @@ const cardClasses = computed(() => {
 
 <style scoped>
 .base-card {
-  background-color: white;
+  background-color: var(--color-bg-secondary);
   border-radius: 0.5rem;
   overflow: hidden;
   transition: all 0.2s ease-in-out;
 }
 
 .card-default {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border-light);
 }
 
 .card-bordered {
-  border: 2px solid #d1d5db;
+  border: 3px solid var(--color-border-light);
 }
 
 .card-elevated {
@@ -70,19 +70,19 @@ const cardClasses = computed(() => {
 
 .card-header {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-bottom: 1px solid var(--color-border-dark);
+  background-color: var(--color-bg-secondary);
 }
 
 .card-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
 .card-body {
-  background-color: white;
+  background-color: var(--color-bg-primary);
 }
 
 .card-body-padded {
@@ -91,7 +91,7 @@ const cardClasses = computed(() => {
 
 .card-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-top: 1px solid var(--color-border-dark);
+  background-color: var(--color-bg-secondary);
 }
 </style>
