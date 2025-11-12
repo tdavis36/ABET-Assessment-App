@@ -1,7 +1,7 @@
 <template>
   <section class="courses-section">
     <div class="section-header">
-      <h3>Courses</h3>
+      <h3 class="h3">Courses</h3>
       <BaseButton class="edit-btn" @click="toggleEdit">
         {{ editMode ? "Done" : "Edit" }}
       </BaseButton>
@@ -156,11 +156,18 @@ export default {
 </script>
 
 <style scoped>
+.h3 {
+  font-size: var(--font-size-xl);
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  align-items: center;
+}
+
 .courses-section {
   display: flex;
   flex-direction: column;
   background-color: var(--color-bg-secondary);
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 8px;
   box-shadow: var(--shadow-sm);
 }

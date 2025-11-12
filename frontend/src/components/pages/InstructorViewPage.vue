@@ -63,6 +63,12 @@ h2 {
   margin-bottom: 1rem;
 }
 
+h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

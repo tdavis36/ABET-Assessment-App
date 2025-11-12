@@ -11,7 +11,7 @@ describe('App', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('Abet Assessment App')
+    expect(wrapper.text()).toContain('ABET Assessment App')
   })
 
   it('renders properly', () => {

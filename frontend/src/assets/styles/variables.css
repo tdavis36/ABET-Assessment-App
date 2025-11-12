@@ -121,6 +121,17 @@
   --z-popover: 1060;
   --z-tooltip: 1070;
   --z-toast: 9999;
+
+  /* Navbar Specific */
+  --navbar-height: 4rem;           /* 64px */
+  --navbar-bg: var(--color-primary);
+  --navbar-text: var(--color-text-primary);
+  --navbar-hover-bg: var(--color-primary-dark);
+  --navbar-active-bg: var(--color-primary-dark);
+  --navbar-divider: rgba(15, 15, 15, 0.2);
+  --navbar-padding-x: var(--spacing-xl);
+  --navbar-padding-y: 0;
+  --navbar-item-padding-x: var(--spacing-lg);
 }
 
 /* Reset and Base Styles */

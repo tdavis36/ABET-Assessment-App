@@ -47,7 +47,6 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  padding: 2rem;
   font-family:
     system-ui,
     -apple-system,
@@ -63,7 +62,6 @@ export default {
 .divider {
   border: none;
   border-top: 2px solid var(--color-border-light);
-  margin: 1.5rem 0;
 }
 
 .footer {

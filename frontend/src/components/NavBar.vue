@@ -16,20 +16,21 @@ const emits = defineEmits(["logout"])
 
       <div class="navbar-links">
         <router-link to="/" class="nav_button">Home</router-link>
+        <div class="nav-divider"></div>
         <router-link to="/test-connection" class="nav_button">Test Connection</router-link>
 
         <!-- Instructor dashboard link only -->
-        <router-link
-          v-if="loggedIn && !isAdmin"
-          to="/instructor-dashboard"
-          class="nav_button"
-        >
-          Instructor Dashboard
-        </router-link>
+        <template v-if="loggedIn && !isAdmin">
+          <div class="nav-divider"></div>
+          <router-link to="/instructor-dashboard" class="nav_button">
+            Instructor Dashboard
+          </router-link>
+        </template>
       </div>
 
       <!-- Log In / Log Out -->
       <div class="navbar-auth">
+        <div class="nav-divider"></div>
         <router-link
           v-if="loggedIn"
           to="/"
@@ -59,61 +60,71 @@ const emits = defineEmits(["logout"])
 
 <style scoped>
 #navbar {
-  background-color: var(--color-primary);
+  background-color: var(--navbar-bg);
   width: 100%;
-  padding: 0;
+  height: var(--navbar-height);
   box-shadow: var(--shadow-lg);
 }
 
 .navbar-container {
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  height: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 var(--spacing-xl);
+  padding: var(--navbar-padding-y) var(--navbar-padding-x);
 }
 
 #logo {
+  display: flex;
+  align-items: center;
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  padding: var(--spacing-lg) var(--spacing-xl);
+  color: var(--navbar-text);
+  padding: 0 var(--spacing-xl);
+  border-right: 2px solid var(--navbar-divider);
   white-space: nowrap;
   letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 .navbar-links {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
+  align-items: stretch;
   flex: 1;
-  padding-left: var(--spacing-md);
 }
 
 .navbar-auth {
+  display: flex;
+  align-items: stretch;
   margin-left: auto;
 }
 
+.nav-divider {
+  width: 1px;
+  background-color: var(--navbar-divider);
+  align-self: stretch;
+}
+
 .nav_button {
-  padding: var(--spacing-lg) var(--spacing-xl);
-  background-color: var(--overlay-transparent);
-  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--navbar-item-padding-x);
+  color: var(--navbar-text);
   text-decoration: none;
   font-weight: var(--font-weight-medium);
   transition: background-color var(--transition-base);
-  display: inline-flex;
-  align-items: center;
   gap: var(--spacing-sm);
   white-space: nowrap;
-  border-radius: var(--radius-md);
+  height: 100%;
 }
 
 .nav_button:hover {
-  background-color: var(--color-primary-dark);
+  background-color: var(--navbar-hover-bg);
 }
 
 .nav_button.router-link-active {
-  background-color: var(--color-primary-dark);
+  background-color: var(--navbar-active-bg);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -135,50 +146,63 @@ const emits = defineEmits(["logout"])
 /* Responsive Design */
 @media (max-width: 1024px) {
   .navbar-container {
-    padding: 0 var(--spacing-md);
+    padding: var(--navbar-padding-y) var(--spacing-md);
   }
 
   #logo {
     font-size: var(--font-size-lg);
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: 0 var(--spacing-lg);
   }
 
   .nav_button {
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: 0 var(--spacing-md);
     font-size: var(--font-size-sm);
   }
 }
 
 @media (max-width: 768px) {
+  #navbar {
+    height: auto;
+  }
+
   .navbar-container {
-    flex-wrap: wrap;
-    padding: var(--spacing-sm);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
   }
 
   #logo {
     font-size: var(--font-size-base);
     padding: var(--spacing-md);
-    width: 100%;
-    text-align: center;
+    border-right: none;
+    border-bottom: 2px solid var(--navbar-divider);
+    justify-content: center;
   }
 
   .navbar-links {
+    flex-direction: column;
     width: 100%;
-    justify-content: center;
-    padding: var(--spacing-sm) 0;
-    flex-wrap: wrap;
   }
 
   .navbar-auth {
     width: 100%;
     margin-left: 0;
-    display: flex;
-    justify-content: center;
-    padding-bottom: var(--spacing-sm);
+    flex-direction: column;
+  }
+
+  .nav-divider {
+    width: 100%;
+    height: 1px;
   }
 
   .nav_button {
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    justify-content: center;
+    height: auto;
+  }
+
+  .user-info {
     font-size: var(--font-size-xs);
   }
 }

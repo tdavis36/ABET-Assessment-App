@@ -103,8 +103,12 @@ tasks.register('installFrontendDeps', Exec) {
     onlyIf { !project.ext.skipFrontend }
     executable npmExecutable
     args 'ci'
-    inputs.file('frontend/package-lock.json')
-    outputs.dir('frontend/node_modules')
+
+    // Only configure inputs/outputs if not skipping
+    if (!project.ext.skipFrontend) {
+        inputs.file('frontend/package-lock.json')
+        outputs.dir('frontend/node_modules')
+    }
 }
 
 // Task to build the frontend with Vite
@@ -113,16 +117,16 @@ tasks.register('buildFrontend', Exec) {
     executable npmExecutable
     args 'run','build'
     onlyIf { !project.ext.skipFrontend }
-
-    // Caching configuration
-    inputs.files(fileTree("frontend/src"))
-    inputs.file("frontend/package.json")
-    inputs.file("frontend/package-lock.json")
-    inputs.file("frontend/vite.config.ts")
-    inputs.file("frontend/tsconfig.json")
-    inputs.file("frontend/index.html")
-    outputs.dir(frontendDist)
-    outputs.cacheIf { true }
+    if (!project.ext.skipFrontend) {
+        inputs.files(fileTree("frontend/src"))
+        inputs.file("frontend/package.json")
+        inputs.file("frontend/package-lock.json")
+        inputs.file("frontend/vite.config.ts")
+        inputs.file("frontend/tsconfig.json")
+        inputs.file("frontend/index.html")
+        outputs.dir(frontendDist)
+        outputs.cacheIf { true }
+    }
 }
 
 // Task to copy the built frontend into Spring Boot's static resources
