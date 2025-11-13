@@ -62,7 +62,7 @@ export const useUserStore = defineStore("user", () => {
       currentProgramId.value = data.user.currentProgramId;
 
       // Persist to storage
-      localStorage.setItem("authToken", data.token);
+      localStorage.setItem("authToken", data.authToken);
       localStorage.setItem("currentUser", JSON.stringify(data.user));
       localStorage.setItem("programs", JSON.stringify(data.programs));
       localStorage.setItem(
@@ -98,7 +98,7 @@ export const useUserStore = defineStore("user", () => {
       authToken.value = data.token;
       currentProgramId.value = data.user.currentProgramId ?? null;
 
-      localStorage.setItem("authToken", data.token);
+      localStorage.setItem("authToken", data.authToken);
       localStorage.setItem("currentUser", JSON.stringify(data.user));
 
       return data;
