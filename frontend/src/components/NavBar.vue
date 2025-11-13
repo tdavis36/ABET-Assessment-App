@@ -17,7 +17,10 @@ const emits = defineEmits(["logout"])
       <div class="navbar-links">
         <router-link to="/" class="nav_button">Home</router-link>
         <div class="nav-divider"></div>
+        <router-link to="/about" class="nav_button">About</router-link>
+        <div class="nav-divider"></div>
         <router-link to="/test-connection" class="nav_button">Test Connection</router-link>
+
 
         <!-- Instructor dashboard link only -->
         <template v-if="loggedIn && !isAdmin">

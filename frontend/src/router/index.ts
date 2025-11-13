@@ -11,6 +11,7 @@ import LogInPage from '@/components/pages/LogIn.vue'
 import SignUpPage from '@/components/pages/SignUp.vue'
 import AdminDashboard from '@/components/AdminDashboard.vue'
 import ExamplePage from "@/components/pages/ExamplePage.vue";
+import AboutPage from '@/components/pages/AboutPage.vue'
 
 const routes = [
    {
@@ -26,6 +27,11 @@ const routes = [
     path: '/dashboard',
     name: 'Home',
     component: HomePage,
+  },
+  {
+    path: '/about',
+    name: 'About',
+    component: AboutPage
   },
   {
     path: '/:program_id/summary/',
