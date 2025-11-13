@@ -43,8 +43,15 @@
     </header>
 
     <main>
-      <router-view @login="handle_login"/>
+      <router-view :loggedIn="loggedIn" @login="handle_login"/>
     </main>
+
+    <footer class="footer">
+      <hr />
+      <p>© 2025 ABET Assessment App</p>
+      <p>Definitions adapted from ABET documentation.</p>
+    </footer>
+
     <GlobalToast />
   </div>
 </template>
@@ -59,5 +66,19 @@
 
 header {
   margin-bottom: 1rem;
+}
+
+.footer {
+  text-align: center;
+  color: #555;
+  font-size: 0.9rem;
+  margin-top: 3rem;
+}
+
+.footer hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin-bottom: 1rem;
+  width: 100%;
 }
 </style>

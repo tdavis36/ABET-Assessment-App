@@ -1,30 +1,34 @@
-<script>
+<script lang="ts" setup>
   import ProgramInstructorsPage from "@/components/pages/ProgramInstructorsPage.vue";
   import InstructorViewPage from "@/components/pages/InstructorViewPage.vue";
 
-  export default {
-  name: "HomePage",
-  components: {
-    ProgramInstructorsPage,
-    InstructorViewPage,
-  },
-  };
+  const props = defineProps({
+    loggedIn: Boolean,
+  })
+
+  console.log(props.loggedIn)
 </script>
 
 <template>
   <main class="homepage">
     
-    <header class="dashboard-header">
-      <h1>Administrator Dashboard</h1>
-    </header>
+    <div v-if="!loggedIn" id="log-in-popup">
+      Log in to view course information
+    </div>
 
-    <!-- Admin Dashboard -->
-    <ProgramInstructorsPage :programId="1" />
+    <div v-else id="dashboards">
+      <header class="dashboard-header">
+        <h1>Administrator Dashboard</h1>
+      </header>
 
-    <hr class="section-divider" />
+      <!-- Admin Dashboard -->
+      <ProgramInstructorsPage :programId="1" />
 
-    <!-- Instructor Dashboard -->
-    <InstructorViewPage :programId="1" />
+      <hr class="section-divider" />
+
+      <!-- Instructor Dashboard -->
+      <InstructorViewPage :programId="1" />
+    </div>
 
   </main>
 </template>

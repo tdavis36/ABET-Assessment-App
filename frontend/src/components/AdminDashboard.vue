@@ -9,13 +9,6 @@
     <hr class="divider" />
 
     <InstructorViewPage :programId="programId" />
-
-  
-    <footer class="footer">
-      <hr />
-      <p>© 2025 ABET Assessment App</p>
-      <p>Definitions adapted from ABET documentation.</p>
-    </footer>
   </section>
 </template>
 
@@ -60,19 +53,5 @@ export default {
   border: none;
   border-top: 2px solid #ccc;
   margin: 1.5rem 0;
-}
-
-.footer {
-  text-align: center;
-  color: #555;
-  font-size: 0.9rem;
-  margin-top: 3rem;
-}
-
-.footer hr {
-  border: none;
-  border-top: 1px solid #ccc;
-  margin-bottom: 1rem;
-  width: 100%;
 }
 </style>

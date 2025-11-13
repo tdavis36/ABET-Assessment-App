@@ -121,12 +121,6 @@
             </div>
         </div>
         </section>
-
-        <footer class="footer">
-        <hr />
-        <p>© 2025 ABET Assessment App</p>
-        <p>Definitions adapted from ABET documentation.</p>
-        </footer>
     </main>
 </template>
 
