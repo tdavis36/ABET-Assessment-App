@@ -1,11 +1,13 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
 plugins {
-    id 'org.springframework.boot' version '3.2.0'
+    id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'java'
     id 'com.github.node-gradle.node' version '7.0.1'
 }
 
-version = '0.0.7-dev'
+version = '0.0.31-dev'
 group = 'com.abetappteam.abetapp'
 
 // Java version configuration
@@ -26,15 +28,22 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'   // Database access
     implementation 'org.springframework.boot:spring-boot-starter-validation' // Request validation
     implementation 'org.springframework.boot:spring-boot-starter-actuator'   // Health checks
+    implementation 'org.springframework.boot:spring-boot-starter-security'   // Security
+
+    // JWT dependencies
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client' // Database driver
     runtimeOnly 'com.h2database:h2'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 test {
-    jvmArgs '-XX:-UseSharedSpaces'
     useJUnitPlatform()
 }
 
@@ -55,7 +64,27 @@ bootRun {
     ]
 }
 
-def skipFrontend = project.hasProperty('skipFrontend') && project.property('skipFrontend') == 'true'
+// Use ext property so it can be modified during configuration
+project.ext.skipFrontend = project.hasProperty('skipFrontend') && project.property('skipFrontend') == 'true'
+
+// Helper to enable frontend for specific tasks
+gradle.taskGraph.whenReady { graph ->
+    def frontendTasks = [
+            'installFrontendDeps',
+            'buildFrontend',
+            'copyFrontend',
+            'testFrontend',
+            'testFrontendE2e',
+            'testFrontendE2eDocker',
+            'devFrontend'
+    ]
+
+    frontendTasks.each { taskName ->
+        if (graph.hasTask(":${taskName}")) {
+            project.ext.skipFrontend = false
+        }
+    }
+}
 
 node {
     version = '20.19.0'
@@ -65,107 +94,169 @@ node {
 }
 
 def npmExecutable = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
+def frontendDir = "$projectDir/frontend"
+def frontendDist = "$frontendDir/dist"
 
-tasks.register('installFrontendDeps', Exec) {
-    workingDir 'frontend'
-    executable npmExecutable
-    args 'ci'
-    inputs.file('frontend/package-lock.json')
-    outputs.dir('frontend/node_modules')
+tasks.withType(Test).configureEach {
+    jvmArgs '-XX:+EnableDynamicAgentLoading'
 }
 
+// FRONTEND BUILD TASKS
+// Cleans and then installs the dependencies
+tasks.register('installFrontendDeps', Exec) {
+    workingDir 'frontend'
+    onlyIf { !project.ext.skipFrontend }
+    executable npmExecutable
+    args 'ci'
+
+    // Only configure inputs/outputs if not skipping
+    if (!project.ext.skipFrontend) {
+        inputs.file('frontend/package-lock.json')
+        outputs.dir('frontend/node_modules')
+    }
+}
+
+// Task to build the frontend with Vite
+tasks.register('buildFrontend', Exec) {
+    workingDir frontendDir
+    executable npmExecutable
+    args 'run','build'
+    onlyIf { !project.ext.skipFrontend }
+    if (!project.ext.skipFrontend) {
+        inputs.files(fileTree("frontend/src"))
+        inputs.file("frontend/package.json")
+        inputs.file("frontend/package-lock.json")
+        inputs.file("frontend/vite.config.ts")
+        inputs.file("frontend/tsconfig.json")
+        inputs.file("frontend/index.html")
+        outputs.dir(frontendDist)
+        outputs.cacheIf { true }
+    }
+}
+
+// Task to copy the built frontend into Spring Boot's static resources
+tasks.register('copyFrontend', Copy) {
+    dependsOn 'buildFrontend'
+    from "${frontendDist}"
+    into "${projectDir}/src/main/resources/static"
+    onlyIf { !project.ext.skipFrontend }
+}
+
+// Ensure Spring copies frontend before processing resources
+tasks.named('processResources') {
+    dependsOn 'copyFrontend'
+    onlyIf { !project.ext.skipFrontend }
+}
+
+// TESTS
+// Run backend tests
+tasks.named('test') {
+    group = 'abet-dev'
+    useJUnitPlatform()
+    outputs.upToDateWhen { false }
+}
+
+// Run frontend unit tests
 tasks.register('testFrontend', Exec) {
+    group = 'abet-dev'
     dependsOn tasks.installFrontendDeps
     workingDir 'frontend'
     executable npmExecutable
     args 'run', 'test:unit'
-    onlyIf { !skipFrontend }
+    onlyIf { !project.ext.skipFrontend }
+
+    // Caching configuration
+    inputs.files(fileTree("frontend/src"))
+    inputs.files(fileTree("frontend/tests"))
+    inputs.file("frontend/package.json")
+    inputs.file("frontend/vitest.config.ts")
+    outputs.dir("frontend/coverage")
+    outputs.cacheIf { true }
 }
 
-tasks.register('buildFrontend', Exec) {
+// Run frontend e2e tests
+tasks.register('testFrontendE2e', Exec) {
+    group = 'abet-dev'
     dependsOn tasks.installFrontendDeps
     workingDir 'frontend'
     executable npmExecutable
-    args 'run', 'build'
-    inputs.files(fileTree("frontend/src"))
-    inputs.file("frontend/package.json")
-    outputs.dir("frontend/dist")
-    onlyIf { !skipFrontend }
+    args 'run', 'test:e2e'
+    onlyIf { !project.ext.skipFrontend }
 }
 
-tasks.register('copyFrontend', Copy) {
-    dependsOn tasks.buildFrontend
-    from "frontend/dist"
-    into "src/main/resources/static"
-    onlyIf { !skipFrontend }
+// Run frontend e2e tests in docker
+tasks.register('testFrontendE2eDocker', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable 'docker'
+    args 'run', '--rm', '--ipc=host', '-p', '9323', '-v', './:/work', '-w', '/work', 'mcr.microsoft.com/playwright:v1.56.1-jammy', 'bash', '-c', 'npm ci && npx playwright test'
 }
 
-// Configure main tasks
-tasks.named('test') {
-    if (!skipFrontend) {
-        dependsOn tasks.testFrontend
-    }
-}
-
-tasks.named('processResources') {
-    if (!skipFrontend) {
-        dependsOn tasks.copyFrontend
-    }
-}
-
+// MAIN TASKS
 // Development tasks
 tasks.register('dev') {
     group = 'abet-dev'
-    description = 'Run backend only for local development'
+    description = 'Run for local development'
     dependsOn 'bootRun'
     doFirst {
-        project.setProperty('skipFrontend', 'true')
+        println "Frontend: http://localhost:5173"
         println "Backend: http://localhost:8080"
-        println "Start frontend separately: cd frontend && npm run dev"
     }
 }
 
-tasks.register('devWithFrontend') {
+tasks.register('devFrontend', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'dev'
+    inputs.files(fileTree("frontend/src"))
+    inputs.file("frontend/package.json")
+    outputs.dir("frontend/dist")
+    onlyIf { !project.ext.skipFrontend }
+}
+
+tasks.register('devWithBuiltInFrontend') {
     group = 'abet-dev'
     description = 'Run with built frontend locally'
-    dependsOn 'bootRun'
     doFirst {
-        println "Full app: http://localhost:8080"
+        tasks.bootRun.configure {
+            args = ['--spring.profiles.active=dev-builtin']
+        }
     }
+    finalizedBy 'bootRun'
 }
 
-// Unified Docker development tasks
-tasks.register('devDocker') {
+// Docker development tasks
+tasks.register('devDocker', Exec) {
     group = 'abet-dev'
     description = 'Run in Docker with H2 database'
     dependsOn 'composeBuild'
-    doLast {
-        exec {
-            executable 'docker'
-            args 'compose', '-f', 'docker-compose.deployment-testing.yml', 'up', '-d'
-        }
+    executable 'docker'
+    args 'compose', '-f', 'docker-compose.deployment-testing.yml', 'up', '-d'
+    doFirst {
         println "Docker app: http://localhost:8080"
         println "Stop with: ./gradlew stopDocker -Pcompose=deployment-testing"
     }
 }
 
-tasks.register('devDockerProd') {
+tasks.register('devDockerProd', Exec) {
     group = 'abet-dev'
     description = 'Run in Docker with MariaDB (production-like)'
     dependsOn 'composeBuild'
-    doLast {
-        exec {
-            executable 'docker'
-            args 'compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'up', '-d'
-        }
+    executable 'docker'
+    args 'compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod-testing.yml', 'up', '-d'
+    doFirst {
         println "Docker app: http://localhost:8080"
         println "Adminer: http://localhost:8081"
         println "Stop with: ./gradlew stopDocker -Pcompose=prod-testing"
     }
+    executable 'docker'
 }
 
-// Unified Docker control tasks
-tasks.register('stopDocker', Exec) {
+// Docker tasks
+tasks.register('dockerStop', Exec) {
     group = 'abet-dev'
     description = 'Stop Docker environment (use -Pcompose=<env>)'
     doFirst {
@@ -179,7 +270,7 @@ tasks.register('stopDocker', Exec) {
     executable 'docker'
 }
 
-tasks.register('logsDocker', Exec) {
+tasks.register('dockerLogs', Exec) {
     group = 'abet-dev'
     description = 'Follow Docker logs (use -Pcompose=<env>)'
     doFirst {
