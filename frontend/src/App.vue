@@ -1,22 +1,29 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { onMounted } from 'vue'
 import NavBar from '@/components/NavBar.vue'
 import GlobalToast from '@/components/ui/GlobalToast.vue'
-import '@/assets/styles/variables.css'
+import { useUserStore } from '@/stores/user-store.js'
 
-const userID = ref(310297)
-const loggedIn = ref(true)
+const userStore = useUserStore()
 
-function handle_logout(){
-  userID.value = 0
-  loggedIn.value = false;
+// Load user from localStorage on app mount
+onMounted(() => {
+  userStore.loadFromStorage()
+})
+
+function handleLogout() {
+  userStore.logout()
 }
 </script>
 
 <template>
   <div id="app">
     <header>
-      <NavBar :loggedIn="loggedIn" :userID="userID" @logout="handle_logout" />
+      <NavBar
+        :loggedIn="userStore.isLoggedIn"
+        :username="userStore.userFullName"
+        @logout="handleLogout"
+      />
     </header>
 
     <main>
@@ -27,33 +34,13 @@ function handle_logout(){
 </template>
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 #app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  margin: 0 auto;
   text-align: center;
-  font-family: var(--font-family-sans), sans-serif;
-  background-color: var(--color-bg-primary);
+  font-family: Noto Sans, system-ui, -apple-system, sans-serif;
 }
 
 header {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
-  box-shadow: var(--shadow-md);
-}
-
-main {
-  flex: 1;
-  padding: var(--spacing-xl);
-  max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
+  margin-bottom: 1rem;
 }
 </style>

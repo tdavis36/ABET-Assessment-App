@@ -1,73 +1,94 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
-import {BaseButton, BaseCard, BaseInput} from "@/components/ui";
+import { BaseButton, BaseCard, BaseInput } from "@/components/ui";
 import { useRouter } from 'vue-router'
-import {useToast} from "@/composables/useToast.ts";
+import { useToast } from "@/composables/useToast.ts";
+import { useUserStore } from '@/stores/user-store.ts'
 
-const API_BASE = 'http://localhost:8080/api'
 const router = useRouter()
+const toast = useToast()
+const userStore = useUserStore()
 
-const email_input = ref('');
-const password_input = ref('');
-const toast = useToast();
-
-const emits = defineEmits(["login"])
+const email_input = ref('')
+const password_input = ref('')
 
 async function login() {
   try {
-    // POST credentials to your backend
-    const response = await fetch('/api/users/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: email_input.value,
-        password: password_input.value
-      })
-    });
+    await userStore.login(email_input.value, password_input.value)
 
-    if (!response.ok) {
-      // Show error toast instead of inline error
-      const errText = await response.text();
-      toast.error(errText || "Email or password is incorrect.", "Login Failed");
-      return;
+    // Success - show toast and redirect
+    toast.success("Successfully logged in!", "Welcome")
+
+    // Redirect based on role
+    if (userStore.isAdmin) {
+      router.push('/admin-dashboard')
+    } else if (userStore.isInstructor) {
+      router.push('/instructor-dashboard')
+    } else {
+      router.push('/')
     }
-
-    // Success case
-    const json_obj = await response.json()
-    toast.success("Successfully logged in!", "Welcome");
-    emits("login", json_obj.data)
-    router.push("/")
-
   } catch (error) {
-    // Handle network errors
-    toast.error("Unable to reach server. Please try again.", "Connection Error");
+    // Error toast - userStore.error contains the error message
+    toast.error(
+      userStore.error || "Email or password is incorrect.",
+      "Login Failed"
+    )
   }
 }
 </script>
 
 <template>
-  <BaseCard title="Log In">
+  <div class="login">
+  <BaseCard class="login-card" title="Log In">
     <div>
       <div>
-        <BaseInput id="email" class="login-input" v-model="email_input" placeholder="Email"></BaseInput>
+        <BaseInput
+          id="email"
+          class="login-input"
+          v-model="email_input"
+          placeholder="Email"
+          :disabled="userStore.isLoading"
+        />
       </div>
       <div>
-        <BaseInput id="password" class="login-input" v-model="password_input" placeholder="Password" type="password"></BaseInput>
+        <BaseInput
+          id="password"
+          class="login-input"
+          v-model="password_input"
+          placeholder="Password"
+          type="password"
+          :disabled="userStore.isLoading"
+          @keyup.enter="login"
+        />
       </div>
-      <div><BaseButton id="submit" class="submit-button" @click="login">Submit</BaseButton></div>
+      <div>
+        <BaseButton
+          id="submit"
+          class="submit-button"
+          @click="login"
+          :loading="userStore.isLoading"
+          :disabled="!email_input || !password_input"
+        >
+          Submit
+        </BaseButton>
+      </div>
     </div>
     <p class="tooltip">Don't have an account? Sign up <router-link to="/signup">here</router-link>.</p>
   </BaseCard>
+  </div>
 </template>
 
-<style>
-.login-input {
-  padding-bottom: var(--spacing-md);
+<style scoped>
+.login {
+  display: flex;
+  justify-content: center;
 }
 
-.submit-button {
+.login-card {
+  width: 70vw;
+}
+
+.login-input {
   padding-bottom: var(--spacing-md);
 }
 

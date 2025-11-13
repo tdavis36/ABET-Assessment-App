@@ -46,7 +46,7 @@ export default {
 .combined-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  margin: 2rem;
   font-family:
     system-ui,
     -apple-system,
@@ -61,7 +61,7 @@ export default {
 
 .divider {
   border: none;
-  border-top: 2px solid var(--color-border-light);
+  border-top: 2px solid var(--color-border-dark);
 }
 
 .footer {

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 const props = defineProps({
   loggedIn: Boolean,
-  userID: Number,
+  username: String,
 })
 
 
@@ -38,7 +38,7 @@ const emits = defineEmits(["logout"])
           id="logout"
           @click="$emit('logout')"
         >
-          <span class="user-info">{{ userID }}</span>
+          <span class="user-info">{{ username }}</span>
           <span class="separator">|</span>
           <span>Log Out</span>
         </router-link>

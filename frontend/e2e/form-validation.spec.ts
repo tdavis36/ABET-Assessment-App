@@ -16,7 +16,7 @@ test.describe('Login Form Validation', () => {
 
   test('should handle login submission', async ({ page, mockApi }) => {
     // Mock successful login
-    await page.route('**/api/auth/login', async (route) => {
+    await page.route('**/api/users/login', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

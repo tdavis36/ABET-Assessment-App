@@ -1,6 +1,6 @@
 <template>
   <main class="homepage">
-    
+
     <header class="dashboard-header">
       <h1>Administrator Dashboard</h1>
     </header>
@@ -176,8 +176,9 @@ export default {
 
 .dashboard-header {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
+
 .dashboard-header h1 {
   font-size: 2rem;
   font-weight: 700;
@@ -188,8 +189,8 @@ export default {
 
 .section-divider {
   border: none;
-  border-top: 2px dashed rgba(178, 34, 34, 0.35); 
-  margin: 2.5rem auto;   /* space between dashbaords*/
+  border-top: 2px dashed rgba(178, 34, 34, 0.35);
+  margin: 2rem auto;   /* space between dashbaords*/
   width: 80%;
 }
 </style>

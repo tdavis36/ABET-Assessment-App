@@ -1,22 +1,30 @@
 package com.abetappteam.abetapp.config;
 
+import com.abetappteam.abetapp.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
 
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthFilter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // disable for API dev
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // allow static assets and SPA routes
+                        // Public endpoints
                         .requestMatchers(
                                 "/", "/index.html",
                                 "/favicon.ico",
@@ -30,14 +38,22 @@ public class WebSecurityConfig {
                                 "/test-connection",
                                 "/h2-console/**"
                         ).permitAll()
-                        // protect only API endpoints
-                        .requestMatchers("/api/**").permitAll()
-                        // everything else (for Vue routing) is allowed
+                        // Public API endpoints
+                        .requestMatchers(
+                                "/api/users/login",
+                                "/api/users/signup"
+                        ).permitAll()
+                        // Protected API endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/instructor/**").hasAnyRole("ADMIN", "INSTRUCTOR")
+                        .requestMatchers("/api/**").authenticated()
+                        // Everything else (for Vue routing)
                         .anyRequest().permitAll()
                 )
-                .headers(headers -> headers.frameOptions(frame -> frame.disable())) // let H2 console render
-                .formLogin(form -> form.disable())  // no Spring login form
-                .httpBasic(basic -> basic.disable()); // disable browser auth popup
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
