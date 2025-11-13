@@ -18,6 +18,7 @@
     <div id="logo">Abet Assessment App</div>
 
     <router-link to="/" class="nav_button">Home</router-link>
+    <router-link to="/about" class="nav_button">About</router-link>
     <router-link to="/test-connection" class="nav_button">Test Connection</router-link>
 
     <!-- Instructor dashboard link only -->
