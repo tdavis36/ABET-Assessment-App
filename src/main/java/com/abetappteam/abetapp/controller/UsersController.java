@@ -53,8 +53,7 @@ public class UsersController extends BaseController {
             throw new BadRequestException("User not found");
         }
 
-        // Use BCrypt to compare passwords (TODO: implement this)
-        if (!user.getPasswordHash().equals(password)) {
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new BadRequestException("Incorrect password");
         }
 
@@ -99,7 +98,7 @@ public class UsersController extends BaseController {
                 .collect(Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
+        response.put("authToken", token);
         response.put("user", userMap);
         response.put("programs", programsList);
 

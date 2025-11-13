@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
-import { BaseButton, BaseCard, BaseInput } from "@/components/ui";
+import { ref } from 'vue'
+import { BaseButton, BaseCard, BaseInput } from "@/components/ui"
 import { useRouter } from 'vue-router'
-import { useToast } from "@/composables/useToast.ts";
+import { useToast } from "@/composables/useToast.ts"
 import { useUserStore } from '@/stores/user-store.ts'
 
 const router = useRouter()
@@ -16,10 +16,8 @@ async function login() {
   try {
     await userStore.login(email_input.value, password_input.value)
 
-    // Success - show toast and redirect
     toast.success("Successfully logged in!", "Welcome")
 
-    // Redirect based on role
     if (userStore.isAdmin) {
       router.push('/admin-dashboard')
     } else if (userStore.isInstructor) {
@@ -28,7 +26,6 @@ async function login() {
       router.push('/')
     }
   } catch (error) {
-    // Error toast - userStore.error contains the error message
     toast.error(
       userStore.error || "Email or password is incorrect.",
       "Login Failed"
@@ -39,8 +36,7 @@ async function login() {
 
 <template>
   <div class="login">
-  <BaseCard class="login-card" title="Log In">
-    <div>
+    <BaseCard class="login-card" title="Log In">
       <div>
         <BaseInput
           id="email"
@@ -49,8 +45,7 @@ async function login() {
           placeholder="Email"
           :disabled="userStore.isLoading"
         />
-      </div>
-      <div>
+
         <BaseInput
           id="password"
           class="login-input"
@@ -60,39 +55,22 @@ async function login() {
           :disabled="userStore.isLoading"
           @keyup.enter="login"
         />
-      </div>
-      <div>
+
         <BaseButton
           id="submit"
           class="submit-button"
           @click="login"
           :loading="userStore.isLoading"
-          :disabled="!email_input || !password_input"
+          :disabled="!email_input || !password_input || userStore.isLoading"
         >
           Submit
         </BaseButton>
       </div>
-    </div>
-    <p class="tooltip">Don't have an account? Sign up <router-link to="/signup">here</router-link>.</p>
-  </BaseCard>
+
+      <p class="tooltip">
+        Don't have an account? Sign up
+        <router-link to="/signup">here</router-link>.
+      </p>
+    </BaseCard>
   </div>
 </template>
-
-<style scoped>
-.login {
-  display: flex;
-  justify-content: center;
-}
-
-.login-card {
-  width: 70vw;
-}
-
-.login-input {
-  padding-bottom: var(--spacing-md);
-}
-
-.tooltip {
-  padding-top: var(--spacing-md);
-}
-</style>

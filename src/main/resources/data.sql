@@ -2,10 +2,10 @@
 
 -- Sample Users
 INSERT INTO users (email, password_hash, name_first, name_last) VALUES
-                                                           ('john.doe@university.edu', 'password1', 'John', 'Doe'),
-                                                           ('jane.smith@university.edu', 'password2', 'Jane', 'Smith'),
-                                                           ('admin@university.edu', 'adminPassword', 'System', 'Administrator'),
-                                                           ('mary.johnson@university.edu', 'password3', 'Mary', 'Johnson');
+                                                           ('john.doe@university.edu', '$2b$10$e..jxMoUWUwlbkm84bgIwuc9YMEIQM46zPzy/yc.Ib4ZxUMVoB6lm', 'John', 'Doe'),
+                                                           ('jane.smith@university.edu', '$2b$10$5.U1UcA1MeKVFEoJsPKUpe.Fk2jrQpGdQ3N3EZWDzWJtm7PMm8mZm', 'Jane', 'Smith'),
+                                                           ('admin@university.edu', '$2b$10$MxfejV3BEA8oKEgsFILmUeIyDnvucN7U0x6drSEC.LMAUWte98JTa', 'System', 'Administrator'),
+                                                           ('mary.johnson@university.edu', '$2b$10$P/.vn.eg6mPkOa64hZGElew2RmXywSp1tqO/r0GO0LBCxtmdXvta6', 'Mary', 'Johnson');
 
 --Sample Programs
 INSERT INTO program (program_name, institution) VALUES

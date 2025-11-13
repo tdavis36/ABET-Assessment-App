@@ -12,7 +12,7 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
-    // TODO: Update to use env variable
+    // TODO: Update to use env variable or project property
     @Value("""
             ${jwt.secret:VPEEoRJaj3TYWq1oNGWUeE9tEp6d4e7mAVhVNjVj39trxvGl0Pjyab2e56dMNW8k
             GYyqCxxKQ+C54Pp+v4riR6Otl2GZLVYrPnnnQlmO9dA2Ewy1KGK3ajKN5Bsb0m1B

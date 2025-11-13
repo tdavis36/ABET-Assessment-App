@@ -1,186 +1,172 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import api from "@/api"; // axios instance with interceptor
 
 export interface User {
-  id: number
-  username?: string
-  email: string
-  firstName?: string
-  lastName?: string
-  role: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT' | 'USER'
+  id: number;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: "ADMIN" | "INSTRUCTOR" | "STUDENT" | "USER";
+  currentProgramId?: number;
 }
 
-export const useUserStore = defineStore('user', () => {
-  // State
-  const user = ref<User | null>(null)
-  const authToken = ref<string | null>(null)
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
+export interface ProgramAccess {
+  programId: number;
+  isAdmin: boolean;
+  role: "ADMIN" | "INSTRUCTOR";
+}
 
-  // Getters
-  const isLoggedIn = computed(() => user.value !== null && authToken.value !== null)
-  const isAdmin = computed(() => user.value?.role === 'ADMIN')
-  const isInstructor = computed(() => user.value?.role === 'INSTRUCTOR')
-  const userId = computed(() => user.value?.id ?? 0)
+export const useUserStore = defineStore("user", () => {
+  // -------------------------
+  // STATE
+  // -------------------------
+  const user = ref<User | null>(null);
+  const authToken = ref<string | null>(null);
+  const programs = ref<ProgramAccess[]>([]);
+  const currentProgramId = ref<number | null>(null);
+
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
+
+  // -------------------------
+  // GETTERS
+  // -------------------------
+  const isLoggedIn = computed(() => !!authToken.value && !!user.value);
+  const isAdmin = computed(() => user.value?.role === "ADMIN");
+  const isInstructor = computed(() => user.value?.role === "INSTRUCTOR");
+
+  const userId = computed(() => user.value?.id ?? 0);
+
   const userFullName = computed(() => {
-    if (!user.value) return ''
+    if (!user.value) return "";
     if (user.value.firstName && user.value.lastName) {
-      return `${user.value.firstName} ${user.value.lastName}`
+      return `${user.value.firstName} ${user.value.lastName}`;
     }
-    return user.value.username || user.value.email
-  })
+    return user.value.email;
+  });
 
-  // Actions
+  // -------------------------
+  // ACTION: LOGIN
+  // -------------------------
   async function login(email: string, password: string) {
-    isLoading.value = true
-    error.value = null
+    error.value = null;
+    isLoading.value = true;
 
     try {
-      const response = await fetch('/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
+      const { data } = await api.post("/users/login", { email, password });
 
-      if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(errorData || 'Login failed')
-      }
+      user.value = data.user;
+      authToken.value = data.token;
+      programs.value = data.programs;
+      currentProgramId.value = data.user.currentProgramId;
 
-      const data = await response.json()
+      // Persist to storage
+      localStorage.setItem("authToken", data.token);
+      localStorage.setItem("currentUser", JSON.stringify(data.user));
+      localStorage.setItem("programs", JSON.stringify(data.programs));
+      localStorage.setItem(
+        "currentProgramId",
+        String(data.user.currentProgramId)
+      );
 
-      // Store the user and token
-      user.value = data.user
-      authToken.value = data.token
-
-      // Persist to localStorage
-      localStorage.setItem('authToken', data.token)
-      localStorage.setItem('currentUser', JSON.stringify(data.user))
-
-      return data
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Login failed'
-      throw err
+      return data;
+    } catch (err: any) {
+      error.value = err?.response?.data?.message || "Login failed";
+      throw err;
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
   }
 
+  // -------------------------
+  // ACTION: SIGNUP
+  // -------------------------
   async function signup(userData: {
-    firstName: string
-    lastName: string
-    email: string
-    password: string
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
   }) {
-    isLoading.value = true
-    error.value = null
+    isLoading.value = true;
+    error.value = null;
 
     try {
-      const response = await fetch('/api/users/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      })
+      const { data } = await api.post("/users/signup", userData);
 
-      if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(errorData || 'Signup failed')
-      }
+      user.value = data.user;
+      authToken.value = data.token;
+      currentProgramId.value = data.user.currentProgramId ?? null;
 
-      const data = await response.json()
+      localStorage.setItem("authToken", data.token);
+      localStorage.setItem("currentUser", JSON.stringify(data.user));
 
-      // Store the user and token
-      user.value = data.user
-      authToken.value = data.token
-
-      // Persist to localStorage
-      if (data.token) {
-        localStorage.setItem('authToken', data.token)
-        localStorage.setItem('currentUser', JSON.stringify(data.user))
-      }
-
-      return data
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Signup failed'
-      throw err
+      return data;
+    } catch (err: any) {
+      error.value = err?.response?.data?.message || "Signup failed";
+      throw err;
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
   }
 
-  function logout() {
-    user.value = null
-    authToken.value = null
-    error.value = null
+  // -------------------------
+  // ACTION: SWITCH PROGRAM
+  // -------------------------
+  async function switchProgram(programId: number) {
+    if (!authToken.value) return;
 
-    // Clear localStorage
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('currentUser')
+    try {
+      const { data } = await api.post("/users/switch-program", { programId });
+
+      authToken.value = data.token;
+      currentProgramId.value = data.programId;
+      user.value!.role = data.role;
+
+      // Persist changes
+      localStorage.setItem("authToken", data.token);
+      localStorage.setItem("currentProgramId", String(data.programId));
+      localStorage.setItem("currentUser", JSON.stringify(user.value));
+    } catch (err) {
+      console.error("Error switching program:", err);
+      throw err;
+    }
   }
 
+  // -------------------------
+  // LOAD FROM LOCALSTORAGE
+  // -------------------------
   function loadFromStorage() {
-    const token = localStorage.getItem('authToken')
-    const userData = localStorage.getItem('currentUser')
+    const token = localStorage.getItem("authToken");
+    const storedUser = localStorage.getItem("currentUser");
+    const storedPrograms = localStorage.getItem("programs");
+    const storedPid = localStorage.getItem("currentProgramId");
 
-    if (token && userData) {
-      try {
-        authToken.value = token
-        user.value = JSON.parse(userData)
-      } catch (err) {
-        console.error('Failed to parse user data from localStorage:', err)
-        logout()
-      }
-    }
+    if (token) authToken.value = token;
+    if (storedUser) user.value = JSON.parse(storedUser);
+    if (storedPrograms) programs.value = JSON.parse(storedPrograms);
+    if (storedPid) currentProgramId.value = Number(storedPid);
   }
 
-  async function refreshUser() {
-    if (!authToken.value) return
+  // -------------------------
+  // ACTION: LOGOUT
+  // -------------------------
+  function logout() {
+    user.value = null;
+    authToken.value = null;
+    programs.value = [];
+    currentProgramId.value = null;
+    error.value = null;
 
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const response = await fetch('/api/users/', {
-        headers: {
-          Authorization: `Bearer ${authToken.value}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to refresh user data')
-      }
-
-      const userData = await response.json()
-      user.value = userData
-
-      // Update localStorage
-      localStorage.setItem('currentUser', JSON.stringify(userData))
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to refresh user'
-      logout()
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  function setUser(userData: User) {
-    user.value = userData
-    localStorage.setItem('currentUser', JSON.stringify(userData))
-  }
-
-  function setToken(token: string) {
-    authToken.value = token
-    localStorage.setItem('authToken', token)
+    localStorage.clear();
   }
 
   return {
     // State
     user,
     authToken,
+    programs,
+    currentProgramId,
     isLoading,
     error,
 
@@ -195,9 +181,7 @@ export const useUserStore = defineStore('user', () => {
     login,
     signup,
     logout,
+    switchProgram,
     loadFromStorage,
-    refreshUser,
-    setUser,
-    setToken,
-  }
-})
+  };
+});
