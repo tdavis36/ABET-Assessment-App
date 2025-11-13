@@ -4,11 +4,9 @@ const props = defineProps({
   username: String,
 })
 
-
-const isAdmin = true
-
-const emits = defineEmits(["logout"])
+const emit = defineEmits(["logout"])
 </script>
+
 <template>
   <nav id="navbar">
     <div class="navbar-container">
@@ -21,9 +19,8 @@ const emits = defineEmits(["logout"])
         <div class="nav-divider"></div>
         <router-link to="/test-connection" class="nav_button">Test Connection</router-link>
 
-
-        <!-- Instructor dashboard link only -->
-        <template v-if="loggedIn && !isAdmin">
+        <!-- Instructor dashboard only -->
+        <template v-if="loggedIn">
           <div class="nav-divider"></div>
           <router-link to="/instructor-dashboard" class="nav_button">
             Instructor Dashboard
@@ -31,9 +28,9 @@ const emits = defineEmits(["logout"])
         </template>
       </div>
 
-      <!-- Log In / Log Out -->
       <div class="navbar-auth">
         <div class="nav-divider"></div>
+
         <router-link
           v-if="loggedIn"
           to="/"
@@ -57,9 +54,7 @@ const emits = defineEmits(["logout"])
       </div>
     </div>
   </nav>
-  <h1 hidden>This hidden element checks if the site loaded</h1>
 </template>
-
 
 <style scoped>
 #navbar {

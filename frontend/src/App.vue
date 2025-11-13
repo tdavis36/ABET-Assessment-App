@@ -6,7 +6,6 @@ import { useUserStore } from '@/stores/user-store.js'
 
 const userStore = useUserStore()
 
-// Load user from localStorage on app mount
 onMounted(() => {
   userStore.loadFromStorage()
 })
@@ -27,7 +26,7 @@ function handleLogout() {
     </header>
 
     <main>
-      <router-view :loggedIn="loggedIn" @login="handle_login"/>
+      <router-view />
     </main>
 
     <footer class="footer">
