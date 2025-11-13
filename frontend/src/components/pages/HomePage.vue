@@ -40,7 +40,6 @@ const { isLoggedIn, isAdmin, isInstructor } = storeToRefs(userStore);
       <template v-if="!isAdmin && !isInstructor">
         <h2>You are logged in, but your account has no dashboard privileges.</h2>
       </template>
-
     </div>
 
   </main>

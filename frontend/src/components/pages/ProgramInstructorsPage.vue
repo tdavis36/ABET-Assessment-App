@@ -130,7 +130,7 @@ async function addCourse() {
 // Init on load
 // --------------------------------------
 onMounted(async () => {
-  await userStore.loadFromStorage();
+  userStore.loadFromStorage();
   await loadProgramInstructors();
   await loadCourses();
 });

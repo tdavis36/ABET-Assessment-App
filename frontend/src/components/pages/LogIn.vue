@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { BaseButton, BaseCard, BaseInput } from "@/components/ui"
 import { useRouter } from 'vue-router'
-import { useToast } from "@/composables/useToast.ts"
+import { useToast } from "@/composables/use-toast.ts"
 import { useUserStore } from '@/stores/user-store.ts'
 
 const router = useRouter()
@@ -19,11 +19,11 @@ async function login() {
     toast.success("Successfully logged in!", "Welcome")
 
     if (userStore.isAdmin) {
-      router.push('/admin-dashboard')
+      await router.push('/admin-dashboard')
     } else if (userStore.isInstructor) {
-      router.push('/instructor-dashboard')
+      await router.push('/instructor-dashboard')
     } else {
-      router.push('/')
+      await router.push('/')
     }
   } catch (error) {
     toast.error(
@@ -74,3 +74,19 @@ async function login() {
     </BaseCard>
   </div>
 </template>
+
+<style scoped>
+.login {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-card {
+  width: 50vw;
+}
+
+.login-input {
+  margin-bottom: var(--spacing-md);
+}
+</style>

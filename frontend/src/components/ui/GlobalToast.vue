@@ -17,7 +17,7 @@
 
 <script lang="ts" setup>
 import BaseToast from './BaseToast.vue'
-import { useToast } from '@/composables/useToast'
+import { useToast } from '@/composables/use-toast.ts'
 
 const { toasts, removeToast } = useToast()
 </script>

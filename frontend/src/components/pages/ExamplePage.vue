@@ -149,7 +149,7 @@ import {
   BaseModal,
   BaseSpinner,
 } from '@/components/ui'
-import { useToast } from '@/composables/useToast'
+import { useToast } from '@/composables/use-toast.ts'
 
 const toast = useToast()
 
