@@ -1,11 +1,16 @@
 package com.abetappteam.abetapp;
 
+import com.abetappteam.abetapp.config.TestConfig;
+import com.abetappteam.abetapp.security.JwtUtil;
+import com.abetappteam.abetapp.util.TestEntityHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Base class for repository tests.
@@ -16,15 +21,29 @@ import org.springframework.test.context.ActiveProfiles;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
+@Import(TestConfig.class)
 public abstract class BaseRepositoryTest {
 
     @Autowired
     protected TestEntityManager entityManager;
 
+    @Autowired
+    protected TestEntityHelper entityHelper;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
     @BeforeEach
     public void baseSetUp() {
         // Common setup for all repository tests
         // Override this method in subclasses if needed
+    }
+
+    /**
+     * Utility method for convenience to flush and clear persistence context.
+     */
+    protected void flushAndClear() {
+        entityHelper.flushAndClear();
     }
 
     /**

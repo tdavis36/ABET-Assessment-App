@@ -1,5 +1,6 @@
 package com.abetappteam.abetapp.controller;
 
+import com.abetappteam.abetapp.BaseControllerTest;
 import com.abetappteam.abetapp.config.TestSecurityConfig;
 import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.entity.Course;
@@ -7,16 +8,14 @@ import com.abetappteam.abetapp.service.CourseService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -32,8 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(CourseController.class)
 @Import(TestSecurityConfig.class)
-@Execution(ExecutionMode.SAME_THREAD)
-class CourseControllerUnitTest {
+class CourseControllerUnitTest extends BaseControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -41,7 +39,7 @@ class CourseControllerUnitTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private CourseService courseService;
 
     private Course testCourse;
@@ -328,4 +326,61 @@ class CourseControllerUnitTest {
         verify(courseService, never()).findById(0L);
         verify(courseService, never()).findById(-1L);
     }
+
+    @Test
+    void shouldAssignInstructor() throws Exception {
+        mockMvc.perform(post("/api/courses/1/instructors/2"))
+                .andExpect(status().isOk());
+
+        verify(courseService).assignInstructor(1L, 2L);
+    }
+
+    @Test
+    void shouldRemoveInstructor() throws Exception {
+        mockMvc.perform(delete("/api/courses/1/instructors/2"))
+                .andExpect(status().isOk());
+
+        verify(courseService).removeInstructor(1L, 2L);
+    }
+
+    @Test
+    void shouldGetInstructors() throws Exception {
+        when(courseService.getInstructorIds(1L)).thenReturn(List.of(5L, 6L));
+
+        mockMvc.perform(get("/api/courses/1/instructors"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0]").value(5))
+                .andExpect(jsonPath("$[1]").value(6));
+
+        verify(courseService).getInstructorIds(1L);
+    }
+
+    @Test
+    void shouldAssignIndicator() throws Exception {
+        mockMvc.perform(post("/api/courses/1/indicators/3"))
+                .andExpect(status().isOk());
+
+        verify(courseService).assignIndicator(1L, 3L);
+    }
+
+    @Test
+    void shouldRemoveIndicator() throws Exception {
+        mockMvc.perform(delete("/api/courses/1/indicators/3"))
+                .andExpect(status().isOk());
+
+        verify(courseService).removeIndicator(1L, 3L);
+    }
+
+    @Test
+    void shouldGetIndicators() throws Exception {
+        when(courseService.getIndicatorIds(1L)).thenReturn(List.of(7L, 8L));
+
+        mockMvc.perform(get("/api/courses/1/indicators"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0]").value(7))
+                .andExpect(jsonPath("$[1]").value(8));
+
+        verify(courseService).getIndicatorIds(1L);
+    }
+
 }
