@@ -13,6 +13,8 @@ const error_message = ref('')
 
 const router = useRouter()
 
+const emits = defineEmits(["login"])
+
 async function signup() {
   if (password_input.value !== confirm_password_input.value) {
     display_error.value = true
@@ -22,14 +24,14 @@ async function signup() {
 
   try {
     // Send signup data to backend
-    const response = await fetch('/api/users/signup', {
+    const response = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        first_name: firstname_input.value,
-        last_name: lastname_input.value,
+        firstName: firstname_input.value,
+        lastName: lastname_input.value,
         email: email_input.value,
-        password: password_input.value,
+        passwordHash: password_input.value,
       }),
     })
 
@@ -46,6 +48,7 @@ async function signup() {
       localStorage.setItem('authToken', data.token)
     }
 
+    emits("login", data.data.id)
     router.push('/')
   } catch (error) {
     display_error.value = true

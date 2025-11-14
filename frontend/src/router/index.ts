@@ -10,6 +10,8 @@ import ProgramInstructorsPage from '@/components/pages/ProgramInstructorsPage.vu
 import LogInPage from '@/components/pages/LogIn.vue'
 import SignUpPage from '@/components/pages/SignUp.vue'
 import AdminDashboard from '@/components/AdminDashboard.vue'
+import ExamplePage from "@/components/pages/ExamplePage.vue";
+import AboutPage from '@/components/pages/AboutPage.vue'
 
 const routes = [
    {
@@ -27,22 +29,27 @@ const routes = [
     component: HomePage,
   },
   {
+    path: '/about',
+    name: 'About',
+    component: AboutPage
+  },
+  {
     path: '/:program_id/summary/',
     name: 'Summary',
     component: SummaryPage,
   },
   {
-    path: '/:program_id/fcar/:measure_id',
+    path: '/fcar/:measure_id',
     name: 'FCAR',
     component: FCARPage,
   },
   {
-    path: '/:program_id/course/:course_id',
+    path: '/course/:course_id',
     name: 'Course',
     component: CourseViewPage,
   },
   {
-    path: '/:program_id/instructor/:instructor_id',
+    path: '/instructor/:instructor_id',
     name: 'Instructor',
     component: InstructorViewPage,
   },
@@ -71,6 +78,11 @@ const routes = [
     name: 'Admin Dashboard',
     component: AdminDashboard,
   },
+  {
+    path: '/examples',
+    name: 'Examples',
+    component: ExamplePage
+  }
 ]
 
 

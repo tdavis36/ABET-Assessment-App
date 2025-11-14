@@ -1,49 +1,61 @@
+<script setup>
+import { computed, onMounted } from "vue";
+import { useUserStore } from "@/stores/user-store.ts";
+
+import ProgramInstructorsPage from "@/components/pages/ProgramInstructorsPage.vue";
+import InstructorViewPage from "@/components/pages/InstructorViewPage.vue";
+
+const userStore = useUserStore();
+
+// Ensure stored data exists before rendering
+onMounted(() => {
+  userStore.loadFromStorage();
+});
+
+// Only render dashboard when programId is ready
+const programId = computed(() => userStore.currentProgramId);
+</script>
+
 <template>
-  <section class="combined-dashboard">
+  <!-- Wait for programId to be available -->
+  <section v-if="programId" class="combined-dashboard">
+
+    <!-- Admin Section -->
     <header class="dashboard-header">
       <h1>Administrator Dashboard</h1>
     </header>
- 
-    <ProgramInstructorsPage :programId="programId" />
+
+    <ProgramInstructorsPage/>
 
     <hr class="divider" />
 
-    <InstructorViewPage :programId="programId" />
+    <!-- Instructor Section -->
+    <header class="dashboard-header">
+      <h1>Instructor Dashboard</h1>
+    </header>
 
-  
+    <InstructorViewPage/>
+
+    <!-- Footer -->
     <footer class="footer">
       <hr />
       <p>© 2025 ABET Assessment App</p>
       <p>Definitions adapted from ABET documentation.</p>
     </footer>
+
+  </section>
+
+  <!-- Loading state before userStore initializes -->
+  <section v-else class="loading-screen">
+    <p>Loading your dashboard...</p>
   </section>
 </template>
-
-<script>
-import ProgramInstructorsPage from "@/components/pages/ProgramInstructorsPage.vue";
-import InstructorViewPage from "@/components/pages/InstructorViewPage.vue";
-
-export default {
-  name: "AdminDashboard",
-  components: {
-    ProgramInstructorsPage,
-    InstructorViewPage,
-  },
-  props: {
-    programId: {
-      type: Number,
-      default: 1, // change to ID
-    },
-  },
-};
-</script>
 
 <style scoped>
 .combined-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  padding: 2rem;
+  margin: 2rem;
   font-family:
     system-ui,
     -apple-system,
@@ -52,27 +64,35 @@ export default {
     Helvetica,
     Arial,
     sans-serif;
-  color: #222;
-  background-color: #fff;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
 }
 
 .divider {
   border: none;
-  border-top: 2px solid #ccc;
-  margin: 1.5rem 0;
+  border-top: 2px solid var(--color-border-dark);
 }
 
 .footer {
   text-align: center;
-  color: #555;
-  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
   margin-top: 3rem;
 }
 
 .footer hr {
   border: none;
-  border-top: 1px solid #ccc;
+  border-top: 1px solid var(--color-border-light);
   margin-bottom: 1rem;
   width: 100%;
+}
+
+.loading-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-lg);
 }
 </style>

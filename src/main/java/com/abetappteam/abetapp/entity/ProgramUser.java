@@ -14,7 +14,7 @@ public class ProgramUser {
     private Long id;
 
     @NotNull(message = "Admin Status is required")
-    @Column(name = "isAdmin", nullable = false)
+    @Column(name = "isadmin", nullable = false)
     private Boolean isAdmin;
 
     @NotNull(message = "Program ID is required")

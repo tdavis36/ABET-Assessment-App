@@ -31,7 +31,7 @@ public class CourseInstructor {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    // You can add ManyToOne relationships if needed
+    // ManyToOne relationships can be added if needed
     // @ManyToOne(fetch = FetchType.LAZY)
     // @JoinColumn(name = "course_id", insertable = false, updatable = false)
     // private Course course;

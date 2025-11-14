@@ -100,6 +100,29 @@ public class Users extends BaseEntity {
         this.active = active;
     }
 
+    @Transient
+    private Long currentProgramId;
+
+    @Transient
+    private String currentRole; // "ADMIN" or "INSTRUCTOR" for current program
+
+    // Getters and setters
+    public Long getCurrentProgramId() {
+        return currentProgramId;
+    }
+
+    public void setCurrentProgramId(Long currentProgramId) {
+        this.currentProgramId = currentProgramId;
+    }
+
+    public String getCurrentRole() {
+        return currentRole;
+    }
+
+    public void setCurrentRole(String currentRole) {
+        this.currentRole = currentRole;
+    }
+
     public String getFullName(){
         if(title == null){
             return firstName + " " + lastName;

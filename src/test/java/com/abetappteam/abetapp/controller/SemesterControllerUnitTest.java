@@ -12,12 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Execution(ExecutionMode.SAME_THREAD)
 class SemesterControllerUnitTest extends BaseControllerTest {
 
-    @MockBean
+    @MockitoBean
     private SemesterService semesterService;
 
     private Semester testSemester;
@@ -308,5 +308,116 @@ class SemesterControllerUnitTest extends BaseControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(semesterService, never()).findById(0L);
+    }
+
+    @Test
+    void shouldGetDistinctAcademicYears() throws Exception {
+        when(semesterService.getDistinctAcademicYearsByProgram(1L))
+                .thenReturn(List.of(2024, 2025));
+
+        mockMvc.perform(get("/api/semesters/program/1/academic-years"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]").value(2024))
+                .andExpect(jsonPath("$.data[1]").value(2025));
+
+        verify(semesterService).getDistinctAcademicYearsByProgram(1L);
+    }
+
+    @Test
+    void shouldCheckIfSemesterHasCourses() throws Exception {
+        when(semesterService.hasCourses(1L)).thenReturn(true);
+
+        mockMvc.perform(get("/api/semesters/1/has-courses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(true));
+
+        verify(semesterService).hasCourses(1L);
+    }
+
+    @Test
+    void shouldCountByProgramAndStatus() throws Exception {
+        when(semesterService.countByProgramAndStatus(1L, SemesterStatus.ACTIVE))
+                .thenReturn(3L);
+
+        mockMvc.perform(get("/api/semesters/program/1/status/ACTIVE/count"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(3));
+
+        verify(semesterService).countByProgramAndStatus(1L, SemesterStatus.ACTIVE);
+    }
+
+    @Test
+    void shouldUpdateAllSemesterStatuses() throws Exception {
+        mockMvc.perform(post("/api/semesters/update-statuses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message")
+                        .value("All semester statuses updated successfully"));
+
+        verify(semesterService).updateAllSemesterStatuses();
+    }
+
+    @Test
+    void shouldClearCurrentSemesterFlag() throws Exception {
+        mockMvc.perform(delete("/api/semesters/program/1/clear-current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message")
+                        .value("Current semester flag cleared successfully"));
+
+        verify(semesterService).clearCurrentSemesterFlag(1L);
+    }
+
+    @Test
+    void shouldGetSemestersByAcademicYear() throws Exception {
+        var semesters = List.of(testSemester);
+        var page = new PageImpl<>(semesters, PageRequest.of(0, 20), 1);
+
+        when(semesterService.getSemestersByAcademicYear(eq(2025), any(PageRequest.class)))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/api/semesters/academic-year/2025"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1));
+
+        verify(semesterService).getSemestersByAcademicYear(eq(2025), any(PageRequest.class));
+    }
+
+    @Test
+    void shouldGetSemestersByStatus() throws Exception {
+        var semesters = List.of(testSemester);
+        var page = new PageImpl<>(semesters, PageRequest.of(0, 20), 1);
+
+        when(semesterService.getSemestersByStatus(eq(SemesterStatus.UPCOMING), any(PageRequest.class)))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/api/semesters/status/UPCOMING"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1));
+
+        verify(semesterService).getSemestersByStatus(eq(SemesterStatus.UPCOMING), any(PageRequest.class));
+    }
+
+    @Test
+    void shouldGetActiveSemestersOnDate() throws Exception {
+        var semesters = List.of(testSemester);
+        when(semesterService.getActiveSemestersOnDate(LocalDate.parse("2025-09-01")))
+                .thenReturn(semesters);
+
+        mockMvc.perform(get("/api/semesters/active-on-date")
+                        .param("date", "2025-09-01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1));
+
+        verify(semesterService).getActiveSemestersOnDate(LocalDate.parse("2025-09-01"));
+    }
+
+    @Test
+    void shouldGetCurrentSemesters() throws Exception {
+        when(semesterService.getCurrentSemesters()).thenReturn(List.of(testSemester));
+
+        mockMvc.perform(get("/api/semesters/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(1));
+
+        verify(semesterService).getCurrentSemesters();
     }
 }

@@ -23,7 +23,7 @@ public class ProgramUserTest extends BaseRepositoryTest {
 
     @BeforeEach
     void setUp(){
-        testPUser = TestDataBuilder.createProgramUserWithId(1l, false, 1l, 1l, true);
+        testPUser = TestDataBuilder.createProgramUser(false, 1L, 1L, true);
     }
 
     @Test

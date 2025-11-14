@@ -1,105 +1,92 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref } from 'vue'
+import { BaseButton, BaseCard, BaseInput } from "@/components/ui"
+import { useRouter } from 'vue-router'
+import { useToast } from "@/composables/use-toast.ts"
+import { useUserStore } from '@/stores/user-store.ts'
 
-const email_input = ref('');
-const password_input = ref('');
+const router = useRouter()
+const toast = useToast()
+const userStore = useUserStore()
 
-const display_error = ref(false);
-const error_message = ref('');
+const email_input = ref('')
+const password_input = ref('')
 
 async function login() {
   try {
-    // POST credentials to your backend
-    const response = await fetch('/api/users/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: email_input.value,
-        password: password_input.value
-      })
-    });
+    await userStore.login(email_input.value, password_input.value)
 
-    if (!response.ok) {
-      // show error if backend returns 4xx/5xx
-      const errText = await response.text();
-      display_error.value = true;
-      error_message.value = errText || "Email or password is incorrect.";
-      return;
+    toast.success("Successfully logged in!", "Welcome")
+
+    if (userStore.isAdmin) {
+      await router.push('/admin-dashboard')
+    } else if (userStore.isInstructor) {
+      await router.push('/instructor-dashboard')
+    } else {
+      await router.push('/')
     }
-
-    // Parse success response
-    const data = await response.json();
-    console.log('Login success:', data);
-
-    // Example: save token and redirect
-    if (data.token) {
-      localStorage.setItem('authToken', data.token);
-    }
-
-    window.location.href = '/dashboard'; // change as needed
-
   } catch (error) {
-    console.error('Login error:', error);
-    display_error.value = true;
-    error_message.value = "Unable to reach server.";
+    toast.error(
+      userStore.error || "Email or password is incorrect.",
+      "Login Failed"
+    )
   }
 }
 </script>
 
 <template>
-    <div id="login_component">
-        <h3>Log In</h3>
-        <div class="input_div">
-            <input id="email" v-model="email_input" placeholder="Email"></input>
-        </div>
-        <div class="input_div">
-            <input id="password" v-model="password_input" placeholder="Password" type="password"></input>
-        </div>
-        <div id="submit_div"><button id="submit" @click="login">Submit</button></div>
-        <p>Don't have an account? Sign up <router-link to="/signup">here</router-link>.</p>
-    </div>
+  <div class="login">
+    <BaseCard class="login-card" title="Log In">
+      <div>
+        <BaseInput
+          id="email"
+          class="login-input"
+          v-model="email_input"
+          placeholder="Email"
+          :disabled="userStore.isLoading"
+        />
 
-    <div v-if="display_error" id="error">
-        <p>Error: {{ error_message }}</p>
-    </div>
+        <BaseInput
+          id="password"
+          class="login-input"
+          v-model="password_input"
+          placeholder="Password"
+          type="password"
+          :disabled="userStore.isLoading"
+          @keyup.enter="login"
+        />
+
+        <BaseButton
+          id="submit"
+          class="submit-button"
+          @click="login"
+          :loading="userStore.isLoading"
+          :disabled="!email_input || !password_input || userStore.isLoading"
+        >
+          Submit
+        </BaseButton>
+      </div>
+
+      <p class="tooltip">
+        Don't have an account? Sign up
+        <router-link to="/signup">here</router-link>.
+      </p>
+    </BaseCard>
+  </div>
 </template>
 
-<style>
-    #login_component{
-        padding: 1rem;
-        background-color: #e2e2e2;
-        width: 30%;
-        border: 1px solid black;
-        padding: 2rem;
-        margin: auto;
-        text-align: left;
-    }
+<style scoped>
+.login {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    .input_div{
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-    }
+.login-card {
+  width: 50vw;
+}
 
-    #submit_div{
-        margin: auto;
-    }
-
-    h3{
-        margin-top: 1rem;
-    }
-
-    #error{
-        background-color: rgb(255, 168, 168);
-        border: 1px solid red;
-        width: 30%;
-        margin-left: auto;
-        margin-right: auto;
-        margin-top: 0.5rem;
-    }
-
-    #error p{
-        color: rgb(204, 0, 0);
-    }
+.login-input {
+  margin-bottom: var(--spacing-md);
+}
 </style>
