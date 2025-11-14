@@ -1,6 +1,7 @@
 <script lang="ts" setup>
     import { ref } from 'vue';
     import { useRoute } from 'vue-router';
+    import api from '@/api';
     import InstructorListing from '@/components/InstructorListing.vue';
     import IndicatorListing from '@/components/IndicatorListing.vue';
 
@@ -19,7 +20,6 @@
     });
     const semester_name = ref('');
     const instructor_ids = ref([]);
-    const instructor_names = ref(['']);
     const indicator_ids = ref([])
 
     //--------TEST DATA--------
@@ -44,8 +44,7 @@
 
         //Fetch Course data
         try {
-            const response = await fetch(`/api/courses/${course_id.value}`);
-            const data = await response.json(); // Await the JSON parsing
+            const { data } = await api.get(`/courses/${course_id.value}`);
             course_obj.value = {
                 id: data.data.id,
                 course_code: data.data.courseCode,
@@ -60,20 +59,17 @@
         }
 
         //Fetch Semester data
-        /*
         try {
-            const response = await fetch(`/api/semesters/${course_obj.value.semester_id}`);
-            const data = await response.json(); // Await the JSON parsing
+            const { data } = await api.get(`/semesters/${course_obj.value.semester_id}`);
             console.log('Fetched JSON data:', data);
             semester_name.value = `${data.data.season} ${data.data.semesterYear}`
         } catch (error) {
             console.error('Error fetching or parsing course data:', error);
-        }*/
+        }
 
         //Fetch Instructor IDs
         try {
-            const response = await fetch(`/api/courses/${course_id.value}/instructors`);
-            const data = await response.json(); // Await the JSON parsing
+            const { data } = await api.get(`/courses/${course_id.value}/instructors`);
             instructor_ids.value = data
         } catch (error) {
             console.error('Error fetching or parsing course data:', error);
@@ -81,8 +77,7 @@
         
         //Fetch Indicator IDs
         try {
-            const response = await fetch(`/api/courses/${course_id.value}/indicators`);
-            const data = await response.json(); // Await the JSON parsing
+            const { data } = await api.get(`/courses/${course_id.value}/indicators`);
             indicator_ids.value = data
         } catch (error) {
             console.error('Error fetching or parsing course data:', error);
@@ -135,14 +130,14 @@
     }
 
     #course_code{
-        color: red;
+        color: green;
         font-weight: bold;
         margin-right: 1rem;
     }
 
     #description{
         font-style: italic;
-        color: rgb(85, 85, 85);
+        color: rgb(196, 196, 196);
         margin-bottom: 1.5rem;
     }
 

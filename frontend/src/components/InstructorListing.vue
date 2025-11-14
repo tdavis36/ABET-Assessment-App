@@ -1,5 +1,7 @@
 <script lang="ts" setup>
     import { ref } from 'vue';
+    import api from '@/api'
+
     const props = defineProps({iid: Number})
 
     const name = ref('')
@@ -8,8 +10,7 @@
     async function initialize(){
         //Fetch instructor name
         try {
-            const response = await fetch(`/api/users/${props.iid}`);
-            const data = await response.json(); // Await the JSON parsing
+            const { data } = await api.get(`/users/${props.iid}`);
             name.value = data.data.fullName
         } catch (error) {
             console.error('Error fetching or parsing course data:', error);
@@ -28,7 +29,7 @@
 
 <style>
     #instructor-listing{
-        background-color: rgb(253, 101, 101);
+        background-color: rgb(0, 173, 40);
         color: white;
         padding-left: 1rem;
         padding-right: 1rem;
@@ -40,6 +41,6 @@
     }
 
     #instructor-listing:hover{
-        background-color: rgb(252, 35, 35);
+        background-color: rgb(0, 220, 7);
     }
 </style>
