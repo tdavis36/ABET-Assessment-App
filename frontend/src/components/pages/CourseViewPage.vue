@@ -7,7 +7,7 @@
 
     const route = useRoute()
 
-    
+    /*
     const course_id = ref(NaN);
     const course_obj = ref({
         id: NaN,
@@ -21,9 +21,10 @@
     const semester_name = ref('');
     const instructor_ids = ref([]);
     const indicator_ids = ref([])
+    */
 
     //--------TEST DATA--------
-    /*
+    
     const course_id = ref(1);
     const course_obj = ref({
         id: 1,
@@ -36,7 +37,7 @@
     });
     const semester_name = ref('Fall 2025');
     const instructor_ids = ref([1, 2]);
-    const indicator_ids = ref([1,2])*/
+    const indicator_ids = ref([1,2])
     //--------------------------
     
     async function initialize(){
@@ -84,7 +85,7 @@
         }
     }
 
-    initialize();
+    //initialize();
     
 </script>
 
@@ -102,7 +103,10 @@
         </div>
 
         <div id="performance-indicators">
-            <IndicatorListing v-for="piid in indicator_ids" :piid="piid"></IndicatorListing>
+            <div id="indicator-container" v-for="piid in indicator_ids">
+                <IndicatorListing :piid="piid"></IndicatorListing>
+                <hr></hr>
+            </div>
         </div>
     </div>
 </template>
@@ -126,7 +130,7 @@
     #course_header{
         margin-top: 2rem;
         margin-bottom: 0.5rem;
-        font-size: 32px;
+        font-size: 42px;
     }
 
     #course_code{
@@ -143,5 +147,9 @@
 
     #performance-indicators{
         margin: 2rem;
+    }
+
+    #indicator-container{
+        margin-bottom: 1rem;
     }
 </style>
