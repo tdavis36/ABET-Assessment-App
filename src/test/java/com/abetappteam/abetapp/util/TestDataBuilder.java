@@ -405,12 +405,11 @@ public class TestDataBuilder {
      * Create a current semester
      */
     public static Semester createCurrentSemester() {
+        LocalDate startDate = LocalDate.of(2024, 6, 1);
+        LocalDate endDate = LocalDate.of(2024, 7, 31);
+
         Semester semester = createSemester("Spring 2024", "SPRING-2024",
-                LocalDate.now().minusDays(30),
-                LocalDate.now().plusDays(30),
-                2024,
-                Semester.SemesterType.SPRING,
-                1L);
+                startDate, endDate, 2024, Semester.SemesterType.SPRING, 1L);
         semester.setIsCurrent(true);
         semester.setStatus(Semester.SemesterStatus.ACTIVE);
         return semester;

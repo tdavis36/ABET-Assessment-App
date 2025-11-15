@@ -3,8 +3,14 @@ package com.abetappteam.abetapp.repository;
 import com.abetappteam.abetapp.BaseRepositoryTest;
 import com.abetappteam.abetapp.entity.Semester;
 import com.abetappteam.abetapp.util.TestDataBuilder;
+
+import jakarta.transaction.Transactional;
+
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
@@ -16,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Repository tests for SemesterRepository
  */
+@Transactional
+@Execution(ExecutionMode.SAME_THREAD)
 class SemesterRepositoryTest extends BaseRepositoryTest {
 
     @Autowired
@@ -25,15 +33,24 @@ class SemesterRepositoryTest extends BaseRepositoryTest {
 
     @BeforeEach
     void setUp() {
+        semesterRepository.deleteAll();
+        flush();
+        clearContext();
         testSemester = TestDataBuilder.createSemester("Fall 2024", "FALL-2024",
                 LocalDate.of(2024, 9, 1), LocalDate.of(2024, 12, 15),
                 2024, Semester.SemesterType.FALL, 1L);
+    }
+
+    @AfterEach
+    void tearDown() {
+        semesterRepository.deleteAll();
     }
 
     @Test
     void shouldSaveAndRetrieveSemester() {
         // Given
         Semester saved = semesterRepository.save(testSemester);
+        flush();
         clearContext();
 
         // When
@@ -50,6 +67,8 @@ class SemesterRepositoryTest extends BaseRepositoryTest {
     void shouldFindByCodeIgnoreCase() {
         // Given
         semesterRepository.save(testSemester);
+        flush();
+        clearContext();
 
         // When
         Optional<Semester> found = semesterRepository.findByCodeIgnoreCase("fall-2024");
@@ -66,6 +85,8 @@ class SemesterRepositoryTest extends BaseRepositoryTest {
         semesterRepository.save(TestDataBuilder.createSemester("Spring 2024", "SPRING-2024",
                 LocalDate.of(2024, 1, 15), LocalDate.of(2024, 5, 15),
                 2024, Semester.SemesterType.SPRING, 1L));
+        flush();
+        clearContext();
 
         // When
         List<Semester> programSemesters = semesterRepository.findByProgramId(1L);
@@ -82,6 +103,8 @@ class SemesterRepositoryTest extends BaseRepositoryTest {
         semesterRepository.save(TestDataBuilder.createSemester("Spring 2024", "SPRING-2024",
                 LocalDate.of(2024, 1, 15), LocalDate.of(2024, 5, 15),
                 2024, Semester.SemesterType.SPRING, 1L));
+        flush();
+        clearContext();
 
         // When
         List<Semester> yearSemesters = semesterRepository.findByAcademicYear(2024);
@@ -94,18 +117,24 @@ class SemesterRepositoryTest extends BaseRepositoryTest {
     @Test
     void shouldFindByStatus() {
         // Given
+        LocalDate fixedDate = LocalDate.of(2024, 6, 15);
+
         Semester activeSemester = TestDataBuilder.createSemesterWithStatus(
-                "Active Semester", "ACTIVE-2024", LocalDate.now().minusDays(10),
-                LocalDate.now().plusDays(50), 2024, Semester.SemesterType.SPRING,
-                1L, Semester.SemesterStatus.ACTIVE);
+                "Active Semester", "ACTIVE-2024",
+                fixedDate.minusDays(10), fixedDate.plusDays(50),
+                2024, Semester.SemesterType.SPRING, 1L,
+                Semester.SemesterStatus.ACTIVE);
 
         Semester upcomingSemester = TestDataBuilder.createSemesterWithStatus(
-                "Upcoming Semester", "UPCOMING-2024", LocalDate.now().plusDays(10),
-                LocalDate.now().plusDays(100), 2024, Semester.SemesterType.FALL,
-                1L, Semester.SemesterStatus.UPCOMING);
+                "Upcoming Semester", "UPCOMING-2024",
+                fixedDate.plusDays(10), fixedDate.plusDays(100),
+                2024, Semester.SemesterType.FALL, 1L,
+                Semester.SemesterStatus.UPCOMING);
 
         semesterRepository.save(activeSemester);
         semesterRepository.save(upcomingSemester);
+        flush();
+        clearContext();
 
         // When
         List<Semester> activeSemesters = semesterRepository.findByStatus(Semester.SemesterStatus.ACTIVE);
@@ -121,6 +150,8 @@ class SemesterRepositoryTest extends BaseRepositoryTest {
         Semester currentSemester = TestDataBuilder.createCurrentSemester();
         semesterRepository.save(currentSemester);
         semesterRepository.save(testSemester); // Non-current semester
+        flush();
+        clearContext();
 
         // When
         List<Semester> currentSemesters = semesterRepository.findByIsCurrentTrue();
@@ -137,6 +168,8 @@ class SemesterRepositoryTest extends BaseRepositoryTest {
         semesterRepository.save(TestDataBuilder.createSemester("Fall 2023", "FALL-2023",
                 LocalDate.of(2023, 9, 1), LocalDate.of(2023, 12, 15),
                 2023, Semester.SemesterType.FALL, 1L));
+        flush();
+        clearContext();
 
         // When
         List<Semester> fallSemesters = semesterRepository.findByType(Semester.SemesterType.FALL);
@@ -150,6 +183,8 @@ class SemesterRepositoryTest extends BaseRepositoryTest {
     void shouldCheckExistsByCodeIgnoreCase() {
         // Given
         semesterRepository.save(testSemester);
+        flush();
+        clearContext();
 
         // When/Then
         assertThat(semesterRepository.existsByCodeIgnoreCase("fall-2024")).isTrue();
@@ -167,8 +202,6 @@ class SemesterRepositoryTest extends BaseRepositoryTest {
 
         // When
         semesterRepository.deleteById(id);
-        flush();
-        clearContext();
 
         // Then
         assertThat(semesterRepository.findById(id)).isEmpty();
@@ -178,6 +211,7 @@ class SemesterRepositoryTest extends BaseRepositoryTest {
     void shouldUpdateSemester() {
         // Given
         Semester saved = semesterRepository.save(testSemester);
+        flush();
         clearContext();
 
         // When
