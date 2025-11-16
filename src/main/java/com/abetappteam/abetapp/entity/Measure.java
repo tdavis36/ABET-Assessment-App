@@ -5,8 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "measure")
 public class Measure extends BaseEntity {
 
     @JoinColumn(name = "courseindicator_id")
@@ -153,7 +155,7 @@ public class Measure extends BaseEntity {
     
     @Override
     public String toString(){
-        return "Program{" +
+        return "Measure{" +
                 "id=" + getId() +
                 ", courseIndicatorId=" + courseIndicatorId +
                 ", description='" + description + '\'' +

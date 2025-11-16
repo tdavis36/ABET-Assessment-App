@@ -11,7 +11,7 @@ import java.time.LocalDate;
  * Semesters organize courses and assessments by academic period
  */
 @Entity
-@Table(name = "semesters")
+@Table(name = "semester")
 public class Semester extends BaseEntity {
 
     @NotBlank(message = "Semester name is required")
