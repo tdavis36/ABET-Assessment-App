@@ -1,64 +1,38 @@
-package com.abetappteam.abetapp.entity;
+package com.abetappteam.abetapp.dto;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
 
-@Entity
-@Table(name = "measure")
-public class Measure extends BaseEntity {
+public class MeasureDTO {
+    private Long id;
 
-    @JoinColumn(name = "courseindicator_id")
     private Long courseIndicatorId;
 
-    //Every character length of 3000 should be reviewed prior to production
     @NotBlank(message = "Description of Measure is required")
-    @Column(name = "measure_description", nullable = false, length = 3000)
     private String description;
 
-    @Column(name = "observation", nullable = true, length = 3000)
     private String observation;
 
-    @Column(name = "recommended_action", nullable = true, length = 3000)
     private String recAction;
 
-    @Column(name = "fcar", nullable = true, length = 3000)
     private String fcar;
 
-    @Column(name = "met", nullable = true)
     private Integer met;
 
-    @Column(name = "exceeded", nullable = true)
     private Integer exceeded;
 
-    @Column(name = "below", nullable = true)
     private Integer below;
 
-    /*
-     * Each measure has one of the following statuses:
-     * "InProgress": The measure hasn't been started or submitted for review yet
-     * "Submitted": The measure is awaiting approval from an administrator
-     * "InReview": The measure has been rejected at least once, and has not yet been submitted again
-     * "Complete": The measure has been approved 
-     */
-    @NotBlank(message = "Measure Status is required")
-    @Size(min = 8, max = 10, message = "Measure must have a status of length 8, 9, or 10")
-    @Column(name = "mStatus", nullable = false, length = 10)
     private String status;
 
-    @Column(name="is_active", nullable = false)
     private Boolean active;
 
     //Constructors
-    public Measure(){
-        super();
+    public MeasureDTO(){
     }
 
-    public Measure(Long courseIndicatorId, String description, String observation, String recAction, String fcar, 
+    public MeasureDTO(Long id, Long courseIndicatorId, String description, String observation, String recAction, String fcar, 
     Integer met, Integer exceeded, Integer below, String status, Boolean active){
+        this.id = id;
         this.courseIndicatorId = courseIndicatorId;
         this.description = description;
         this.observation = observation;
@@ -71,8 +45,15 @@ public class Measure extends BaseEntity {
         this.active = active;
     }
 
+    //Getters/setters
+    public Long getId(){
+        return this.id;
+    }
 
-    //Getters and Setters
+    public void setId(Long id){
+        this.id = id;
+    }
+
     public Long getCourseIndicatorId() {
         return courseIndicatorId;
     }
@@ -152,23 +133,5 @@ public class Measure extends BaseEntity {
     public void setActive(Boolean active){
         this.active = active;
     }
-    
-    @Override
-    public String toString(){
-        return "Measure{" +
-                "id=" + getId() +
-                ", courseIndicatorId=" + courseIndicatorId +
-                ", description='" + description + '\'' +
-                ", observation='" + observation + '\'' +
-                ", recommended action='" + recAction + '\'' +
-                ", fcar='" + fcar + '\'' +
-                ", met='" + met + '\'' +
-                ", exceeded='" + exceeded + '\'' +
-                ", below='" + below + '\'' +
-                ", status='" + status + '\'' +
-                ", active=" + active +
-                ", createdAt=" + getCreatedAt() +
-                ", updatedAt=" + getUpdatedAt() +
-                '}';
-    }
+
 }

@@ -5,7 +5,10 @@ import com.abetappteam.abetapp.entity.ProgramUser;
 import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.dto.ProgramDTO;
 import com.abetappteam.abetapp.entity.Course;
+import com.abetappteam.abetapp.entity.CourseIndicator;
+import com.abetappteam.abetapp.entity.Measure;
 import com.abetappteam.abetapp.dto.CourseDTO;
+import com.abetappteam.abetapp.dto.MeasureDTO;
 import com.abetappteam.abetapp.dto.UsersDTO;
 import com.abetappteam.abetapp.entity.Semester;
 import com.abetappteam.abetapp.dto.SemesterDTO;
@@ -413,5 +416,98 @@ public class TestDataBuilder {
         semester.setIsCurrent(true);
         semester.setStatus(Semester.SemesterStatus.ACTIVE);
         return semester;
+    }
+
+    //MEASURE TEST DATA
+
+    //Create Measure
+    public static Measure createMeasure(){
+        return createMeasure(1l, "Example Description", "Example Observation", "Example Recommended Action", "Example Fcar", 
+        3, 1, 2, "InProgress", true);
+    }
+
+    //Create Custom Measure
+    public static Measure createMeasure(Long courseIndicatorId, String description, String observation, String recAction, String fcar, 
+    Integer met, Integer exceeded, Integer below, String status, Boolean active) {
+        Measure measure = new Measure();
+        measure.setCourseIndicatorId(courseIndicatorId);
+        measure.setDescription(description);
+        measure.setObservation(observation);
+        measure.setRecommendedAction(recAction);
+        measure.setFCar(fcar);
+        measure.setStudentsMet(met);
+        measure.setStudentsExceeded(exceeded);
+        measure.setStudentsBelow(below);
+        measure.setStatus(status);
+        measure.setActive(active);
+        return measure;
+    }
+
+    //Create Custom Measure with ID
+    public static Measure createMeasureWithId(Long id, Long courseIndicatorId, String description, String observation, String recAction, String fcar, 
+    Integer met, Integer exceeded, Integer below, String status, Boolean active) {
+        Measure measure = createMeasure(courseIndicatorId, description, observation, recAction, fcar, met, exceeded, below, status, active);
+        measure.setId(id);
+        return measure;
+    }
+
+    //Create MeasureDTO
+    public static MeasureDTO creaMeasureDTO(){
+        return createMeasureDTO(1l, 1l, "New Description", "New Observation", 
+        "New Recommended Action", "New Fcar", 1, 2, 3, "InReview", true);
+    }
+
+    //Create Custom MeasureDTO
+    public static MeasureDTO createMeasureDTO(Long id, Long courseIndicatorId, String description, String observation, String recAction, String fcar,
+    Integer met, Integer exceeded, Integer below, String status, Boolean active){
+        MeasureDTO measureDTO = new MeasureDTO();
+        measureDTO.setId(id);
+        measureDTO.setCourseIndicatorId(courseIndicatorId);
+        measureDTO.setDescription(description);
+        measureDTO.setObservation(observation);
+        measureDTO.setRecommendedAction(recAction);
+        measureDTO.setFCar(fcar);
+        measureDTO.setStudentsMet(met);
+        measureDTO.setStudentsExceeded(exceeded);
+        measureDTO.setStudentsBelow(below);
+        measureDTO.setStatus(status);
+        measureDTO.setActive(active);
+        return measureDTO;
+    }
+
+    // Create a list of programs belonging to "Example University", every odd
+    // numbered program will be inactive
+    public static List<Measure> createMeasureList(int count) {
+        List<Measure> measures = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            measures.add(createMeasureWithId(
+                    (long) i,
+                    (long) i,
+                    "Description" + i,
+                    "Observation" + i,
+                    "Action" + i,
+                    "Fcar" + i,
+                    i, i, i,
+                    "InProgress",
+                    i % 2 == 0));
+        }
+        return measures;
+    }
+
+    // COURSE INDICATOR DATA
+
+    //Create Course Indicator
+    public static CourseIndicator createCourseIndicator(){
+        return createCourseIndicator(1l, 1l, 1l, true);
+    }
+
+    //Create Custom Course Indicator
+    public static CourseIndicator createCourseIndicator(Long id, Long courseId, Long indicatorId, Boolean active){
+        CourseIndicator courseIndicator = new CourseIndicator();
+        courseIndicator.setId(id);
+        courseIndicator.setCourseId(courseId);
+        courseIndicator.setIndicatorId(indicatorId);
+        courseIndicator.setIsActive(active);
+        return courseIndicator;
     }
 }
