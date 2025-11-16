@@ -43,8 +43,11 @@ class CourseServiceTest extends BaseServiceTest {
     void setUp() {
         testCourse = TestDataBuilder.createCourseWithId(1L, "CS101", "Introduction to Computer Science",
                 "Basic computer science principles", 1L);
+        testCourse.setStudentCount(30);
+
         testCourseDTO = TestDataBuilder.createCourseDTO("CS102", "Database Systems",
                 "Database management systems", 1L);
+        testCourseDTO.setStudentCount(25);
     }
 
     @Test
@@ -115,6 +118,22 @@ class CourseServiceTest extends BaseServiceTest {
         assertThat(updated).isNotNull();
         verify(courseRepository).findById(1L);
         verify(courseRepository).save(any(Course.class));
+    }
+
+    @Test
+    void shouldUpdateStudentCount() {
+        // Given
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(testCourse));
+        when(courseRepository.save(any(Course.class))).thenReturn(testCourse);
+
+        // When
+        Course updated = courseService.updateStudentCount(1L, 35);
+
+        // Then
+        assertThat(updated).isNotNull();
+        assertThat(testCourse.getStudentCount()).isEqualTo(35);
+        verify(courseRepository).findById(1L);
+        verify(courseRepository).save(testCourse);
     }
 
     @Test

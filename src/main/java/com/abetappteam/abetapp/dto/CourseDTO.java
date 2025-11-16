@@ -19,6 +19,8 @@ public class CourseDTO {
     @NotNull(message = "Semester ID is required")
     private Long semesterId;
 
+    private Integer studentCount;
+
     private Boolean isActive;
 
     // Constructors
@@ -74,6 +76,14 @@ public class CourseDTO {
         this.semesterId = semesterId;
     }
 
+    public Integer getStudentCount() {
+        return studentCount;
+    }
+
+    public void setStudentCount(Integer studentCount) {
+        this.studentCount = studentCount;
+    }
+
     public Boolean getIsActive() {
         return isActive;
     }
@@ -90,6 +100,7 @@ public class CourseDTO {
                 ", courseName='" + courseName + '\'' +
                 ", courseDescription='" + courseDescription + '\'' +
                 ", semesterId=" + semesterId +
+                ", studentCount=" + studentCount +
                 ", isActive=" + isActive +
                 '}';
     }

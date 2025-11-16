@@ -53,6 +53,7 @@ class CourseControllerUnitTest extends BaseControllerTest {
         testCourse.setCourseName("Software Engineering");
         testCourse.setCourseDescription("An introduction to software engineering principles");
         testCourse.setSemesterId(1L);
+        testCourse.setStudentCount(28);
         testCourse.setIsActive(true);
 
         testCourseDTO = new CourseDTO();
@@ -60,6 +61,7 @@ class CourseControllerUnitTest extends BaseControllerTest {
         testCourseDTO.setCourseName("Software Engineering");
         testCourseDTO.setCourseDescription("An introduction to software engineering principles");
         testCourseDTO.setSemesterId(1L);
+        testCourseDTO.setStudentCount(28);
     }
 
     @Test
@@ -149,6 +151,23 @@ class CourseControllerUnitTest extends BaseControllerTest {
                 .andExpect(jsonPath("$.data.id").value(1));
 
         verify(courseService, times(1)).updateCourse(eq(1L), any(CourseDTO.class));
+    }
+
+    @Test
+    void shouldUpdateStudentCount() throws Exception {
+        // Given
+        testCourse.setStudentCount(32);
+        when(courseService.updateStudentCount(eq(1L), eq(32))).thenReturn(testCourse);
+
+        // When/Then
+        mockMvc.perform(put("/api/courses/1/student-count")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"studentCount\": 32}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.studentCount").value(32));
+
+        verify(courseService, times(1)).updateStudentCount(1L, 32);
     }
 
     @Test

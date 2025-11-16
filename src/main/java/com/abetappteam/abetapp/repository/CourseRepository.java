@@ -13,7 +13,7 @@ import java.util.Optional;
 
 /**
  * Repository for Course entity
- * Based on schema: course table with fields (id, course_code, course_name, course_description, semester_id, created_at, is_active)
+ * Based on schema: course table with fields (id, course_code, course_name, course_description, semester_id, student_count, created_at, is_active)
  */
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {

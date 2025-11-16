@@ -130,6 +130,7 @@ CREATE TABLE course (
                         course_name VARCHAR(255) NOT NULL,
                         course_description TEXT NOT NULL,
                         semester_id BIGINT NOT NULL,
+                        student_count INT NULL,
     -- From BaseEntity
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,

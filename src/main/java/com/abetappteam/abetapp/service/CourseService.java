@@ -43,7 +43,7 @@ public class CourseService extends BaseService<Course, Long, CourseRepository> {
     }
 
     @Transactional
-    public Course createCourse(String courseCode, String courseName, String courseDescription, Long semesterId) {
+    public Course createCourse(String courseCode, String courseName, String courseDescription, Long semesterId, Integer studentCount) {
         // Check for duplicate course code in the same semester
         if (repository.existsByCourseCodeAndSemesterId(courseCode, semesterId)) {
             throw new ConflictException("Course with code '" + courseCode + "' already exists in this semester");
@@ -54,6 +54,7 @@ public class CourseService extends BaseService<Course, Long, CourseRepository> {
         course.setCourseName(courseName);
         course.setCourseDescription(courseDescription);
         course.setSemesterId(semesterId);
+        course.setStudentCount(studentCount);
         course.setIsActive(true);
 
         logger.info("Creating new course: {} - {}", courseCode, courseName);
@@ -63,11 +64,11 @@ public class CourseService extends BaseService<Course, Long, CourseRepository> {
     @Transactional
     public Course createCourse(CourseDTO dto) {
         return createCourse(dto.getCourseCode(), dto.getCourseName(),
-                dto.getCourseDescription(), dto.getSemesterId());
+                dto.getCourseDescription(), dto.getSemesterId(), dto.getStudentCount());
     }
 
     @Transactional
-    public Course updateCourse(Long courseId, String courseCode, String courseName, String courseDescription) {
+    public Course updateCourse(Long courseId, String courseCode, String courseName, String courseDescription, Integer studentCount) {
         Course course = findById(courseId);
 
         // Check for duplicate course code if it's being changed
@@ -84,6 +85,9 @@ public class CourseService extends BaseService<Course, Long, CourseRepository> {
         if (courseDescription != null) {
             course.setCourseDescription(courseDescription);
         }
+        if (studentCount != null) {
+            course.setStudentCount(studentCount);
+        }
 
         logger.info("Updating course: {}", courseId);
         return repository.save(course);
@@ -91,7 +95,16 @@ public class CourseService extends BaseService<Course, Long, CourseRepository> {
 
     @Transactional
     public Course updateCourse(Long courseId, CourseDTO dto) {
-        return updateCourse(courseId, dto.getCourseCode(), dto.getCourseName(), dto.getCourseDescription());
+        return updateCourse(courseId, dto.getCourseCode(), dto.getCourseName(),
+                dto.getCourseDescription(), dto.getStudentCount());
+    }
+
+    @Transactional
+    public Course updateStudentCount(Long courseId, Integer studentCount) {
+        Course course = findById(courseId);
+        course.setStudentCount(studentCount);
+        logger.info("Updating student count for course {}: {}", courseId, studentCount);
+        return repository.save(course);
     }
 
     @Transactional

@@ -97,6 +97,20 @@ public class CourseController extends BaseController {
     }
 
     /**
+     * Update student count for a course
+     */
+    @PutMapping("/{id}/student-count")
+    public ResponseEntity<ApiResponse<Course>> updateStudentCount(
+            @PathVariable Long id,
+            @RequestBody UpdateStudentCountRequest request) {
+
+        logger.info("Updating student count for course with ID: {}", id);
+        validateId(id);
+        Course updated = courseService.updateStudentCount(id, request.getStudentCount());
+        return success(updated, "Student count updated successfully");
+    }
+
+    /**
      * Remove/delete a course
      */
     @DeleteMapping("/{id}")
@@ -262,5 +276,20 @@ public class CourseController extends BaseController {
     @GetMapping("/{courseId}/indicators")
     public ResponseEntity<List<Long>> getIndicators(@PathVariable Long courseId) {
         return ResponseEntity.ok(courseService.getIndicatorIds(courseId));
+    }
+
+    /**
+     * Request DTO for updating student count
+     */
+    public static class UpdateStudentCountRequest {
+        private Integer studentCount;
+
+        public Integer getStudentCount() {
+            return studentCount;
+        }
+
+        public void setStudentCount(Integer studentCount) {
+            this.studentCount = studentCount;
+        }
     }
 }
