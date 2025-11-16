@@ -27,7 +27,7 @@ public interface PerformanceIndicatorRepository extends JpaRepository<Performanc
 
     // Active status queries
     Page<PerformanceIndicator> findByStudentOutcomeIdAndIsActive(Long studentOutcomeId, Boolean isActive,
-            Pageable pageable);
+                                                                 Pageable pageable);
 
     List<PerformanceIndicator> findByStudentOutcomeIdAndIsActive(Long studentOutcomeId, Boolean isActive);
 
@@ -37,7 +37,7 @@ public interface PerformanceIndicatorRepository extends JpaRepository<Performanc
 
     // Indicator number queries
     Optional<PerformanceIndicator> findByIndicatorNumberAndStudentOutcomeId(Integer indicatorNumber,
-            Long studentOutcomeId);
+                                                                            Long studentOutcomeId);
 
     boolean existsByIndicatorNumberAndStudentOutcomeId(Integer indicatorNumber, Long studentOutcomeId);
 
@@ -47,19 +47,19 @@ public interface PerformanceIndicatorRepository extends JpaRepository<Performanc
     List<PerformanceIndicator> findByDescriptionContainingIgnoreCase(String descriptionFragment);
 
     // Search queries
-    @Query("SELECT pi FROM PerformanceIndicator pi WHERE LOWER(pi.indDescription) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    @Query("SELECT pi FROM PerformanceIndicator pi WHERE LOWER(pi.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     List<PerformanceIndicator> searchByDescription(@Param("searchTerm") String searchTerm);
 
-    @Query("SELECT pi FROM PerformanceIndicator pi WHERE LOWER(pi.indDescription) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    @Query("SELECT pi FROM PerformanceIndicator pi WHERE LOWER(pi.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     Page<PerformanceIndicator> searchByDescription(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-    @Query("SELECT pi FROM PerformanceIndicator pi WHERE pi.studentOutcomeId = :studentOutcomeId AND LOWER(pi.indDescription) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    @Query("SELECT pi FROM PerformanceIndicator pi WHERE pi.studentOutcomeId = :studentOutcomeId AND LOWER(pi.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     List<PerformanceIndicator> searchByDescriptionAndStudentOutcome(@Param("searchTerm") String searchTerm,
-            @Param("studentOutcomeId") Long studentOutcomeId);
+                                                                    @Param("studentOutcomeId") Long studentOutcomeId);
 
-    @Query("SELECT pi FROM PerformanceIndicator pi WHERE pi.studentOutcomeId = :studentOutcomeId AND pi.isActive = :isActive AND LOWER(pi.indDescription) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    @Query("SELECT pi FROM PerformanceIndicator pi WHERE pi.studentOutcomeId = :studentOutcomeId AND pi.isActive = :isActive AND LOWER(pi.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     Page<PerformanceIndicator> searchByDescriptionAndStudentOutcomeAndIsActive(@Param("searchTerm") String searchTerm,
-            @Param("studentOutcomeId") Long studentOutcomeId, @Param("isActive") Boolean isActive, Pageable pageable);
+                                                                               @Param("studentOutcomeId") Long studentOutcomeId, @Param("isActive") Boolean isActive, Pageable pageable);
 
     // Course relationship queries
     @Query("SELECT pi FROM PerformanceIndicator pi JOIN CourseIndicator ci ON pi.id = ci.indicatorId WHERE ci.courseId = :courseId AND pi.isActive = true")
@@ -70,12 +70,12 @@ public interface PerformanceIndicatorRepository extends JpaRepository<Performanc
 
     @Query("SELECT pi FROM PerformanceIndicator pi JOIN CourseIndicator ci ON pi.id = ci.indicatorId WHERE ci.courseId = :courseId AND pi.studentOutcomeId = :studentOutcomeId")
     List<PerformanceIndicator> findIndicatorsByCourseIdAndStudentOutcomeId(@Param("courseId") Long courseId,
-            @Param("studentOutcomeId") Long studentOutcomeId);
+                                                                           @Param("studentOutcomeId") Long studentOutcomeId);
 
     // Methods for finding available indicators for course assignment
     @Query("SELECT pi FROM PerformanceIndicator pi WHERE pi.studentOutcomeId = :studentOutcomeId AND pi.isActive = true AND pi.id NOT IN (SELECT ci.indicatorId FROM CourseIndicator ci WHERE ci.courseId = :courseId)")
     List<PerformanceIndicator> findAvailableIndicatorsForCourse(@Param("courseId") Long courseId,
-            @Param("studentOutcomeId") Long studentOutcomeId);
+                                                                @Param("studentOutcomeId") Long studentOutcomeId);
 
     // Methods for statistics and reporting
     @Query("SELECT COUNT(pi) FROM PerformanceIndicator pi WHERE pi.studentOutcomeId = :studentOutcomeId AND pi.isActive = true")

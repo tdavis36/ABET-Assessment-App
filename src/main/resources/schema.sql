@@ -186,7 +186,6 @@ CREATE TABLE measure (
                          met SMALLINT NULL,
                          exceeded SMALLINT NULL,
                          below SMALLINT NULL,
-                         mStatus ENUM('InProgress', 'Submitted', 'InReview', 'Complete') DEFAULT 'InProgress' NOT NULL,
     -- From BaseEntity
                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,

@@ -13,16 +13,25 @@ import jakarta.validation.constraints.NotNull;
 public class PerformanceIndicator extends BaseEntity {
 
     @NotBlank(message = "Performance indicator description is required")
-    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "ind_description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @NotNull(message = "Indicator number is required")
-    @Column(name = "indicator_number", nullable = false)
+    @Column(name = "ind_number", nullable = false)
     private Integer indicatorNumber;
+
+    @Column(name = "ind_value")
+    private Integer indicatorValue;
+
+    @Column(name = "evaluation", columnDefinition = "TEXT")
+    private String evaluation;
 
     @NotNull(message = "Student outcome ID is required")
     @Column(name = "student_outcome_id", nullable = false)
     private Long studentOutcomeId;
+
+    @Column(name = "threshold_percentage")
+    private Double thresholdPercentage = 70.00;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
@@ -71,13 +80,40 @@ public class PerformanceIndicator extends BaseEntity {
         this.isActive = isActive;
     }
 
+    public Integer getIndicatorValue() {
+        return indicatorValue;
+    }
+
+    public void setIndicatorValue(Integer indicatorValue) {
+        this.indicatorValue = indicatorValue;
+    }
+
+    public String getEvaluation() {
+        return evaluation;
+    }
+
+    public void setEvaluation(String evaluation) {
+        this.evaluation = evaluation;
+    }
+
+    public Double getThresholdPercentage() {
+        return thresholdPercentage;
+    }
+
+    public void setThresholdPercentage(Double thresholdPercentage) {
+        this.thresholdPercentage = thresholdPercentage;
+    }
+
     @Override
     public String toString() {
         return "PerformanceIndicator{" +
                 "id=" + getId() +
                 ", description='" + description + '\'' +
                 ", indicatorNumber=" + indicatorNumber +
+                ", indicatorValue=" + indicatorValue +
+                ", evaluation='" + evaluation + '\'' +
                 ", studentOutcomeId=" + studentOutcomeId +
+                ", thresholdPercentage=" + thresholdPercentage +
                 ", isActive=" + isActive +
                 ", createdAt=" + getCreatedAt() +
                 ", updatedAt=" + getUpdatedAt() +

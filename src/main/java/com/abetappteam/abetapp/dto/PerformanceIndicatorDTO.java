@@ -13,8 +13,14 @@ public class PerformanceIndicatorDTO {
     @NotNull(message = "Indicator number is required")
     private Integer indicatorNumber;
 
+    private Integer indicatorValue;
+
+    private String evaluation;
+
     @NotNull(message = "Student outcome ID is required")
     private Long studentOutcomeId;
+
+    private Double thresholdPercentage;
 
     private Boolean isActive;
 
@@ -27,6 +33,7 @@ public class PerformanceIndicatorDTO {
         this.indicatorNumber = indicatorNumber;
         this.studentOutcomeId = studentOutcomeId;
         this.isActive = true;
+        this.thresholdPercentage = 70.00;
     }
 
     // Getters and setters
@@ -54,12 +61,36 @@ public class PerformanceIndicatorDTO {
         this.indicatorNumber = indicatorNumber;
     }
 
+    public Integer getIndicatorValue() {
+        return indicatorValue;
+    }
+
+    public void setIndicatorValue(Integer indicatorValue) {
+        this.indicatorValue = indicatorValue;
+    }
+
+    public String getEvaluation() {
+        return evaluation;
+    }
+
+    public void setEvaluation(String evaluation) {
+        this.evaluation = evaluation;
+    }
+
     public Long getStudentOutcomeId() {
         return studentOutcomeId;
     }
 
     public void setStudentOutcomeId(Long studentOutcomeId) {
         this.studentOutcomeId = studentOutcomeId;
+    }
+
+    public Double getThresholdPercentage() {
+        return thresholdPercentage;
+    }
+
+    public void setThresholdPercentage(Double thresholdPercentage) {
+        this.thresholdPercentage = thresholdPercentage;
     }
 
     public Boolean getIsActive() {
@@ -76,7 +107,10 @@ public class PerformanceIndicatorDTO {
                 "id=" + id +
                 ", description='" + description + '\'' +
                 ", indicatorNumber=" + indicatorNumber +
+                ", indicatorValue=" + indicatorValue +
+                ", evaluation='" + evaluation + '\'' +
                 ", studentOutcomeId=" + studentOutcomeId +
+                ", thresholdPercentage=" + thresholdPercentage +
                 ", isActive=" + isActive +
                 '}';
     }
