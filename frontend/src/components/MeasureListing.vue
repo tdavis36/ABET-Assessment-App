@@ -1,7 +1,11 @@
-<setup lang="ts" setup>
-    const props = defineProps({mid: Number})
-</setup>
+<script setup lang="ts">
+interface Props {
+  mid?: number
+}
+
+const props = defineProps<Props>()
+</script>
 
 <template>
-    <p>Measure</p>
+  <p>Measure {{ mid }}</p>
 </template>

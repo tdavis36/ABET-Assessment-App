@@ -24,24 +24,7 @@ const programId = computed(() => userStore.currentProgramId);
     <header class="dashboard-header">
       <h1>Administrator Dashboard</h1>
     </header>
-
     <ProgramInstructorsPage/>
-
-    <hr class="divider" />
-
-    <!-- Instructor Section -->
-    <header class="dashboard-header">
-      <h1>Instructor Dashboard</h1>
-    </header>
-
-    <InstructorViewPage/>
-
-    <!-- Footer -->
-    <footer class="footer">
-      <hr />
-      <p>© 2025 ABET Assessment App</p>
-      <p>Definitions adapted from ABET documentation.</p>
-    </footer>
 
   </section>
 

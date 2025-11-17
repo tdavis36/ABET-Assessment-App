@@ -1,263 +1,734 @@
-<script setup>
-import { ref, onMounted, computed } from "vue";
-import api from "@/api";
-import { useUserStore } from "@/stores/user-store.ts";
-
-import { BaseButton, BaseInput } from "@/components/ui/index.ts";
-
-const userStore = useUserStore();
-
-// Always use program + semester from the store
-const programId = computed(() => userStore.currentProgramId);
-const semesterId = computed(() => userStore.currentSemesterId);
-
-// State
-const editMode = ref(false);
-const courses = ref([]);
-const programInstructors = ref([]);
-
-const newCourse = ref({
-  courseName: "",
-  instructorName: "",
-  total: 1,
-});
-
-// --------------------------------------
-// Load instructors for the current program
-// --------------------------------------
-async function loadProgramInstructors() {
-  if (!programId.value) return;
-
-  const res = await api.get(`/program/${programId.value}/instructors`);
-  programInstructors.value = res.data.data;
-}
-
-// --------------------------------------
-// Load courses for the CURRENT SEMESTER
-// --------------------------------------
-async function loadCourses() {
-  if (!semesterId.value) return;
-
-  const res = await api.get("/courses", {
-    params: { semesterId: semesterId.value },
-  });
-
-  const rawCourses = res.data.content;
-
-  // Build formatted course list
-  courses.value = await Promise.all(
-    rawCourses.map(async (c) => {
-      // Completeness check
-      const compRes = await api.get(`/courses/${c.id}/completeness`);
-      const comp = compRes.data.data;
-
-      // Match instructor
-      const instructorPU = programInstructors.value.find(
-        (pi) => pi.userId === c.instructorId
-      );
-
-      const instructorName =
-        instructorPU && instructorPU.user
-          ? `${instructorPU.user.firstName} ${instructorPU.user.lastName}`
-          : "Unassigned";
-
-      return {
-        id: c.id,
-        courseName: c.courseName,
-        instructorName,
-        completed: comp.completedMeasures,
-        total: comp.totalMeasures,
-        submitted: comp.completedMeasures >= comp.totalMeasures,
-        rejected: false,
-      };
-    })
-  );
-}
-
-// --------------------------------------
-// Edit mode toggle
-// --------------------------------------
-function toggleEdit() {
-  editMode.value = !editMode.value;
-}
-
-// --------------------------------------
-// Reject a course
-// --------------------------------------
-function toggleReject(course) {
-  course.rejected = !course.rejected;
-
-  if (course.rejected) {
-    course.submitted = false;
-    course.completed = 0;
-  }
-}
-
-// --------------------------------------
-// Add new course to semester
-// --------------------------------------
-async function addCourse() {
-  if (!newCourse.value.courseName) return;
-
-  try {
-    const dto = {
-      courseName: newCourse.value.courseName,
-      courseCode: newCourse.value.courseName.replace(/\s+/g, "").toUpperCase(),
-      semesterId: semesterId.value,
-      totalMeasures: newCourse.value.total,
-    };
-
-    const res = await api.post("/courses", dto);
-    const created = res.data.data;
-
-    courses.value.push({
-      id: created.id,
-      courseName: created.courseName,
-      instructorName: newCourse.value.instructorName,
-      completed: 0,
-      total: newCourse.value.total,
-      submitted: false,
-      rejected: false,
-    });
-
-    newCourse.value = { courseName: "", instructorName: "", total: 1 };
-  } catch (e) {
-    console.error("Failed to add course", e);
-  }
-}
-
-// --------------------------------------
-// Init on load
-// --------------------------------------
-onMounted(async () => {
-  userStore.loadFromStorage();
-  await loadProgramInstructors();
-  await loadCourses();
-});
-</script>
-
 <template>
-  <section class="courses-section">
-    <div class="section-header">
-      <h3 class="h3">Courses</h3>
-      <BaseButton class="edit-btn" @click="toggleEdit">
-        {{ editMode ? "Done" : "Edit" }}
-      </BaseButton>
+  <section class="instructors-page">
+    <div class="page-header">
+      <div class="header-content">
+        <p
+          class="subtitle"
+          v-if="instructors.length > 0 && selectedProgramName"
+        >
+          {{ instructors.length }} instructor{{ instructors.length !== 1 ? 's' : '' }}
+          in {{ selectedProgramName }}
+        </p>
+      </div>
+
+      <!-- Program Selector -->
+      <div class="program-selector">
+        <label for="program-select" class="selector-label">
+          Select Program:
+        </label>
+        <select
+          id="program-select"
+          v-model.number="selectedProgramId"
+          class="program-select"
+          :disabled="loadingPrograms || programs.length === 0"
+        >
+          <option :value="null" disabled>Choose a program...</option>
+          <option
+            v-for="program in programs"
+            :key="program.id"
+            :value="program.id"
+          >
+            {{ program.name }} - {{ program.institution }}
+          </option>
+        </select>
+      </div>
     </div>
 
-    <table class="courses-table">
-      <thead>
-      <tr>
-        <th>Course</th>
-        <th>Instructor</th>
-        <th>Measures Completed</th>
-        <th>Submitted (Y/N)</th>
-        <th v-if="editMode">Reject</th>
-      </tr>
-      </thead>
-
-      <tbody>
-      <tr v-for="course in courses" :key="course.id">
-        <td>
-          <input v-if="editMode" v-model="course.courseName" class="editable-input" />
-          <span v-else>{{ course.courseName }}</span>
-        </td>
-
-        <td>
-          <input v-if="editMode" v-model="course.instructorName" class="editable-input" />
-          <span v-else>{{ course.instructorName }}</span>
-        </td>
-
-        <td>
-          <template v-if="editMode">
-            <input class="small-input" type="number" min="0" v-model.number="course.completed" />
-            <span>/</span>
-            <input class="small-input" type="number" min="1" v-model.number="course.total" />
-          </template>
-          <template v-else>
-            {{ course.completed }}/{{ course.total }}
-          </template>
-        </td>
-
-        <td>{{ course.submitted ? "Y" : "N" }}</td>
-
-        <td v-if="editMode" class="reject-cell">
-          <BaseButton class="reject-btn" :class="{ active: course.rejected }" @click="toggleReject(course)">
-            X
-          </BaseButton>
-        </td>
-      </tr>
-      </tbody>
-    </table>
-
-    <div v-if="editMode" class="add-row">
-      <BaseInput v-model="newCourse.courseName" placeholder="Course" />
-      <BaseInput v-model="newCourse.instructorName" placeholder="Instructor" />
-      <BaseInput v-model.number="newCourse.total" type="number" min="1" placeholder="Measures" />
-      <BaseButton class="add-btn" @click="addCourse">Add</BaseButton>
+    <!-- Loading / empty / error / grid -->
+    <div v-if="loadingPrograms" class="loading-state">
+      <p>Loading programs...</p>
     </div>
+
+    <div
+      v-else-if="programs.length === 0 && !loadingPrograms"
+      class="empty-state"
+    >
+      <p>No programs found. Please contact an administrator.</p>
+    </div>
+
+    <div v-else-if="!selectedProgramId" class="empty-state">
+      <p>Please select a program to view instructors.</p>
+    </div>
+
+    <div v-else-if="loading" class="loading-state">
+      <p>Loading instructors...</p>
+    </div>
+
+    <div v-else-if="error" class="error-state">
+      <p>{{ error }}</p>
+    </div>
+
+    <div v-else-if="instructors.length > 0" class="instructors-grid">
+      <BaseCard
+        v-for="instructor in instructors"
+        :key="instructor.programUserId"
+        variant="elevated"
+        :hoverable="true"
+        class="instructor-card"
+        @click="showInstructorDetails(instructor)"
+      >
+        <div class="instructor-card-content">
+          <div class="instructor-avatar">
+            {{ instructor.firstName?.charAt(0) }}{{ instructor.lastName?.charAt(0) }}
+          </div>
+
+          <div class="instructor-info">
+            <h3 class="instructor-name">
+              {{ instructor.firstName }} {{ instructor.lastName }}
+            </h3>
+            <p class="instructor-email">
+              {{ instructor.email }}
+            </p>
+            <p class="instructor-meta">
+              {{ instructor.courseCount }} course{{ instructor.courseCount !== 1 ? 's' : '' }}
+            </p>
+          </div>
+        </div>
+      </BaseCard>
+    </div>
+
+    <div v-else class="empty-state">
+      <p>No instructors found in this program.</p>
+    </div>
+
+    <!-- Instructor Details Modal -->
+    <BaseModal
+      v-model:isOpen="showModal"
+      :title="selectedInstructor
+        ? `${selectedInstructor.firstName} ${selectedInstructor.lastName}`
+        : 'Instructor Details'"
+      size="lg"
+      @close="closeModal"
+    >
+      <div v-if="selectedInstructor" class="instructor-details">
+        <!-- Personal Information -->
+        <section class="detail-section">
+          <h3>Personal Information</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Name:</span>
+              <span class="detail-value">
+                {{ selectedInstructor.firstName }} {{ selectedInstructor.lastName }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Email:</span>
+              <span class="detail-value">
+                <a :href="`mailto:${selectedInstructor.email}`">
+                  {{ selectedInstructor.email }}
+                </a>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Role:</span>
+              <span class="detail-value">
+                {{ selectedInstructor.role }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">User ID:</span>
+              <span class="detail-value">
+                {{ selectedInstructor.userId }}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Courses -->
+        <section class="detail-section">
+          <h3>
+            Courses ({{ selectedInstructor.courses?.length || 0 }})
+          </h3>
+
+          <div
+            v-if="selectedInstructor.courses && selectedInstructor.courses.length > 0"
+          >
+            <table class="courses-table">
+              <thead>
+              <tr>
+                <th>Course Code</th>
+                <th>Course Name</th>
+                <th>Measures Progress</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr
+                v-for="course in selectedInstructor.courses"
+                :key="course.id"
+              >
+                <td>
+                  {{ course.courseCode || course.course_code }}
+                </td>
+                <td>
+                  {{ course.courseName || course.course_name || '—' }}
+                </td>
+                <td>
+                    <span v-if="course.measuresCompleted !== undefined">
+                      {{ course.measuresCompleted }}/{{ course.measuresTotal }}
+                      <span class="progress-percent">
+                        ({{ course.measuresTotal && course.measuresTotal > 0
+                        ? Math.round(
+                          ((course.measuresCompleted || 0) / course.measuresTotal) * 100
+                        )
+                        : 0 }}%)
+                      </span>
+                    </span>
+                  <span v-else>—</span>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p v-else class="no-courses">
+            No courses assigned to this instructor.
+          </p>
+        </section>
+      </div>
+
+      <template #footer>
+        <button class="btn-primary" @click="closeModal">
+          Close
+        </button>
+      </template>
+    </BaseModal>
   </section>
 </template>
 
-<style scoped>
-.h3 {
-  font-size: var(--font-size-xl);
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-  align-items: center;
+<script setup lang="ts">
+import { ref, onMounted, computed, watch } from 'vue'
+import api from '@/api'
+import { useUserStore } from '@/stores/user-store.ts'
+import BaseCard from '@/components/ui/BaseCard.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
+
+const userStore = useUserStore()
+
+interface Program {
+  id: number
+  name: string
+  institution: string
 }
-.courses-section {
+
+interface ProgramUser {
+  id: number
+  userId: number
+  adminStatus?: boolean
+}
+
+interface Course {
+  id: number
+  courseCode?: string
+  course_code?: string
+  courseName?: string
+  course_name?: string
+  measuresCompleted?: number
+  measuresTotal?: number
+}
+
+interface Instructor {
+  programUserId: number
+  userId: number
+  firstName: string
+  lastName: string
+  email: string
+  role: string
+  courseCount: number
+  courses: Course[]
+}
+
+/* -----------------------------
+ * Reactive state
+ * ----------------------------- */
+
+const programs = ref<Program[]>([])
+const selectedProgramId = ref<number | null>(null)
+
+const instructors = ref<Instructor[]>([])
+const selectedInstructor = ref<Instructor | null>(null)
+
+const showModal = ref(false)
+const loading = ref(false)
+const loadingPrograms = ref(false)
+const error = ref<string | null>(null)
+
+/* -----------------------------
+ * Computed
+ * ----------------------------- */
+
+const selectedProgramName = computed<string>(() => {
+  const program = programs.value.find(p => p.id === selectedProgramId.value)
+  return program ? program.name : ''
+})
+
+/* -----------------------------
+ * Load programs
+ * GET /api/program (paged)
+ * ----------------------------- */
+
+async function loadUserPrograms(): Promise<void> {
+  loadingPrograms.value = true
+  try {
+    const res = await api.get('/program', {
+      params: { page: 0, size: 100 }
+    })
+    const paged = res.data
+    programs.value = paged.content ?? paged ?? []
+
+    if (programs.value.length > 0 && !selectedProgramId.value) {
+      selectedProgramId.value = programs.value[0].id
+    }
+  } catch (err) {
+    console.error('Error loading programs:', err)
+    error.value = 'Failed to load programs'
+  } finally {
+    loadingPrograms.value = false
+  }
+}
+
+/* -----------------------------
+ * Load program instructors
+ * GET /api/program/{id}/users -> ApiResponse<List<ProgramUser>>
+ * Then:
+ *   GET /api/users/{userId}
+ *   GET /api/courses/instructor?programUserId=...
+ * ----------------------------- */
+
+async function loadProgramInstructors(): Promise<void> {
+  if (!selectedProgramId.value) return
+
+  loading.value = true
+  error.value = null
+
+  try {
+    const res = await api.get(`/program/${selectedProgramId.value}/users`)
+    const apiResp = res.data
+    const programUsers = (apiResp.data ?? []) as ProgramUser[]
+
+    const loaded = await Promise.all(
+      programUsers.map(async (pu: ProgramUser): Promise<Instructor | null> => {
+        try {
+          const userRes = await api.get(`/users/${pu.userId}`)
+          const userApi = userRes.data
+          const user = userApi.data as {
+            firstName: string
+            lastName: string
+            email: string
+          }
+
+          const coursesRes = await api.get('/courses/instructor', {
+            params: { programUserId: pu.id }
+          })
+          const coursesApi = coursesRes.data
+          const courses = (coursesApi.data ?? []) as Course[]
+
+          return {
+            programUserId: pu.id,
+            userId: pu.userId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: pu.adminStatus ? 'ADMIN' : 'INSTRUCTOR',
+            courseCount: courses.length,
+            courses
+          }
+        } catch (err) {
+          console.error(`Error loading user or courses for programUserId ${pu.id}`, err)
+          return null
+        }
+      })
+    )
+
+    instructors.value = loaded.filter((i): i is Instructor => i !== null)
+  } catch (err) {
+    console.error('Error loading program instructors:', err)
+    error.value = 'Failed to load instructors'
+  } finally {
+    loading.value = false
+  }
+}
+
+/* -----------------------------
+ * Show instructor details
+ * For each course:
+ *   GET /api/courses/{courseId}/completeness
+ * ----------------------------- */
+
+async function showInstructorDetails(instructor: Instructor): Promise<void> {
+  selectedInstructor.value = instructor
+
+  if (
+    selectedInstructor.value &&
+    selectedInstructor.value.courses &&
+    selectedInstructor.value.courses.length > 0
+  ) {
+    try {
+      const coursesWithCompleteness = await Promise.all(
+        selectedInstructor.value.courses.map(
+          async (course: Course): Promise<Course> => {
+            try {
+              const compRes = await api.get(`/courses/${course.id}/completeness`)
+              const compApi = compRes.data
+              const comp = compApi.data as {
+                completedMeasures: number
+                totalMeasures: number
+              }
+
+              return {
+                ...course,
+                measuresCompleted: comp.completedMeasures,
+                measuresTotal: comp.totalMeasures
+              }
+            } catch (err) {
+              console.error(
+                `Error loading completeness for course ${course.id}:`,
+                err
+              )
+              return {
+                ...course,
+                measuresCompleted: 0,
+                measuresTotal: 0
+              }
+            }
+          }
+        )
+      )
+
+      if (selectedInstructor.value) {
+        selectedInstructor.value = {
+          ...selectedInstructor.value,
+          courses: coursesWithCompleteness
+        }
+      }
+    } catch (err) {
+      console.error('Error loading course details:', err)
+    }
+  }
+
+  showModal.value = true
+}
+
+/* -----------------------------
+ * Close modal
+ * ----------------------------- */
+
+function closeModal(): void {
+  showModal.value = false
+  selectedInstructor.value = null
+}
+
+/* -----------------------------
+ * Watchers
+ * ----------------------------- */
+
+watch(selectedProgramId, async newProgramId => {
+  if (newProgramId) {
+    await loadProgramInstructors()
+  } else {
+    instructors.value = []
+  }
+})
+
+/* -----------------------------
+ * Lifecycle
+ * ----------------------------- */
+
+onMounted(async () => {
+  try {
+    await userStore.loadFromStorage()
+    await loadUserPrograms()
+    // loadProgramInstructors will be triggered by watcher
+  } catch (err) {
+    console.error('Error loading instructor view:', err)
+    error.value = 'Failed to initialize page'
+  }
+})
+</script>
+
+<style scoped>
+.instructors-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.header-content {
+  margin-bottom: 1.5rem;
+}
+
+.page-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text-primary);
+  font-size: 2rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+}
+
+/* Program Selector */
+.program-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--color-bg-secondary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border-light);
+}
+
+.selector-label {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.program-select {
+  flex: 1;
+  max-width: 500px;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-border-dark);
+  border-radius: 0.375rem;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.program-select:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+
+.program-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.program-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading, Error, Empty States */
+.loading-state,
+.error-state,
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-secondary);
+}
+
+.error-state {
+  color: var(--color-error);
+}
+
+/* Instructors Grid */
+.instructors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.instructor-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.instructor-card-content {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.instructor-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-primary-dark)
+  );
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.instructor-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.instructor-name {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.instructor-email {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.instructor-meta {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-tertiary);
+}
+
+/* Instructor Details */
+.instructor-details {
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg-secondary);
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: var(--shadow-sm);
+  gap: 2rem;
 }
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.edit-btn {
-  background-color: var(--color-primary);
+
+.detail-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
   color: var(--color-text-primary);
-  border: none;
-  border-radius: 6px;
-  padding: 0.3rem 0.8rem;
-  cursor: pointer;
-  font-size: 0.9rem;
+  border-bottom: 2px solid var(--color-border-light);
+  padding-bottom: 0.5rem;
 }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 1rem;
+  color: var(--color-text-primary);
+}
+
+.detail-value a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.detail-value a:hover {
+  text-decoration: underline;
+}
+
+/* Courses Table */
 .courses-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
-.courses-table th {
-  background-color: var(--color-bg-tertiary);
-  padding: 0.6rem;
-  font-weight: 600;
-}
+
+.courses-table th,
 .courses-table td {
+  padding: 0.75rem;
+  text-align: left;
   border-bottom: 1px solid var(--color-border-light);
-  padding: 0.6rem;
 }
-.editable-input,
-.small-input {
-  padding: 0.4rem;
-  border: 1px solid var(--color-border-light);
-  border-radius: 4px;
+
+.courses-table th {
+  background: var(--color-bg-tertiary);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
-.small-input {
-  width: 3rem;
-  text-align: center;
+
+.courses-table tbody tr:hover {
+  background: var(--color-bg-secondary);
 }
-.reject-btn {
-  border: 1px solid var(--color-border-dark);
-  color: var(--color-error-dark);
+
+.progress-percent {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
 }
-.reject-btn.active {
-  background-color: #b22222;
+
+.no-courses {
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin: 1rem 0;
+}
+
+/* Button Styles */
+.btn-primary {
+  background: var(--color-primary);
   color: white;
+  border: none;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .instructors-page {
+    padding: 1rem;
+  }
+
+  .program-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .program-select {
+    max-width: 100%;
+  }
+
+  .instructors-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .courses-table {
+    font-size: 0.875rem;
+    display: block;
+    overflow-x: auto;
+  }
+
+  .courses-table th,
+  .courses-table td {
+    padding: 0.5rem;
+  }
 }
 </style>

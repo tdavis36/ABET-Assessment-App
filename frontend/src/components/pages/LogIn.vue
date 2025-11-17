@@ -18,10 +18,8 @@ async function login() {
 
     toast.success("Successfully logged in!", "Welcome")
 
-    if (userStore.isAdmin) {
-      await router.push('/admin-dashboard')
-    } else if (userStore.isInstructor) {
-      await router.push('/instructor-dashboard')
+    if (userStore.isAdmin || userStore.isInstructor) {
+      await router.push('/dashboard')
     } else {
       await router.push('/')
     }

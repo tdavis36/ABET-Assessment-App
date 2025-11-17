@@ -57,7 +57,7 @@ export const useUserStore = defineStore("user", () => {
       const { data } = await api.post("/users/login", { email, password });
 
       user.value = data.user;
-      authToken.value = data.token;
+      authToken.value = data.authToken;
       programs.value = data.programs;
       currentProgramId.value = data.user.currentProgramId;
 
@@ -95,7 +95,7 @@ export const useUserStore = defineStore("user", () => {
       const { data } = await api.post("/users/signup", userData);
 
       user.value = data.user;
-      authToken.value = data.token;
+      authToken.value = data.authToken;
       currentProgramId.value = data.user.currentProgramId ?? null;
 
       localStorage.setItem("authToken", data.authToken);

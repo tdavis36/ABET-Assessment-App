@@ -2,8 +2,8 @@
 import { storeToRefs } from "pinia";
 import { useUserStore } from "@/stores/user-store.js";
 
-import ProgramInstructorsPage from "@/components/pages/ProgramInstructorsPage.vue";
-import InstructorViewPage from "@/components/pages/InstructorViewPage.vue";
+import AdminDashboard from "@/components/AdminDashboard.vue";
+import InstructorDashboard from "@/components/InstructorDashboard.vue";
 
 const userStore = useUserStore();
 const { isLoggedIn, isAdmin, isInstructor } = storeToRefs(userStore);
@@ -22,18 +22,13 @@ const { isLoggedIn, isAdmin, isInstructor } = storeToRefs(userStore);
 
       <!-- Admin Dashboard -->
       <template v-if="isAdmin">
-        <header class="dashboard-header">
-          <h1>Administrator Dashboard</h1>
-        </header>
-
-        <ProgramInstructorsPage :programId="userStore.currentProgramId || 1" />
-
-        <hr class="section-divider" />
+        <AdminDashboard :programId="userStore.currentProgramId || 1" />
+        <hr v-if="isInstructor" class="section-divider" />
       </template>
 
       <!-- Instructor Dashboard -->
-      <template v-if="isInstructor || isAdmin">
-        <InstructorViewPage :programId="userStore.currentProgramId || 1" />
+      <template v-if="isInstructor">
+        <InstructorDashboard :programId="userStore.currentProgramId || 1" />
       </template>
 
       <!-- Fallback (logged in but not admin or instructor) -->

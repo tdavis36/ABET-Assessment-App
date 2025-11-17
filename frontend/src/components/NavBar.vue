@@ -18,31 +18,33 @@ const emit = defineEmits(["logout"])
         <router-link to="/about" class="nav_button">About</router-link>
         <div class="nav-divider"></div>
         <router-link to="/test-connection" class="nav_button">Test Connection</router-link>
-
-        <!-- Instructor dashboard only -->
-        <template v-if="loggedIn">
-          <div class="nav-divider"></div>
-          <router-link to="/instructor-dashboard" class="nav_button">
-            Instructor Dashboard
-          </router-link>
-        </template>
+        <div class="nav-divider"></div>
+        <router-link to="/setup" class="nav_button">Setup</router-link>
       </div>
 
+      <!-- USER + LOGIN/LOGOUT SECTION -->
       <div class="navbar-auth">
         <div class="nav-divider"></div>
 
-        <router-link
-          v-if="loggedIn"
-          to="/"
-          class="nav_button auth-button"
-          id="logout"
-          @click="$emit('logout')"
-        >
-          <span class="user-info">{{ username }}</span>
-          <span class="separator">|</span>
-          <span>Log Out</span>
-        </router-link>
+        <!-- When logged in -->
+        <template v-if="loggedIn">
+          <!-- Username displayed separately -->
+          <div class="username-display">
+            {{ username }}
+          </div>
 
+          <div class="nav-divider"></div>
+
+          <!-- Stand-alone logout button -->
+          <button
+            class="nav_button auth-button logout-btn"
+            @click="$emit('logout')"
+          >
+            Log Out
+          </button>
+        </template>
+
+        <!-- When logged out -->
         <router-link
           v-else
           to="/login"
@@ -139,6 +141,32 @@ const emit = defineEmits(["logout"])
 
 .separator {
   opacity: 0.6;
+}
+
+.username-display {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--navbar-item-padding-x);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-md);
+  color: white;
+  white-space: nowrap;
+}
+
+.logout-btn {
+  background: none;
+  color: var(--navbar-text);
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--navbar-item-padding-x);
+  height: 100%;
+}
+
+.logout-btn:hover {
+  background-color: var(--navbar-hover-bg);
 }
 
 /* Responsive Design */
