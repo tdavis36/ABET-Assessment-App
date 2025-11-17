@@ -1,12 +1,13 @@
 <script lang="ts" setup>
     import { ref } from 'vue';
     import { useRoute } from 'vue-router';
+    import api from '@/api';
     import InstructorListing from '@/components/InstructorListing.vue';
     import IndicatorListing from '@/components/IndicatorListing.vue';
 
     const route = useRoute()
 
-    
+    /*
     const course_id = ref(NaN);
     const course_obj = ref({
         id: NaN,
@@ -19,11 +20,11 @@
     });
     const semester_name = ref('');
     const instructor_ids = ref([]);
-    const instructor_names = ref(['']);
     const indicator_ids = ref([])
+    */
 
     //--------TEST DATA--------
-    /*
+    
     const course_id = ref(1);
     const course_obj = ref({
         id: 1,
@@ -36,7 +37,7 @@
     });
     const semester_name = ref('Fall 2025');
     const instructor_ids = ref([1, 2]);
-    const indicator_ids = ref([1,2])*/
+    const indicator_ids = ref([1,2])
     //--------------------------
     
     async function initialize(){
@@ -44,8 +45,7 @@
 
         //Fetch Course data
         try {
-            const response = await fetch(`/api/courses/${course_id.value}`);
-            const data = await response.json(); // Await the JSON parsing
+            const { data } = await api.get(`/courses/${course_id.value}`);
             course_obj.value = {
                 id: data.data.id,
                 course_code: data.data.courseCode,
@@ -60,20 +60,17 @@
         }
 
         //Fetch Semester data
-        /*
         try {
-            const response = await fetch(`/api/semesters/${course_obj.value.semester_id}`);
-            const data = await response.json(); // Await the JSON parsing
+            const { data } = await api.get(`/semesters/${course_obj.value.semester_id}`);
             console.log('Fetched JSON data:', data);
             semester_name.value = `${data.data.season} ${data.data.semesterYear}`
         } catch (error) {
             console.error('Error fetching or parsing course data:', error);
-        }*/
+        }
 
         //Fetch Instructor IDs
         try {
-            const response = await fetch(`/api/courses/${course_id.value}/instructors`);
-            const data = await response.json(); // Await the JSON parsing
+            const { data } = await api.get(`/courses/${course_id.value}/instructors`);
             instructor_ids.value = data
         } catch (error) {
             console.error('Error fetching or parsing course data:', error);
@@ -81,15 +78,14 @@
         
         //Fetch Indicator IDs
         try {
-            const response = await fetch(`/api/courses/${course_id.value}/indicators`);
-            const data = await response.json(); // Await the JSON parsing
+            const { data } = await api.get(`/courses/${course_id.value}/indicators`);
             indicator_ids.value = data
         } catch (error) {
             console.error('Error fetching or parsing course data:', error);
         }
     }
 
-    initialize();
+    //initialize();
     
 </script>
 
@@ -107,7 +103,10 @@
         </div>
 
         <div id="performance-indicators">
-            <IndicatorListing v-for="piid in indicator_ids" :piid="piid"></IndicatorListing>
+            <div id="indicator-container" v-for="piid in indicator_ids">
+                <IndicatorListing :piid="piid"></IndicatorListing>
+                <hr></hr>
+            </div>
         </div>
     </div>
 </template>
@@ -131,22 +130,26 @@
     #course_header{
         margin-top: 2rem;
         margin-bottom: 0.5rem;
-        font-size: 32px;
+        font-size: 42px;
     }
 
     #course_code{
-        color: red;
+        color: green;
         font-weight: bold;
         margin-right: 1rem;
     }
 
     #description{
         font-style: italic;
-        color: rgb(85, 85, 85);
+        color: rgb(196, 196, 196);
         margin-bottom: 1.5rem;
     }
 
     #performance-indicators{
         margin: 2rem;
+    }
+
+    #indicator-container{
+        margin-bottom: 1rem;
     }
 </style>
