@@ -51,57 +51,42 @@ public interface SemesterRepository extends JpaRepository<Semester, Long> {
 
     List<Semester> findByProgramIdAndStatus(Long programId, SemesterStatus status);
 
-    // Unique constraint methods
+    // Unique semester identification
     Optional<Semester> findByCodeIgnoreCase(String code);
-
-    boolean existsByCodeIgnoreCase(String code);
 
     Optional<Semester> findByCodeIgnoreCaseAndProgramId(String code, Long programId);
 
-    // Search methods
-    List<Semester> findByNameContainingIgnoreCase(String nameFragment);
-
-    @Query("SELECT s FROM Semester s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(s.code) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    List<Semester> searchByNameOrCode(@Param("searchTerm") String searchTerm);
-
-    @Query("SELECT s FROM Semester s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(s.code) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    Page<Semester> searchByNameOrCode(@Param("searchTerm") String searchTerm, Pageable pageable);
-
-    // Date range queries
-    List<Semester> findByStartDateAfter(LocalDate date);
-
-    List<Semester> findByEndDateBefore(LocalDate date);
-
-    List<Semester> findByStartDateBetween(LocalDate start, LocalDate end);
-
-    List<Semester> findByEndDateBetween(LocalDate start, LocalDate end);
-
-    @Query("SELECT s FROM Semester s WHERE :date BETWEEN s.startDate AND s.endDate")
-    List<Semester> findActiveSemestersOnDate(@Param("date") LocalDate date);
+    boolean existsByCodeIgnoreCase(String code);
 
     // Current semester queries
-    Optional<Semester> findByIsCurrentTrueAndProgramId(Long programId);
-
     List<Semester> findByIsCurrentTrue();
 
-    @Query("SELECT s FROM Semester s WHERE s.isCurrent = true AND s.programId = :programId")
+    @Query("SELECT s FROM Semester s WHERE s.programId = :programId AND s.isCurrent = true")
     Optional<Semester> findCurrentSemesterByProgram(@Param("programId") Long programId);
 
-    // Status-based utility methods
-    @Query("SELECT COUNT(s) FROM Semester s WHERE s.programId = :programId AND s.status = :status")
-    long countByProgramIdAndStatus(@Param("programId") Long programId, @Param("status") SemesterStatus status);
+    // Search methods
+    @Query("SELECT s FROM Semester s WHERE " +
+            "LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(s.code) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    List<Semester> searchByNameOrCode(@Param("searchTerm") String searchTerm);
 
-    long countByProgramId(Long programId);
+    @Query("SELECT s FROM Semester s WHERE " +
+            "LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(s.code) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<Semester> searchByNameOrCode(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-    @Query("SELECT s FROM Semester s WHERE s.programId = :programId AND s.status IN ('ACTIVE', 'UPCOMING') ORDER BY s.startDate ASC")
+    // Date-based queries
+    @Query("SELECT s FROM Semester s WHERE s.startDate <= :date AND s.endDate >= :date AND s.status = 'ACTIVE'")
+    List<Semester> findActiveSemestersOnDate(@Param("date") LocalDate date);
+
+    // Active and upcoming semesters
+    @Query("SELECT s FROM Semester s WHERE s.programId = :programId AND (s.status = 'ACTIVE' OR s.status = 'UPCOMING') ORDER BY s.startDate")
     List<Semester> findActiveAndUpcomingSemestersByProgram(@Param("programId") Long programId);
 
-    // Academic year range queries
-    @Query("SELECT s FROM Semester s WHERE s.programId = :programId AND s.academicYear BETWEEN :startYear AND :endYear")
-    List<Semester> findByProgramIdAndAcademicYearRange(
-            @Param("programId") Long programId,
-            @Param("startYear") Integer startYear,
-            @Param("endYear") Integer endYear);
+    // Count methods
+    long countByProgramId(Long programId);
+
+    long countByProgramIdAndStatus(Long programId, SemesterStatus status);
 
     // Methods for assessment generation validation
     @Query("SELECT COUNT(c) > 0 FROM Course c WHERE c.semesterId = :semesterId")
@@ -110,14 +95,12 @@ public interface SemesterRepository extends JpaRepository<Semester, Long> {
     @Query("SELECT COUNT(c) FROM Course c WHERE c.semesterId = :semesterId")
     long countCoursesBySemesterId(@Param("semesterId") Long semesterId);
 
-    // Bulk status update methods
-    @Query("UPDATE Semester s SET s.status = :newStatus WHERE s.id = :semesterId")
-    void updateSemesterStatus(@Param("semesterId") Long semesterId, @Param("newStatus") SemesterStatus newStatus);
-
+    // Bulk update methods
+    @Modifying
     @Query("UPDATE Semester s SET s.isCurrent = false WHERE s.programId = :programId")
     void clearCurrentSemesterFlag(@Param("programId") Long programId);
 
     @Modifying
-    @Query("UPDATE Semester s SET s.isCurrent = true WHERE s.id = :semesterId AND s.programId = :programId")
-    void setCurrentSemester(@Param("semesterId") Long semesterId, @Param("programId") Long programId);
+    @Query("UPDATE Semester s SET s.status = :status WHERE s.id = :semesterId")
+    void updateSemesterStatus(@Param("semesterId") Long semesterId, @Param("status") SemesterStatus status);
 }

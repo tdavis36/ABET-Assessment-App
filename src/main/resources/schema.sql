@@ -66,17 +66,22 @@ CREATE TABLE program_user (
 -- Semester table
 CREATE TABLE semester (
                           id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                          season VARCHAR(6) NOT NULL,
-                          semester_year SMALLINT NOT NULL,
+                          name VARCHAR(50) NOT NULL,
+                          code VARCHAR(20) UNIQUE NOT NULL,
+                          type VARCHAR(10) NOT NULL,
+                          status VARCHAR(15) NOT NULL DEFAULT 'UPCOMING',
+                          start_date DATE NULL,
+                          end_date DATE NULL,
+                          academic_year INT NULL,
+                          description VARCHAR(500) NULL,
                           program_id BIGINT NOT NULL,
+                          is_current BOOLEAN NOT NULL DEFAULT FALSE,
     -- From BaseEntity
                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                           version BIGINT DEFAULT 0,
                           deleted BOOLEAN DEFAULT FALSE NOT NULL,
                           deleted_at TIMESTAMP NULL,
-    -- Semester-specific
-                          is_active BOOLEAN DEFAULT TRUE NOT NULL,
                           FOREIGN KEY (program_id) REFERENCES program(id)
 );
 

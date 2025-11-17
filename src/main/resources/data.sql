@@ -30,11 +30,13 @@ VALUES
 ------------------------------------------------------------
 -- SEMESTERS
 ------------------------------------------------------------
-INSERT INTO semester (id, season, semester_year, program_id, is_active)
+INSERT INTO semester (id, name, code, type, status, start_date, end_date, academic_year, description, program_id, is_current)
 VALUES
-    (1, 'FALL', 2024, 1, TRUE),
-    (2, 'FALL', 2025, 1, TRUE),
-    (3, 'SPRING', 2024, 2, TRUE);
+    (1, 'Fall 2024', 'FALL-2024', 'FALL', 'COMPLETED', '2024-08-26', '2024-12-15', 2024, 'Fall semester for Computer Engineering program', 1, FALSE),
+    (2, 'Fall 2025', 'FALL-2025', 'FALL', 'ACTIVE', '2025-08-25', '2025-12-14', 2025, 'Current fall semester for Computer Engineering program', 1, TRUE),
+    (3, 'Spring 2024', 'SPRING-2024', 'SPRING', 'COMPLETED', '2024-01-15', '2024-05-10', 2024, 'Spring semester for Electrical Engineering program', 2, FALSE);
+
+
 
 ------------------------------------------------------------
 -- STUDENT OUTCOMES

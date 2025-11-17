@@ -24,18 +24,6 @@ public class Semester extends BaseEntity {
     @Column(nullable = false, unique = true, length = 20)
     private String code; // e.g., "FALL-2025"
 
-    @NotNull(message = "Start date is required")
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
-
-    @NotNull(message = "End date is required")
-    @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
-
-    @NotNull(message = "Academic year is required")
-    @Column(name = "academic_year", nullable = false)
-    private Integer academicYear;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private SemesterType type; // FALL, SPRING, SUMMER, WINTER
@@ -44,14 +32,23 @@ public class Semester extends BaseEntity {
     @Column(nullable = false, length = 15)
     private SemesterStatus status = SemesterStatus.UPCOMING;
 
-    @NotNull(message = "Program ID is required")
-    @Column(name = "program_id", nullable = false)
-    private Long programId;
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Column(name = "academic_year")
+    private Integer academicYear;
 
     @Column(length = 500)
     private String description;
 
-    @Column(name = "is_current")
+    @NotNull(message = "Program is required")
+    @Column(name = "program_id", nullable = false)
+    private Long programId;
+
+    @Column(name = "is_current", nullable = false)
     private Boolean isCurrent = false;
 
     // Constructors
@@ -67,6 +64,7 @@ public class Semester extends BaseEntity {
         this.academicYear = academicYear;
         this.type = type;
         this.programId = programId;
+        this.isCurrent = false;
     }
 
     // Enum definitions
@@ -82,11 +80,6 @@ public class Semester extends BaseEntity {
     }
 
     // Business logic methods
-    public boolean isActive() {
-        LocalDate today = LocalDate.now();
-        return !today.isBefore(startDate) && !today.isAfter(endDate);
-    }
-
     public boolean canAddCourses() {
         return status == SemesterStatus.UPCOMING || status == SemesterStatus.ACTIVE;
     }
@@ -97,6 +90,14 @@ public class Semester extends BaseEntity {
 
     public boolean isEditable() {
         return status == SemesterStatus.UPCOMING || status == SemesterStatus.ACTIVE;
+    }
+
+    public boolean isActive() {
+        return status == SemesterStatus.ACTIVE;
+    }
+
+    public boolean isCompleted() {
+        return status == SemesterStatus.COMPLETED || status == SemesterStatus.ARCHIVED;
     }
 
     // Getters and setters
@@ -114,6 +115,22 @@ public class Semester extends BaseEntity {
 
     public void setCode(String code) {
         this.code = code;
+    }
+
+    public SemesterType getType() {
+        return type;
+    }
+
+    public void setType(SemesterType type) {
+        this.type = type;
+    }
+
+    public SemesterStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(SemesterStatus status) {
+        this.status = status;
     }
 
     public LocalDate getStartDate() {
@@ -140,20 +157,12 @@ public class Semester extends BaseEntity {
         this.academicYear = academicYear;
     }
 
-    public SemesterType getType() {
-        return type;
+    public String getDescription() {
+        return description;
     }
 
-    public void setType(SemesterType type) {
-        this.type = type;
-    }
-
-    public SemesterStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(SemesterStatus status) {
-        this.status = status;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Long getProgramId() {
@@ -162,14 +171,6 @@ public class Semester extends BaseEntity {
 
     public void setProgramId(Long programId) {
         this.programId = programId;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public Boolean getIsCurrent() {
@@ -186,13 +187,13 @@ public class Semester extends BaseEntity {
                 "id=" + getId() +
                 ", name='" + name + '\'' +
                 ", code='" + code + '\'' +
+                ", type=" + type +
+                ", status=" + status +
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +
                 ", academicYear=" + academicYear +
-                ", type=" + type +
-                ", status=" + status +
-                ", programId=" + programId +
                 ", description='" + description + '\'' +
+                ", programId=" + programId +
                 ", isCurrent=" + isCurrent +
                 ", createdAt=" + getCreatedAt() +
                 ", updatedAt=" + getUpdatedAt() +
