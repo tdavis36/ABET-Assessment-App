@@ -1,56 +1,21 @@
 <template>
   <section class="instructors-page">
+    <!-- Header -->
     <div class="page-header">
       <div class="header-content">
+        <h2>Instructors</h2>
         <p
           class="subtitle"
-          v-if="instructors.length > 0 && selectedProgramName"
+          v-if="instructors.length > 0"
         >
           {{ instructors.length }} instructor{{ instructors.length !== 1 ? 's' : '' }}
-          in {{ selectedProgramName }}
+          in selected program
         </p>
       </div>
-
-      <!-- Program Selector -->
-      <div class="program-selector">
-        <label for="program-select" class="selector-label">
-          Select Program:
-        </label>
-        <select
-          id="program-select"
-          v-model.number="selectedProgramId"
-          class="program-select"
-          :disabled="loadingPrograms || programs.length === 0"
-        >
-          <option :value="null" disabled>Choose a program...</option>
-          <option
-            v-for="program in programs"
-            :key="program.id"
-            :value="program.id"
-          >
-            {{ program.name }} - {{ program.institution }}
-          </option>
-        </select>
-      </div>
     </div>
 
-    <!-- Loading / empty / error / grid -->
-    <div v-if="loadingPrograms" class="loading-state">
-      <p>Loading programs...</p>
-    </div>
-
-    <div
-      v-else-if="programs.length === 0 && !loadingPrograms"
-      class="empty-state"
-    >
-      <p>No programs found. Please contact an administrator.</p>
-    </div>
-
-    <div v-else-if="!selectedProgramId" class="empty-state">
-      <p>Please select a program to view instructors.</p>
-    </div>
-
-    <div v-else-if="loading" class="loading-state">
+    <!-- Loading / error / grid -->
+    <div v-if="loading" class="loading-state">
       <p>Loading instructors...</p>
     </div>
 
@@ -91,7 +56,7 @@
       <p>No instructors found in this program.</p>
     </div>
 
-    <!-- Instructor Details Modal -->
+    <!-- Instructor Modal -->
     <BaseModal
       v-model:isOpen="showModal"
       :title="selectedInstructor
@@ -101,7 +66,7 @@
       @close="closeModal"
     >
       <div v-if="selectedInstructor" class="instructor-details">
-        <!-- Personal Information -->
+        <!-- Personal Info -->
         <section class="detail-section">
           <h3>Personal Information</h3>
           <div class="detail-grid">
@@ -136,13 +101,9 @@
 
         <!-- Courses -->
         <section class="detail-section">
-          <h3>
-            Courses ({{ selectedInstructor.courses?.length || 0 }})
-          </h3>
+          <h3>Courses ({{ selectedInstructor.courses?.length || 0 }})</h3>
 
-          <div
-            v-if="selectedInstructor.courses && selectedInstructor.courses.length > 0"
-          >
+          <div v-if="selectedInstructor.courses?.length > 0">
             <table class="courses-table">
               <thead>
               <tr>
@@ -156,23 +117,19 @@
                 v-for="course in selectedInstructor.courses"
                 :key="course.id"
               >
+                <td>{{ course.courseCode || course.course_code }}</td>
+                <td>{{ course.courseName || course.course_name || '—' }}</td>
                 <td>
-                  {{ course.courseCode || course.course_code }}
-                </td>
-                <td>
-                  {{ course.courseName || course.course_name || '—' }}
-                </td>
-                <td>
-                    <span v-if="course.measuresCompleted !== undefined">
-                      {{ course.measuresCompleted }}/{{ course.measuresTotal }}
-                      <span class="progress-percent">
-                        ({{ course.measuresTotal && course.measuresTotal > 0
-                        ? Math.round(
-                          ((course.measuresCompleted || 0) / course.measuresTotal) * 100
-                        )
-                        : 0 }}%)
-                      </span>
+                  <span v-if="course.measuresCompleted !== undefined">
+                    {{ course.measuresCompleted }}/{{ course.measuresTotal }}
+                    <span class="progress-percent">
+                      ({{ course.measuresTotal && course.measuresTotal > 0
+                      ? Math.round(
+                        ((course.measuresCompleted || 0) / course.measuresTotal) * 100
+                      )
+                      : 0 }}%)
                     </span>
+                  </span>
                   <span v-else>—</span>
                 </td>
               </tr>
@@ -196,131 +153,77 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import api from '@/api'
-import { useUserStore } from '@/stores/user-store.ts'
-import BaseCard from '@/components/ui/BaseCard.vue'
-import BaseModal from '@/components/ui/BaseModal.vue'
-
-const userStore = useUserStore()
-
-interface Program {
-  id: number
-  name: string
-  institution: string
-}
-
-interface ProgramUser {
-  id: number
-  userId: number
-  adminStatus?: boolean
-}
+import { ref, watch, onMounted } from "vue";
+import api from "@/api";
+import BaseCard from "@/components/ui/BaseCard.vue";
+import BaseModal from "@/components/ui/BaseModal.vue";
 
 interface Course {
-  id: number
-  courseCode?: string
-  course_code?: string
-  courseName?: string
-  course_name?: string
-  measuresCompleted?: number
-  measuresTotal?: number
+  id: number;
+  courseCode?: string;
+  courseName?: string;
+
+  // API fallback naming (snake_case)
+  course_code?: string;
+  course_name?: string;
+
+  // Measures progress fields
+  measuresCompleted?: number;
+  measuresTotal?: number;
 }
 
 interface Instructor {
-  programUserId: number
-  userId: number
-  firstName: string
-  lastName: string
-  email: string
-  role: string
-  courseCount: number
-  courses: Course[]
+  programUserId: number;
+  userId: number;
+
+  firstName: string;
+  lastName: string;
+  email: string;
+
+  role: "ADMIN" | "INSTRUCTOR";
+
+  courseCount: number;
+  courses: Course[];
 }
 
-/* -----------------------------
- * Reactive state
- * ----------------------------- */
-
-const programs = ref<Program[]>([])
-const selectedProgramId = ref<number | null>(null)
-
-const instructors = ref<Instructor[]>([])
-const selectedInstructor = ref<Instructor | null>(null)
-
-const showModal = ref(false)
-const loading = ref(false)
-const loadingPrograms = ref(false)
-const error = ref<string | null>(null)
-
-/* -----------------------------
- * Computed
- * ----------------------------- */
-
-const selectedProgramName = computed<string>(() => {
-  const program = programs.value.find(p => p.id === selectedProgramId.value)
-  return program ? program.name : ''
-})
-
-/* -----------------------------
- * Load programs
- * GET /api/program (paged)
- * ----------------------------- */
-
-async function loadUserPrograms(): Promise<void> {
-  loadingPrograms.value = true
-  try {
-    const res = await api.get('/program', {
-      params: { page: 0, size: 100 }
-    })
-    const paged = res.data
-    programs.value = paged.content ?? paged ?? []
-
-    if (programs.value.length > 0 && !selectedProgramId.value) {
-      selectedProgramId.value = programs.value[0].id
-    }
-  } catch (err) {
-    console.error('Error loading programs:', err)
-    error.value = 'Failed to load programs'
-  } finally {
-    loadingPrograms.value = false
-  }
+interface ProgramUser {
+  id: number;
+  userId: number;
+  adminStatus: boolean;
 }
 
+const props = defineProps<{
+  programId: number | null
+}>();
+
+const instructors = ref<Instructor[]>([]);
+const selectedInstructor = ref<Instructor | null>(null);
+const showModal = ref(false);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
 /* -----------------------------
- * Load program instructors
- * GET /api/program/{id}/users -> ApiResponse<List<ProgramUser>>
- * Then:
- *   GET /api/users/{userId}
- *   GET /api/courses/instructor?programUserId=...
+ * Load instructors for program
  * ----------------------------- */
+async function loadProgramInstructors() {
+  if (!props.programId) return;
 
-async function loadProgramInstructors(): Promise<void> {
-  if (!selectedProgramId.value) return
-
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
 
   try {
-    const res = await api.get(`/program/${selectedProgramId.value}/users`)
-    const apiResp = res.data
-    const programUsers = (apiResp.data ?? []) as ProgramUser[]
+    const res = await api.get(`/program/${props.programId}/users`);
+    const programUsers = res.data.data ?? [];
 
     const loaded = await Promise.all(
-      programUsers.map(async (pu: ProgramUser): Promise<Instructor | null> => {
+      programUsers.map(async (pu: ProgramUser) => {
         try {
-          const userRes = await api.get(`/users/${pu.userId}`)
-          const userApi = userRes.data
-          const user = userApi.data as {
-            firstName: string
-            lastName: string
-            email: string
-          }
+          const userRes = await api.get(`/users/${pu.userId}`);
+          const user = userRes.data.data;
 
-          const coursesRes = await api.get('/courses/instructor', {
+          const coursesRes = await api.get(`/courses/instructor`, {
             params: { programUserId: pu.id }
-          })
-          const coursesApi = coursesRes.data
-          const courses = (coursesApi.data ?? []) as Course[]
+          });
 
           return {
             programUserId: pu.id,
@@ -328,128 +231,42 @@ async function loadProgramInstructors(): Promise<void> {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
-            role: pu.adminStatus ? 'ADMIN' : 'INSTRUCTOR',
-            courseCount: courses.length,
-            courses
-          }
-        } catch (err) {
-          console.error(`Error loading user or courses for programUserId ${pu.id}`, err)
-          return null
+            role: pu.adminStatus ? "ADMIN" : "INSTRUCTOR",
+            courseCount: (coursesRes.data.data ?? []).length,
+            courses: coursesRes.data.data ?? []
+          };
+        } catch {
+          return null;
         }
       })
-    )
+    );
 
-    instructors.value = loaded.filter((i): i is Instructor => i !== null)
+    instructors.value = loaded.filter((x): x is Instructor => x !== null);
+
   } catch (err) {
-    console.error('Error loading program instructors:', err)
-    error.value = 'Failed to load instructors'
+    console.error("Error loading instructors:", err);
+    error.value = "Failed to load instructors";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
-/* -----------------------------
- * Show instructor details
- * For each course:
- *   GET /api/courses/{courseId}/completeness
- * ----------------------------- */
+watch(() => props.programId, () => {
+  loadProgramInstructors();
+});
 
-async function showInstructorDetails(instructor: Instructor): Promise<void> {
-  selectedInstructor.value = instructor
+onMounted(() => {
+  if (props.programId) loadProgramInstructors();
+});
 
-  if (
-    selectedInstructor.value &&
-    selectedInstructor.value.courses &&
-    selectedInstructor.value.courses.length > 0
-  ) {
-    try {
-      const coursesWithCompleteness = await Promise.all(
-        selectedInstructor.value.courses.map(
-          async (course: Course): Promise<Course> => {
-            try {
-              const compRes = await api.get(`/courses/${course.id}/completeness`)
-              const compApi = compRes.data
-              const comp = compApi.data as {
-                completedMeasures: number
-                totalMeasures: number
-              }
-
-              return {
-                ...course,
-                measuresCompleted: comp.completedMeasures,
-                measuresTotal: comp.totalMeasures
-              }
-            } catch (err) {
-              console.error(
-                `Error loading completeness for course ${course.id}:`,
-                err
-              )
-              return {
-                ...course,
-                measuresCompleted: 0,
-                measuresTotal: 0
-              }
-            }
-          }
-        )
-      )
-
-      if (selectedInstructor.value) {
-        selectedInstructor.value = {
-          ...selectedInstructor.value,
-          courses: coursesWithCompleteness
-        }
-      }
-    } catch (err) {
-      console.error('Error loading course details:', err)
-    }
-  }
-
-  showModal.value = true
-}
-
-/* -----------------------------
- * Close modal
- * ----------------------------- */
-
-function closeModal(): void {
-  showModal.value = false
-  selectedInstructor.value = null
-}
-
-/* -----------------------------
- * Watchers
- * ----------------------------- */
-
-watch(selectedProgramId, async newProgramId => {
-  if (newProgramId) {
-    await loadProgramInstructors()
-  } else {
-    instructors.value = []
-  }
-})
-
-/* -----------------------------
- * Lifecycle
- * ----------------------------- */
-
-onMounted(async () => {
-  try {
-    await userStore.loadFromStorage()
-    await loadUserPrograms()
-    // loadProgramInstructors will be triggered by watcher
-  } catch (err) {
-    console.error('Error loading instructor view:', err)
-    error.value = 'Failed to initialize page'
-  }
-})
+function closeModal() { showModal.value = false; selectedInstructor.value = null; }
+function showInstructorDetails(i: Instructor) { selectedInstructor.value = i; showModal.value = true; }
 </script>
 
 <style scoped>
 .instructors-page {
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  padding: 0.4rem 0.75rem;
 }
 
 .page-header {
@@ -463,59 +280,13 @@ onMounted(async () => {
 .page-header h2 {
   margin: 0 0 0.5rem 0;
   color: var(--color-text-primary);
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 
 .subtitle {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 1rem;
-}
-
-/* Program Selector */
-.program-selector {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--color-bg-secondary);
-  border-radius: 0.5rem;
-  border: 1px solid var(--color-border-light);
-}
-
-.selector-label {
-  font-weight: 500;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  white-space: nowrap;
-}
-
-.program-select {
-  flex: 1;
-  max-width: 500px;
-  padding: 0.625rem 0.875rem;
-  font-size: 0.875rem;
-  border: 1px solid var(--color-border-dark);
-  border-radius: 0.375rem;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.program-select:hover:not(:disabled) {
-  border-color: var(--color-primary);
-}
-
-.program-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.program-select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 /* Loading, Error, Empty States */
@@ -535,7 +306,7 @@ onMounted(async () => {
 .instructors-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .instructor-card {
@@ -546,6 +317,7 @@ onMounted(async () => {
 .instructor-card-content {
   display: flex;
   align-items: center;
+  text-align: left;
   gap: 1.25rem;
 }
 
@@ -553,11 +325,8 @@ onMounted(async () => {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    var(--color-primary),
-    var(--color-primary-dark)
-  );
+  background: var(--color-primary);
+
   color: white;
   display: flex;
   align-items: center;

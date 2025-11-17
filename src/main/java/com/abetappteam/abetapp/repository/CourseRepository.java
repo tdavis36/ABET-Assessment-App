@@ -66,6 +66,10 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c FROM Course c JOIN CourseInstructor ci ON c.id = ci.courseId WHERE ci.programUserId = :programUserId AND c.isActive = true")
     List<Course> findActiveCoursesByProgramUserId(@Param("programUserId") Long programUserId);
 
+    @Query("SELECT DISTINCT c FROM Course c JOIN CourseInstructor ci ON c.id = ci.courseId JOIN ProgramUser pu ON pu.id = ci.programUserId WHERE pu.programId = :programId AND pu.isActive = true AND c.isActive = true")
+    List<Course> findActiveCoursesByProgramId(@Param("programId") Long programId);
+
+
     @Query("SELECT c FROM Course c JOIN CourseInstructor ci ON c.id = ci.courseId WHERE ci.programUserId = :programUserId")
     List<Course> findCoursesByProgramUserId(@Param("programUserId") Long programUserId);
 

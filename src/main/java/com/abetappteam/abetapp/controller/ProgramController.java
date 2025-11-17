@@ -1,5 +1,6 @@
 package com.abetappteam.abetapp.controller;
 
+import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.entity.ProgramUser;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -149,5 +150,13 @@ public class ProgramController extends BaseController {
         response.put("isAdmin", "ADMIN".equals(role));
 
         return success(response, "Access check completed");
+    }
+
+    @GetMapping("/{programId}/courses/active")
+    public ResponseEntity<ApiResponse<List<Course>>> getActiveCoursesInProgram(
+            @PathVariable Long programId) {
+
+        List<Course> courses = programService.getCoursesInProgram(programId);
+        return success(courses, "Active courses retrieved successfully");
     }
 }

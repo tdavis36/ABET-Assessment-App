@@ -45,7 +45,7 @@ const cardClasses = computed(() => {
 
 <style scoped>
 .base-card {
-  background-color: var(--color-bg-secondary);
+  background-color: var(--color-bg-tertiary);
   border-radius: 0.5rem;
   overflow: hidden;
   transition: all 0.2s ease-in-out;
@@ -82,7 +82,7 @@ const cardClasses = computed(() => {
 }
 
 .card-body {
-  background-color: var(--color-bg-primary);
+  background-color: var(--color-bg-secondary);
 }
 
 .card-body-padded {
