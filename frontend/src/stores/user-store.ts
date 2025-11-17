@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import api from "@/api"; // axios instance with interceptor
+import api from "@/api";
+import router from "@/router";
 
 export interface User {
   id: number;
@@ -159,6 +160,8 @@ export const useUserStore = defineStore("user", () => {
     error.value = null;
 
     localStorage.clear();
+
+    router.push("/login");
   }
 
   return {
