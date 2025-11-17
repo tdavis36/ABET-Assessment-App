@@ -18,7 +18,7 @@ public class CourseInstructor {
     private Long id;
 
     @NotNull(message = "Program User ID is required")
-    @Column(name = "programuser_id", nullable = false)
+    @Column(name = "program_user_id", nullable = false)
     private Long programUserId;
 
     @NotNull(message = "Course ID is required")

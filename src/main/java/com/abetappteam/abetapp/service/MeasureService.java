@@ -41,7 +41,7 @@ public class MeasureService extends BaseService<Measure, Long, MeasureRepository
         measure.setCourseIndicatorId(dto.getCourseIndicatorId());
         measure.setDescription(dto.getDescription());
         measure.setObservation(dto.getObservation());
-        measure.setFCar(dto.getFCar());
+        measure.setFcar(dto.getFCar());
         measure.setRecommendedAction(dto.getRecommendedAction());
         measure.setStatus(dto.getStatus());
         measure.setStudentsMet(dto.getStudentsMet());
@@ -62,7 +62,7 @@ public class MeasureService extends BaseService<Measure, Long, MeasureRepository
         measure.setCourseIndicatorId(dto.getCourseIndicatorId());
         measure.setDescription(dto.getDescription());
         measure.setObservation(dto.getObservation());
-        measure.setFCar(dto.getFCar());
+        measure.setFcar(dto.getFCar());
         measure.setRecommendedAction(dto.getRecommendedAction());
         measure.setStatus(dto.getStatus());
         measure.setStudentsMet(dto.getStudentsMet());

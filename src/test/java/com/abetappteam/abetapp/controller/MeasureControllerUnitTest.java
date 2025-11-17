@@ -57,7 +57,7 @@ public class MeasureControllerUnitTest {
         testMeasure.setDescription("Test Description");
         testMeasure.setObservation("Test Observation");
         testMeasure.setRecommendedAction("Test Action");
-        testMeasure.setFCar("Test Fcar");
+        testMeasure.setFcar("Test Fcar");
         testMeasure.setStudentsMet(1);
         testMeasure.setStudentsExceeded(2);
         testMeasure.setStudentsBelow(3);

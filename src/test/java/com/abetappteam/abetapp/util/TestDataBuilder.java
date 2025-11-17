@@ -434,7 +434,7 @@ public class TestDataBuilder {
         measure.setDescription(description);
         measure.setObservation(observation);
         measure.setRecommendedAction(recAction);
-        measure.setFCar(fcar);
+        measure.setFcar(fcar);
         measure.setStudentsMet(met);
         measure.setStudentsExceeded(exceeded);
         measure.setStudentsBelow(below);

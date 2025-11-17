@@ -43,9 +43,16 @@
               :key="course.id"
               :value="course.id"
             >
-              {{ course.code }} - {{ course.name }}
+              {{ course.courseCode }} - {{ course.courseName }}
             </option>
           </select>
+          <button
+            class="edit-button"
+            v-if="selectedCourseId"
+            @click="openEditModal"
+          >
+            Edit
+          </button>
         </div>
 
         <div v-if="error" class="empty-state">
@@ -73,6 +80,11 @@
       <div v-if="activeTab === 'instructors'" class="tab-content">
         <InstructorSelector />
       </div>
+      <CourseEditorModal
+        :course="editingCourse"
+        @close="closeEditModal"
+        @saved="handleCourseSaved"
+      />
     </div>
   </div>
 </template>
@@ -83,13 +95,18 @@ import { useRoute, useRouter } from 'vue-router'
 import CourseViewPage from '@/components/pages/CourseViewPage.vue'
 import InstructorSelector from '@/components/pages/InstructorSelector.vue'
 import api from '@/api'
+import CourseEditorModal from "@/components/CourseEditorModal.vue";
 
 interface Course {
   id: number
-  code: string
-  name: string
+  courseCode: string
+  courseName: string
+  courseDescription?: string
+  isActive: boolean
   semesterId: number
+  studentCount?: number
 }
+
 
 const route = useRoute()
 const router = useRouter()
@@ -106,39 +123,52 @@ const semesterId = ref<number | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
+const editingCourse = ref<Course | null>(null)
+
+function openEditModal() {
+  if (!selectedCourseId.value) return
+
+  // Find selected course from the list
+  const course = courses.value.find(c => c.id === selectedCourseId.value)
+  if (course) {
+    editingCourse.value = course
+  }
+}
+
+function closeEditModal() {
+  editingCourse.value = null
+}
+
+// Refresh after save
+async function handleCourseSaved() {
+  await fetchCourses()
+
+  // maintain selection (if the course still exists)
+  const stillExists = courses.value.some(c => c.id === selectedCourseId.value)
+  if (!stillExists) {
+    selectedCourseId.value = null
+  }
+
+  editingCourse.value = null
+}
+
 /**
  * Fetch courses for the current semester.
  * Matches CourseController#getAllCourses:
  *   GET /api/courses?semesterId=...&page=&size=&sort=&direction=
  */
 async function fetchCourses() {
-  if (!semesterId.value) {
-    courses.value = []
-    return
-  }
-
   try {
-    isLoading.value = true
-    error.value = null
+    isLoading.value = true;
+    error.value = null;
 
-    const res = await api.get('/courses', {
-      params: {
-        semesterId: semesterId.value,
-        page: 0,
-        size: 100,
-        sort: 'courseName',
-        direction: 'asc'
-      }
-    })
-
-    // CourseController returns PagedResponse<Course> (no ApiResponse wrapper)
-    const paged = res.data
-    courses.value = paged.content ?? paged ?? []
+    const res = await api.get('/courses/active/all');
+    courses.value = res.data.data ?? [];
   } catch (err) {
-    console.error('Error fetching courses:', err)
-    error.value = 'Failed to load courses'
+    console.error('Error fetching courses:', err);
+    error.value = 'Failed to load courses';
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
@@ -148,7 +178,7 @@ async function fetchCourses() {
 function onCourseChange() {
   if (selectedCourseId.value != null) {
     router.push({
-      name: 'Management',
+      name: 'Setup',
       query: {
         tab: 'courses',
         courseId: selectedCourseId.value,
@@ -211,12 +241,12 @@ onMounted(() => {
 .page-header h1 {
   font-size: 2rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
   margin-bottom: 0.5rem;
 }
 
 .subtitle {
-  color: #666;
+  color: var(--color-text-secondary);
   font-size: 1rem;
 }
 
@@ -224,7 +254,7 @@ onMounted(() => {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 2rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-border-dark);
 }
 
 .tab-button {
@@ -232,7 +262,7 @@ onMounted(() => {
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #6b7280;
+  color: var(--color-text-primary);
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -245,12 +275,12 @@ onMounted(() => {
 }
 
 .tab-button.active {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
+  color: var(--color-primary);
+  border-bottom-color: var(--color-border-dark);
 }
 
 .content-area {
-  background: white;
+  background: var(--color-bg-secondary);
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 2rem;
@@ -286,7 +316,7 @@ onMounted(() => {
   border-radius: 0.375rem;
   font-size: 1rem;
   color: #1f2937;
-  background-color: white;
+  background-color: var(--color-bg-tertiary);
   cursor: pointer;
   transition: border-color 0.2s;
 }

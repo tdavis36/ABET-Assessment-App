@@ -145,7 +145,7 @@ CREATE TABLE course (
 -- CourseInstructor table
 CREATE TABLE course_instructor (
                                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                                   programUser_id BIGINT NOT NULL,
+                                   program_user_id BIGINT NOT NULL,
                                    course_id BIGINT NOT NULL,
     -- From BaseEntity
                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -155,7 +155,7 @@ CREATE TABLE course_instructor (
                                    deleted_at TIMESTAMP NULL,
     -- CourseInstructor-specific
                                    is_active BOOLEAN DEFAULT TRUE NOT NULL,
-                                   FOREIGN KEY (programUser_id) REFERENCES program_user(id),
+                                   FOREIGN KEY (program_user_id) REFERENCES program_user(id),
                                    FOREIGN KEY (course_id) REFERENCES course(id)
 );
 
@@ -179,7 +179,7 @@ CREATE TABLE course_indicator (
 -- Measure table
 CREATE TABLE measure (
                          id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                         courseIndicator_id BIGINT NOT NULL,
+                         course_indicator_id BIGINT NOT NULL,
                          measure_description TEXT NOT NULL,
                          observation TEXT NULL,
                          recommended_action TEXT NULL,
@@ -187,7 +187,7 @@ CREATE TABLE measure (
                          met SMALLINT NULL,
                          exceeded SMALLINT NULL,
                          below SMALLINT NULL,
-                         mStatus ENUM('InProgress', 'Submitted', 'InReview', 'Complete') DEFAULT 'InProgress' NOT NULL,
+                         m_status VARCHAR(10) DEFAULT 'InProgress' NOT NULL,
     -- From BaseEntity
                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -196,5 +196,5 @@ CREATE TABLE measure (
                          deleted_at TIMESTAMP NULL,
     -- Measure-specific
                          is_active BOOLEAN DEFAULT TRUE NOT NULL,
-                         FOREIGN KEY (courseIndicator_id) REFERENCES course_indicator(id)
+                         FOREIGN KEY (course_indicator_id) REFERENCES course_indicator(id)
 );

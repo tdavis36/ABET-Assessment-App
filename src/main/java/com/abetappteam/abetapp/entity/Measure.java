@@ -2,77 +2,90 @@ package com.abetappteam.abetapp.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "measure")
 public class Measure extends BaseEntity {
 
-    @JoinColumn(name = "courseindicator_id")
+    @Column(name = "course_indicator_id", nullable = false)
     private Long courseIndicatorId;
 
-    //Every character length of 3000 should be reviewed prior to production
+    // Description (required)
     @NotBlank(message = "Description of Measure is required")
     @Column(name = "measure_description", nullable = false, length = 3000)
     private String description;
 
-    @Column(name = "observation", nullable = true, length = 3000)
+    // Optional fields
+    @Column(name = "observation", length = 3000)
     private String observation;
 
-    @Column(name = "recommended_action", nullable = true, length = 3000)
-    private String recAction;
+    @Column(name = "recommended_action", length = 3000)
+    private String recommendedAction;
 
-    @Column(name = "fcar", nullable = true, length = 3000)
+    @Column(name = "fcar", length = 3000)
     private String fcar;
 
-    @Column(name = "met", nullable = true)
-    private Integer met;
+    // Student performance counts
+    @Column(name = "met")
+    private Integer studentsMet;
 
-    @Column(name = "exceeded", nullable = true)
-    private Integer exceeded;
+    @Column(name = "exceeded")
+    private Integer studentsExceeded;
 
-    @Column(name = "below", nullable = true)
-    private Integer below;
+    @Column(name = "below")
+    private Integer studentsBelow;
 
     /*
-     * Each measure has one of the following statuses:
-     * "InProgress": The measure hasn't been started or submitted for review yet
-     * "Submitted": The measure is awaiting approval from an administrator
-     * "InReview": The measure has been rejected at least once, and has not yet been submitted again
-     * "Complete": The measure has been approved 
+     * Each measure has a status:
+     * "InProgress", "Submitted", "InReview", "Complete"
      */
     @NotBlank(message = "Measure Status is required")
     @Size(min = 8, max = 10, message = "Measure must have a status of length 8, 9, or 10")
-    @Column(name = "mStatus", nullable = false, length = 10)
+    @Column(name = "m_status", nullable = false, length = 10)
     private String status;
 
-    @Column(name="is_active", nullable = false)
+    @Column(name = "is_active", nullable = false)
     private Boolean active;
 
-    //Constructors
-    public Measure(){
+    // ------------------------------------------
+    // Constructors
+    // ------------------------------------------
+
+    public Measure() {
         super();
     }
 
-    public Measure(Long courseIndicatorId, String description, String observation, String recAction, String fcar, 
-    Integer met, Integer exceeded, Integer below, String status, Boolean active){
+    public Measure(
+            Long courseIndicatorId,
+            String description,
+            String observation,
+            String recommendedAction,
+            String fcar,
+            Integer studentsMet,
+            Integer studentsExceeded,
+            Integer studentsBelow,
+            String status,
+            Boolean active
+    ) {
         this.courseIndicatorId = courseIndicatorId;
         this.description = description;
         this.observation = observation;
-        this.recAction = recAction;
+        this.recommendedAction = recommendedAction;
         this.fcar = fcar;
-        this.met = met;
-        this.exceeded = exceeded;
-        this.below = below;
+        this.studentsMet = studentsMet;
+        this.studentsExceeded = studentsExceeded;
+        this.studentsBelow = studentsBelow;
         this.status = status;
         this.active = active;
     }
 
+    // ------------------------------------------
+    // Getters & Setters
+    // ------------------------------------------
 
-    //Getters and Setters
     public Long getCourseIndicatorId() {
         return courseIndicatorId;
     }
@@ -80,61 +93,61 @@ public class Measure extends BaseEntity {
     public void setCourseIndicatorId(Long courseIndicatorId) {
         this.courseIndicatorId = courseIndicatorId;
     }
- 
-    public void setDescription(String description){
-        this.description = description;
-    }
 
-    public String getDescription(){
+    public String getDescription() {
         return description;
     }
 
-    public String getObservation(){
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getObservation() {
         return observation;
     }
 
-    public void setObservation(String observation){
+    public void setObservation(String observation) {
         this.observation = observation;
     }
 
-    public String getRecommendedAction(){
-        return recAction;
+    public String getRecommendedAction() {
+        return recommendedAction;
     }
 
-    public void setRecommendedAction(String recAction){
-        this.recAction = recAction;
+    public void setRecommendedAction(String recommendedAction) {
+        this.recommendedAction = recommendedAction;
     }
 
-    public String getFCar(){
+    public String getFcar() {
         return fcar;
     }
 
-    public void setFCar(String fcar){
+    public void setFcar(String fcar) {
         this.fcar = fcar;
     }
 
-    public Integer getStudentsMet(){
-        return met;
+    public Integer getStudentsMet() {
+        return studentsMet;
     }
 
-    public Integer getStudentsExceeded(){
-        return exceeded;
+    public void setStudentsMet(Integer studentsMet) {
+        this.studentsMet = studentsMet;
     }
 
-    public Integer getStudentsBelow(){
-        return below;
+    public Integer getStudentsExceeded() {
+        return studentsExceeded;
     }
 
-    public void setStudentsMet(Integer met){
-        this.met = met;
+    public void setStudentsExceeded(Integer studentsExceeded) {
+        this.studentsExceeded = studentsExceeded;
     }
 
-    public void setStudentsExceeded(Integer exceeded){
-        this.exceeded = exceeded;
+    public Integer getStudentsBelow() {
+        return studentsBelow;
     }
 
-    public void setStudentsBelow(Integer below){
-        this.below = below;
+    public void setStudentsBelow(Integer studentsBelow) {
+        this.studentsBelow = studentsBelow;
     }
 
     public String getStatus() {
@@ -144,27 +157,31 @@ public class Measure extends BaseEntity {
     public void setStatus(String status) {
         this.status = status;
     }
- 
-    public Boolean getActive(){
+
+    public Boolean getActive() {
         return active;
     }
 
-    public void setActive(Boolean active){
+    public void setActive(Boolean active) {
         this.active = active;
     }
-    
+
+    // ------------------------------------------
+    // toString()
+    // ------------------------------------------
+
     @Override
-    public String toString(){
+    public String toString() {
         return "Measure{" +
                 "id=" + getId() +
                 ", courseIndicatorId=" + courseIndicatorId +
                 ", description='" + description + '\'' +
                 ", observation='" + observation + '\'' +
-                ", recommended action='" + recAction + '\'' +
+                ", recommendedAction='" + recommendedAction + '\'' +
                 ", fcar='" + fcar + '\'' +
-                ", met='" + met + '\'' +
-                ", exceeded='" + exceeded + '\'' +
-                ", below='" + below + '\'' +
+                ", studentsMet=" + studentsMet +
+                ", studentsExceeded=" + studentsExceeded +
+                ", studentsBelow=" + studentsBelow +
                 ", status='" + status + '\'' +
                 ", active=" + active +
                 ", createdAt=" + getCreatedAt() +

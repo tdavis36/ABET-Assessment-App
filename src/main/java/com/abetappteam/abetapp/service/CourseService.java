@@ -285,6 +285,12 @@ public class CourseService extends BaseService<Course, Long, CourseRepository> {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<Course> getAllActiveCourses() {
+        logger.debug("Fetching all active courses");
+        return repository.findByIsActive(true);
+    }
+
     // Helper methods for business logic
     private boolean hasMeasuresInReview(Long courseId) {
         return repository.countMeasuresInReviewByCourseId(courseId) > 0;

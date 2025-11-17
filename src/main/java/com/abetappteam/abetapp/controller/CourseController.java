@@ -66,6 +66,16 @@ public class CourseController extends BaseController {
     }
 
     /**
+     * Get all active courses
+     */
+    @GetMapping("/active/all")
+    public ResponseEntity<ApiResponse<List<Course>>> getAllActiveCourses() {
+        logger.info("Fetching ALL active courses (no semester filter)");
+        List<Course> courses = courseService.getAllActiveCourses();
+        return success(courses, "Active courses retrieved successfully");
+    }
+
+    /**
      * Create a new course
      */
     @PostMapping

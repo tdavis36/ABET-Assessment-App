@@ -39,7 +39,7 @@ public class MeasureController extends BaseController{
         }
 
     //Return a measure by id
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<ApiResponse<Measure>> getMeasure(@PathVariable Long id) {
         logger.info("Fetching measure with id: {}", id);
         Measure measure = service.findById(id);

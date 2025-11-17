@@ -36,4 +36,21 @@ public interface MeasureRepository extends JpaRepository<Measure, Long>{
     @Query("SELECT m FROM Measure m WHERE m.active = true AND m.status = :status AND m.courseIndicatorId = :courseIndicatorId")
     List<Measure> findActiveMeasuresByCourseIndicatorIdAndStatus(@Param("courseIndicatorId") Long courseIndicatorId, 
     @Param("status") String status);
+
+    // Active measures by indicator
+    @Query("""
+    SELECT m FROM Measure m
+    JOIN CourseIndicator ci ON m.courseIndicatorId = ci.id
+    WHERE ci.indicatorId = :indicatorId AND m.active = true
+""")
+    List<Measure> findActiveMeasuresByIndicator(@Param("indicatorId") Long indicatorId);
+
+    // Inactive measures by indicator
+    @Query("""
+    SELECT m FROM Measure m
+    JOIN CourseIndicator ci ON m.courseIndicatorId = ci.id
+    WHERE ci.indicatorId = :indicatorId AND m.active = false
+""")
+    List<Measure> findInactiveMeasuresByIndicator(@Param("indicatorId") Long indicatorId);
+
 }

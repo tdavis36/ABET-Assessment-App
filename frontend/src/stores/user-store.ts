@@ -150,6 +150,27 @@ export const useUserStore = defineStore("user", () => {
   }
 
   // -------------------------
+  // ACTION: SAVE TO STORAGE
+  // -------------------------
+  function saveToStorage() {
+    if (authToken.value) {
+      localStorage.setItem("authToken", authToken.value);
+    }
+
+    if (user.value) {
+      localStorage.setItem("currentUser", JSON.stringify(user.value));
+    }
+
+    if (programs.value) {
+      localStorage.setItem("programs", JSON.stringify(programs.value));
+    }
+
+    if (currentProgramId.value !== null) {
+      localStorage.setItem("currentProgramId", String(currentProgramId.value));
+    }
+  }
+
+  // -------------------------
   // ACTION: LOGOUT
   // -------------------------
   function logout() {
@@ -186,5 +207,6 @@ export const useUserStore = defineStore("user", () => {
     logout,
     switchProgram,
     loadFromStorage,
+    saveToStorage,
   };
 });

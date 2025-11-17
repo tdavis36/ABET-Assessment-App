@@ -77,12 +77,12 @@ VALUES
 ------------------------------------------------------------
 -- COURSE_INSTRUCTOR
 ------------------------------------------------------------
-INSERT INTO course_instructor (id, programUser_id, course_id, is_active)
+INSERT INTO course_instructor (id, program_user_id, course_id, is_active)
 VALUES
-    (1, 2, 1, TRUE), -- Bob → CE101
-    (2, 3, 2, TRUE), -- Carol → CE202
-    (3, 2, 3, TRUE), -- Bob → CE350
-    (4, 4, 4, TRUE); -- Dave → EE210
+    (1, 2, 1, TRUE), -- Bob â†’ CE101
+    (2, 3, 2, TRUE), -- Carol â†’ CE202
+    (3, 2, 3, TRUE), -- Bob â†’ CE350
+    (4, 4, 4, TRUE); -- Dave â†’ EE210
 
 ------------------------------------------------------------
 -- COURSE_INDICATOR (map PIs to courses)
@@ -101,29 +101,29 @@ VALUES
 ------------------------------------------------------------
 -- MEASURES
 ------------------------------------------------------------
-INSERT INTO measure (id, courseIndicator_id, measure_description,
-                     observation, recommended_action, fcar, met, exceeded, below, is_active)
+INSERT INTO measure (id, course_indicator_id, measure_description,
+                     observation, recommended_action, fcar, met, exceeded, below, m_status, is_active)
 VALUES
     (1, 1, 'Exam 1 performance', 'Strong performance overall', 'Continue approach',
-     'Detailed FCAR text', 25, 10, 10, TRUE),
+     'Detailed FCAR text', 25, 10, 10, 'InProgress', TRUE),
 
     (2, 2, 'Communication rubric evaluation', 'Students struggled with clarity', 'Increase practice assignments',
-     'FCAR text', 15, 5, 25, TRUE),
+     'FCAR text', 15, 5, 25, 'Submitted', TRUE),
 
     (3, 3, 'Circuit problem exam section', 'Incorrect simplification common', 'Add supplemental workshop',
-     'FCAR details', 20, 8, 12, TRUE),
+     'FCAR details', 20, 8, 12, 'InProgress', TRUE),
 
     (4, 4, 'Design assignment scoring', 'Good use of tools', 'Expand assignment scope',
-     'More FCAR details', 30, 5, 5, TRUE),
+     'More FCAR details', 30, 5, 5, 'Complete', TRUE),
 
     (5, 5, 'Teamwork assessment', 'Teams performed well', 'Maintain group rotations',
-     'Team FCAR', 22, 8, 0, TRUE),
+     'Team FCAR', 22, 8, 0, 'InReview', TRUE),
 
     (6, 6, 'Team decision analysis', 'Some groups lacked cohesion', 'Add leadership module',
-     'More content', 10, 5, 15, TRUE),
+     'More content', 10, 5, 15, 'InProgress', TRUE),
 
     (7, 7, 'Logic lab exam', 'Hands-on performance good', 'Increase lab difficulty',
-     'Logic FCAR', 28, 12, 10, TRUE),
+     'Logic FCAR', 28, 12, 10, 'Submitted', TRUE),
 
     (8, 8, 'Presentation rubric', 'Oral skills improving', 'More group presentations',
-     'Communication FCAR', 20, 10, 20, TRUE);
+     'Communication FCAR', 20, 10, 20, 'Complete', TRUE);

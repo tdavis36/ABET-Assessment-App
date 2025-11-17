@@ -80,15 +80,24 @@ public class MeasureRepositoryTest extends BaseRepositoryTest{
 
     @Test
     void shouldFindAllActiveMeasures() {
-        //Given
-        measureRepository.save(TestDataBuilder.createMeasure(null, "Active Measure 1", null, null, null, null, null, null, "InProgress", true));
-        measureRepository.save(TestDataBuilder.createMeasure(null, "Active Measure 2", null, null, null, null, null, null, "InProgress", true));
-        measureRepository.save(TestDataBuilder.createMeasure(null, "Inactive Measure", null, null, null, null, null, null, "InProgress", false));
+        Measure active1 = TestDataBuilder.createMeasure(
+                1L, "Active Measure 1", null, null, null, null, null, null, "InProgress", true
+        );
 
-        //When
+        Measure active2 = TestDataBuilder.createMeasure(
+                1L, "Active Measure 2", null, null, null, null, null, null, "InProgress", true
+        );
+
+        Measure inactive = TestDataBuilder.createMeasure(
+                1L, "Inactive Measure", null, null, null, null, null, null, "InProgress", false
+        );
+
+        measureRepository.save(active1);
+        measureRepository.save(active2);
+        measureRepository.save(inactive);
+
         List<Measure> activeMeasures = measureRepository.findByActiveTrue();
 
-        //Then
         assertThat(activeMeasures).hasSize(2);
         assertThat(activeMeasures).allMatch(Measure::getActive);
     }

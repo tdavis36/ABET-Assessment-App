@@ -77,7 +77,7 @@ const selectedProgramName = computed<string>(() => {
 async function loadUserPrograms(): Promise<void> {
   loadingPrograms.value = true;
   try {
-    const res = await api.get("/programs");
+    const res = await api.get("/program");
     const data = (res.data?.data ?? []) as Program[];
     programs.value = data;
 
