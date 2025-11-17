@@ -108,4 +108,38 @@ public class MeasureRepositoryTest extends BaseRepositoryTest{
         assertThat(found).extracting(Measure::getCourseIndicatorId).containsExactlyInAnyOrder(1l);
         assertThat(found).extracting(Measure::getActive).containsExactly(true);
     }
+
+    @Test
+    void shouldFindActiveMeasuresByCourseIndicatorIdAndStatus(){
+        //Given
+        measureRepository.save(testMeasure);
+        entityManager.flush();
+        entityManager.clear();
+
+        //When
+        List<Measure> found = measureRepository.findActiveMeasuresByCourseIndicatorIdAndStatus(1l, "InProgress");
+
+        //Then
+        assertThat(found).hasSize(1);
+        assertThat(found).extracting(Measure::getActive).containsExactly(true);
+        assertThat(found).extracting(Measure::getStatus).containsExactly("InProgress");
+        assertThat(found).extracting(Measure::getCourseIndicatorId).containsExactly(1l);
+    }
+
+    @Test
+    void shouldFindInactiveMeasuresByCourseId(){
+        //Given
+        testMeasure.setActive(false);
+        measureRepository.save(testMeasure);
+        entityManager.flush();
+        entityManager.clear();
+
+        //When
+        List<Measure> found = measureRepository.findInactiveMeasuresByCourseIndicatorId(1l);
+
+        //Then
+        assertThat(found).hasSize(1);
+        assertThat(found).extracting(Measure::getActive).containsExactly(false);
+        assertThat(found).extracting(Measure::getCourseIndicatorId).containsExactly(1l);
+    }
 }

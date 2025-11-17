@@ -2,11 +2,11 @@ package com.abetappteam.abetapp.controller;
 
 import com.abetappteam.abetapp.config.TestSecurityConfig;
 import com.abetappteam.abetapp.exception.ResourceNotFoundException;
+import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.entity.CourseIndicator;
 import com.abetappteam.abetapp.entity.Measure;
 import com.abetappteam.abetapp.dto.MeasureDTO;
 import com.abetappteam.abetapp.service.MeasureService;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +48,7 @@ public class MeasureControllerUnitTest {
     private Measure testMeasure;
     private MeasureDTO testDTO;
     private CourseIndicator testIndicator;
+    private Course testCourse;
 
     @BeforeEach
     void setUp(){
@@ -76,6 +77,13 @@ public class MeasureControllerUnitTest {
         testIndicator.setCourseId(1l);
         testIndicator.setIndicatorId(1l);
         testIndicator.setIsActive(true);
+
+        testCourse = new Course();
+        testCourse.setId(1l);
+        testCourse.setCourseCode("CS400");
+        testCourse.setCourseDescription("Test for Measures");
+        testCourse.setIsActive(true);
+        testCourse.setSemesterId(1l);
     }
 
     @Test
@@ -123,7 +131,6 @@ public class MeasureControllerUnitTest {
         //When/Then
         mockMvc.perform(get("/api/measure/1"))
                 .andExpect(status().isOk())
-                .andDo(MockMvcResultHandlers.print())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.description").value("Test Description"));
@@ -202,11 +209,76 @@ public class MeasureControllerUnitTest {
         //When
         mockMvc.perform(get("/api/measure/byIndicator/1"))
                 .andExpect(status().isOk())
-                .andDo(MockMvcResultHandlers.print())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Measures found"))
                 .andExpect(jsonPath("$.data.[0].id").value(1));
         
         verify(service, times(1)).findAllActiveMeasuresByIndicator(1l);
+    }
+
+    @Test
+    void shouldReturnAllActiveMeasuresByInProgressStatusAndSemesterId() throws Exception {
+        //Given 
+        List<Measure> measures = List.of(testMeasure);
+        when(service.findAllActiveMeasuresByStatusAndSemester(eq("InProgress"), eq(1l))).thenReturn(measures);
+
+        //When
+        mockMvc.perform(get("/api/measure/bySemester/InProgress/1"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Measures found"))
+                .andExpect(jsonPath("$.data.[0].active").value(true));
+    }
+
+    @Test
+    void shouldReturnAllActiveMeasuresBySubmittedStatusAndSemesterId() throws Exception {
+        //Given 
+        testMeasure.setStatus("Submitted");
+
+        List<Measure> measures = List.of(testMeasure);
+        when(service.findAllActiveMeasuresByStatusAndSemester(eq("Submitted"), eq(1l))).thenReturn(measures);
+
+        //When
+        mockMvc.perform(get("/api/measure/bySemester/Submitted/1"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Measures found"))
+                .andExpect(jsonPath("$.data.[0].active").value(true));
+    }
+
+    @Test
+    void shouldReturnAllActiveMeasuresByInReviewStatusAndSemesterId() throws Exception {
+        //Given 
+        testMeasure.setStatus("InReview");
+
+        List<Measure> measures = List.of(testMeasure);
+        when(service.findAllActiveMeasuresByStatusAndSemester(eq("InReview"), eq(1l))).thenReturn(measures);
+
+        //When
+        mockMvc.perform(get("/api/measure/bySemester/InReview/1"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Measures found"))
+                .andExpect(jsonPath("$.data.[0].active").value(true));
+    }
+
+    @Test
+    void shouldReturnAllActiveMeasuresByCompleteStatusAndSemesterId() throws Exception {
+        //Given 
+        testMeasure.setStatus("Complete");
+
+        List<Measure> measures = List.of(testMeasure);
+        when(service.findAllActiveMeasuresByStatusAndSemester(eq("Complete"), eq(1l))).thenReturn(measures);
+
+        //When
+        mockMvc.perform(get("/api/measure/bySemester/Complete/1"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Measures found"))
+                .andExpect(jsonPath("$.data.[0].active").value(true));
     }
 }

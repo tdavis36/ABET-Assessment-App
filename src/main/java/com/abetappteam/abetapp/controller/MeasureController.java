@@ -46,7 +46,39 @@ public class MeasureController extends BaseController{
         return success(measure, "Measure found");
     }
 
-    //Return all measures by courseid
+    //Return all Active measures by SemesterId and InProgress Status
+    @GetMapping("/bySemester/InProgress/{semesterId}")
+    public ResponseEntity<ApiResponse<List<Measure>>> getInProgressMeasuresBySemester(@PathVariable Long semesterId){
+        logger.info("Fetching measures with status 'InProgress' from semester with id: {}", semesterId);
+        List<Measure> measures = service.findAllActiveMeasuresByStatusAndSemester("InProgress", semesterId);
+        return success(measures, "Measures found");
+    }
+
+    //Return all Active measures by SemesterId and Submitted Status
+    @GetMapping("/bySemester/Submitted/{semesterId}")
+    public ResponseEntity<ApiResponse<List<Measure>>> getSubmittedMeasuresBySemester(@PathVariable Long semesterId){
+        logger.info("Fetching measures with status 'Submitted' from semester with id: {}", semesterId);
+        List<Measure> measures = service.findAllActiveMeasuresByStatusAndSemester("Submitted", semesterId);
+        return success(measures, "Measures found");
+    }
+
+    //Return all Active measures by SemesterId and InReview Status
+    @GetMapping("/bySemester/InReview/{semesterId}")
+    public ResponseEntity<ApiResponse<List<Measure>>> getInReviewMeasuresBySemester(@PathVariable Long semesterId){
+        logger.info("Fetching measures with status 'InReview' from semester with id: {}", semesterId);
+        List<Measure> measures = service.findAllActiveMeasuresByStatusAndSemester("InReview", semesterId);
+        return success(measures, "Measures found");
+    }
+
+    //Return all Active measures by SemesterId and Complete Status
+    @GetMapping("/bySemester/Complete/{semesterId}")
+    public ResponseEntity<ApiResponse<List<Measure>>> getCompleteMeasuresBySemester(@PathVariable Long semesterId){
+        logger.info("Fetching measures with status 'Complete' from semester with id: {}", semesterId);
+        List<Measure> measures = service.findAllActiveMeasuresByStatusAndSemester("Complete", semesterId);
+        return success(measures, "Measures found");
+    }
+
+    //Return all Active measures by courseid
     @GetMapping("/byCourse/{courseId}")
     public ResponseEntity<ApiResponse<List<Measure>>> getMeasuresByCourseId(@PathVariable Long courseId){
         logger.info("Fetching measure with course id: {}", courseId);
@@ -54,11 +86,19 @@ public class MeasureController extends BaseController{
         return success(measures, "Measures found");
     }
 
-    //Return all measured by indicatorid
+    //Return all Active measures by indicatorid
     @GetMapping("/byIndicator/{indicatorId}")
     public ResponseEntity<ApiResponse<List<Measure>>> getMeasuresByIndicatorId(@PathVariable Long indicatorId){
         logger.info("Fetching measure with indicator id: {}", indicatorId);
         List<Measure> measures = service.findAllActiveMeasuresByIndicator(indicatorId);
+        return success(measures, "Measures found");
+    }
+
+    //Return all Inactive measures by indicatorid
+    @GetMapping("/byIndicator/Inactive/{indicatorId}")
+    public ResponseEntity<ApiResponse<List<Measure>>> getInactiveMeasuresByIndicatorId(@PathVariable Long indicatorId){
+        logger.info("Fetching inactive measures with indicator id: {}", indicatorId);
+        List<Measure> measures = service.findAllInactiveMeasuresByIndicator(indicatorId);
         return success(measures, "Measures found");
     }
 
