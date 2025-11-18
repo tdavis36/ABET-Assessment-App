@@ -17,7 +17,7 @@ const emit = defineEmits(["logout"])
         <div class="nav-divider"></div>
         <router-link to="/about" class="nav_button">About</router-link>
         <div class="nav-divider"></div>
-        <router-link to="/test-connection" class="nav_button">Test Connection</router-link>
+        <router-link to="/fcar/1" class="nav_button">FCAR (Testing)</router-link>
         <div class="nav-divider"></div>
         <router-link to="/setup" class="nav_button">Setup</router-link>
       </div>

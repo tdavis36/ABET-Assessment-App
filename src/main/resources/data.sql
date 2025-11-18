@@ -81,10 +81,10 @@ VALUES
 ------------------------------------------------------------
 INSERT INTO course_instructor (id, program_user_id, course_id, is_active)
 VALUES
-    (1, 2, 1, TRUE), -- Bob â†’ CE101
-    (2, 3, 2, TRUE), -- Carol â†’ CE202
-    (3, 2, 3, TRUE), -- Bob â†’ CE350
-    (4, 4, 4, TRUE); -- Dave â†’ EE210
+    (1, 2, 1, TRUE), -- Bob at CE101
+    (2, 3, 2, TRUE), -- Carol at CE202
+    (3, 2, 3, TRUE), -- Bob at CE350
+    (4, 4, 4, TRUE); -- Dave at EE210
 
 ------------------------------------------------------------
 -- COURSE_INDICATOR (map PIs to courses)
