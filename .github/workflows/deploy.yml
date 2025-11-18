@@ -68,4 +68,4 @@ jobs:
           ssh -i ~/.ssh/key \
               -o StrictHostKeyChecking=no \
               ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_TAILSCALE_IP }} \
-              "GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}' GITHUB_ACTOR='${{ github.actor }}' IMAGE='${{ needs.build-and-push.outputs.image }}' bash /opt/ABET-Assessment-App/deploy-staging.sh"
+              "GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}' GITHUB_ACTOR='${{ github.actor }}' IMAGE='${{ needs.build-and-push.outputs.image }}' bash /opt/ABET-Assessment-App/deploy.sh"
