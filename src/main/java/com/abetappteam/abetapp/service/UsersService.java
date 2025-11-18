@@ -1,6 +1,7 @@
 package com.abetappteam.abetapp.service;
 
 import com.abetappteam.abetapp.dto.UsersDTO;
+import com.abetappteam.abetapp.dto.UpdateUsersDTO;
 import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.exception.ConflictException;
 import com.abetappteam.abetapp.exception.ResourceNotFoundException;
@@ -42,7 +43,7 @@ public class UsersService extends BaseService<Users, Long, UsersRepository> {
         logger.info("Creating new user : {}", dto.getFullName());
         return repository.save(user);
     }
- 
+
     //Update existing user
     @Transactional
     public Users update(Long id, UsersDTO dto) {
@@ -56,11 +57,46 @@ public class UsersService extends BaseService<Users, Long, UsersRepository> {
         });
 
         user.setEmail(dto.getEmail());
-        user.setPasswordHash(dto.getPasswordHash());
+
+        // Only update password if provided
+        if(dto.getPasswordHash() != null && !dto.getPasswordHash().isEmpty()) {
+            user.setPasswordHash(dto.getPasswordHash());
+        }
+
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
         user.setTitle(dto.getTitle());
-        
+
+        if(dto.getActive() != null){
+            user.setActive(dto.getActive());
+        }
+        logger.info("Updating user: {}", id);
+        return repository.save(user);
+    }
+
+    //Update existing user (overload for UpdateUsersDTO)
+    @Transactional
+    public Users update(Long id, UpdateUsersDTO dto) {
+        Users user = findById(id);
+
+        //Check for duplicate email address, excluding current user
+        repository.findByEmailIgnoreCase(dto.getEmail()).ifPresent(existing -> {
+            if(!existing.getId().equals(id)) {
+                throw new ConflictException("User with email address '" + dto.getEmail() + "' already exists");
+            }
+        });
+
+        user.setEmail(dto.getEmail());
+
+        // Only update password if provided
+        if(dto.getPasswordHash() != null && !dto.getPasswordHash().isEmpty()) {
+            user.setPasswordHash(dto.getPasswordHash());
+        }
+
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setTitle(dto.getTitle());
+
         if(dto.getActive() != null){
             user.setActive(dto.getActive());
         }

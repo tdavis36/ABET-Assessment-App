@@ -66,17 +66,22 @@ CREATE TABLE program_user (
 -- Semester table
 CREATE TABLE semester (
                           id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                          season VARCHAR(6) NOT NULL,
-                          semester_year SMALLINT NOT NULL,
+                          name VARCHAR(50) NOT NULL,
+                          code VARCHAR(20) UNIQUE NOT NULL,
+                          type VARCHAR(10) NOT NULL,
+                          status VARCHAR(15) NOT NULL DEFAULT 'UPCOMING',
+                          start_date DATE NULL,
+                          end_date DATE NULL,
+                          academic_year INT NULL,
+                          description VARCHAR(500) NULL,
                           program_id BIGINT NOT NULL,
+                          is_current BOOLEAN NOT NULL DEFAULT FALSE,
     -- From BaseEntity
                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                           version BIGINT DEFAULT 0,
                           deleted BOOLEAN DEFAULT FALSE NOT NULL,
                           deleted_at TIMESTAMP NULL,
-    -- Semester-specific
-                          is_active BOOLEAN DEFAULT TRUE NOT NULL,
                           FOREIGN KEY (program_id) REFERENCES program(id)
 );
 
@@ -130,6 +135,7 @@ CREATE TABLE course (
                         course_name VARCHAR(255) NOT NULL,
                         course_description TEXT NOT NULL,
                         semester_id BIGINT NOT NULL,
+                        student_count INT NULL,
     -- From BaseEntity
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -144,7 +150,7 @@ CREATE TABLE course (
 -- CourseInstructor table
 CREATE TABLE course_instructor (
                                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                                   programUser_id BIGINT NOT NULL,
+                                   program_user_id BIGINT NOT NULL,
                                    course_id BIGINT NOT NULL,
     -- From BaseEntity
                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -154,7 +160,7 @@ CREATE TABLE course_instructor (
                                    deleted_at TIMESTAMP NULL,
     -- CourseInstructor-specific
                                    is_active BOOLEAN DEFAULT TRUE NOT NULL,
-                                   FOREIGN KEY (programUser_id) REFERENCES program_user(id),
+                                   FOREIGN KEY (program_user_id) REFERENCES program_user(id),
                                    FOREIGN KEY (course_id) REFERENCES course(id)
 );
 
@@ -178,7 +184,7 @@ CREATE TABLE course_indicator (
 -- Measure table
 CREATE TABLE measure (
                          id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                         courseIndicator_id BIGINT NOT NULL,
+                         course_indicator_id BIGINT NOT NULL,
                          measure_description TEXT NOT NULL,
                          observation TEXT NULL,
                          recommended_action TEXT NULL,
@@ -186,6 +192,7 @@ CREATE TABLE measure (
                          met SMALLINT NULL,
                          exceeded SMALLINT NULL,
                          below SMALLINT NULL,
+                         m_status VARCHAR(10) DEFAULT 'InProgress' NOT NULL,
     -- From BaseEntity
                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -194,5 +201,5 @@ CREATE TABLE measure (
                          deleted_at TIMESTAMP NULL,
     -- Measure-specific
                          is_active BOOLEAN DEFAULT TRUE NOT NULL,
-                         FOREIGN KEY (courseIndicator_id) REFERENCES course_indicator(id)
+                         FOREIGN KEY (course_indicator_id) REFERENCES course_indicator(id)
 );

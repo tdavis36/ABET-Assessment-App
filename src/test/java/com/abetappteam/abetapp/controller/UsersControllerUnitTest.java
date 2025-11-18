@@ -1,6 +1,7 @@
 package com.abetappteam.abetapp.controller;
 
 import com.abetappteam.abetapp.config.TestSecurityConfig;
+import com.abetappteam.abetapp.dto.UpdateUsersDTO;
 import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.dto.UsersDTO;
 import com.abetappteam.abetapp.service.UsersService;
@@ -12,12 +13,12 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -38,7 +39,7 @@ public class UsersControllerUnitTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private UsersService userService;
     
     private Users testUser;
@@ -150,18 +151,38 @@ public class UsersControllerUnitTest {
     @Test
     void shouldUpdateUser() throws Exception {
         // Given
-        when(userService.update(eq(1L), any(UsersDTO.class))).thenReturn(testUser);
+        Long userId = 1L;
+
+        Users existingUser = new Users();
+        existingUser.setId(userId);
+        existingUser.setEmail("old@example.com");
+        existingUser.setFirstName("OldFirst");
+        existingUser.setLastName("OldLast");
+
+        Users updatedUser = new Users();
+        updatedUser.setId(userId);
+        updatedUser.setEmail("NewEmail@gmail.com");
+        updatedUser.setFirstName("NewFirstName");
+        updatedUser.setLastName("NewLastName");
+        updatedUser.setTitle("NewTitle");
+        updatedUser.setActive(true);
+
+        // IMPORTANT: Mock the UpdateUsersDTO overload, not the UsersDTO one
+        when(userService.update(eq(userId), any(UpdateUsersDTO.class)))
+                .thenReturn(updatedUser);
 
         // When/Then
-        mockMvc.perform(put("/api/users/1")
+        mockMvc.perform(put("/api/users/{id}", userId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(testDTO)))
+                        .content("{\"email\":\"NewEmail@gmail.com\"," +
+                                "\"firstName\":\"NewFirstName\"," +
+                                "\"lastName\":\"NewLastName\"," +
+                                "\"title\":\"NewTitle\"," +
+                                "\"active\":true}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("User updated successfully"))
-                .andExpect(jsonPath("$.data.id").value(1));
-
-        verify(userService, times(1)).update(eq(1L), any(UsersDTO.class));
+                .andExpect(jsonPath("$.data.id").value(userId))
+                .andExpect(jsonPath("$.data.email").value("NewEmail@gmail.com"));
     }
 
     @Test

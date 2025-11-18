@@ -48,8 +48,9 @@ public abstract class BaseController {
      * Create a standardized error response
      */
     protected ResponseEntity<ApiResponse<Object>> error(String message, HttpStatus status) {
-        return ResponseEntity.status(status)
-                .body(ApiResponse.error(message));
+        ApiResponse<Object> response = ApiResponse.error(message);
+        response.setMessage(message);
+        return ResponseEntity.status(status).body(response);
     }
 
     /**

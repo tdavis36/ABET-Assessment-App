@@ -66,6 +66,16 @@ public class CourseController extends BaseController {
     }
 
     /**
+     * Get all active courses
+     */
+    @GetMapping("/active/all")
+    public ResponseEntity<ApiResponse<List<Course>>> getAllActiveCourses() {
+        logger.info("Fetching ALL active courses (no semester filter)");
+        List<Course> courses = courseService.getAllActiveCourses();
+        return success(courses, "Active courses retrieved successfully");
+    }
+
+    /**
      * Create a new course
      */
     @PostMapping
@@ -94,6 +104,20 @@ public class CourseController extends BaseController {
         validateId(id);
         Course updated = courseService.updateCourse(id, dto);
         return success(updated, "Course updated successfully");
+    }
+
+    /**
+     * Update student count for a course
+     */
+    @PutMapping("/{id}/student-count")
+    public ResponseEntity<ApiResponse<Course>> updateStudentCount(
+            @PathVariable Long id,
+            @RequestBody UpdateStudentCountRequest request) {
+
+        logger.info("Updating student count for course with ID: {}", id);
+        validateId(id);
+        Course updated = courseService.updateStudentCount(id, request.getStudentCount());
+        return success(updated, "Student count updated successfully");
     }
 
     /**
@@ -262,5 +286,20 @@ public class CourseController extends BaseController {
     @GetMapping("/{courseId}/indicators")
     public ResponseEntity<List<Long>> getIndicators(@PathVariable Long courseId) {
         return ResponseEntity.ok(courseService.getIndicatorIds(courseId));
+    }
+
+    /**
+     * Request DTO for updating student count
+     */
+    public static class UpdateStudentCountRequest {
+        private Integer studentCount;
+
+        public Integer getStudentCount() {
+            return studentCount;
+        }
+
+        public void setStudentCount(Integer studentCount) {
+            this.studentCount = studentCount;
+        }
     }
 }

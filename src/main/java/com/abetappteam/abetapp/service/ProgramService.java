@@ -1,8 +1,10 @@
 package com.abetappteam.abetapp.service;
 
+import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.entity.ProgramUser;
 import com.abetappteam.abetapp.exception.ConflictException;
 import com.abetappteam.abetapp.exception.ResourceNotFoundException;
+import com.abetappteam.abetapp.repository.CourseRepository;
 import com.abetappteam.abetapp.repository.ProgramUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,18 +19,19 @@ import java.util.List;
 @Service
 public class ProgramService extends BaseService<Program, Long, ProgramRepository>{
     private final ProgramUserRepository programUserRepository;
+    private final CourseRepository courseRepository;
 
     @Autowired
-    public ProgramService(ProgramRepository repository, ProgramUserRepository programUserRepository) {
+    public ProgramService(ProgramRepository repository, ProgramUserRepository programUserRepository, CourseRepository courseRepository) {
         super(repository);
         this.programUserRepository = programUserRepository;
+        this.courseRepository = courseRepository;
     }
 
     @Override
     protected String getEntityName(){
         return "Program";
     }
-
     //Create new program from DTO
     @Transactional
     public Program create(ProgramDTO dto){
@@ -201,6 +204,10 @@ public class ProgramService extends BaseService<Program, Long, ProgramRepository
         return programUserRepository.findByProgramIdAndIsAdminAndIsActive(programId, false, true);
     }
 
+    public List<Course> getCoursesInProgram(Long programId) {
+        return courseRepository.findActiveCoursesByProgramId(programId);
+    }
+
     /**
      * Add user to program
      */
@@ -251,5 +258,26 @@ public class ProgramService extends BaseService<Program, Long, ProgramRepository
     public void deleteUserFromProgram(Long userId, Long programId) {
         logger.warn("Permanently deleting user {} from program {}", userId, programId);
         programUserRepository.deleteByProgramIdAndUserId(programId, userId);
+    }
+
+    /**
+     * Find ProgramUser by ID
+     */
+    @Transactional(readOnly = true)
+    public ProgramUser findProgramUserById(Long programUserId) {
+        logger.debug("Fetching ProgramUser with ID: {}", programUserId);
+        return programUserRepository.findById(programUserId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "ProgramUser not found with ID: " + programUserId
+                ));
+    }
+
+    /**
+     * Save ProgramUser
+     */
+    @Transactional
+    public ProgramUser saveProgramUser(ProgramUser programUser) {
+        logger.debug("Saving ProgramUser: {}", programUser.getId());
+        return programUserRepository.save(programUser);
     }
 }

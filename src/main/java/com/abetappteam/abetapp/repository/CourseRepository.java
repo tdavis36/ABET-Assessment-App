@@ -13,7 +13,7 @@ import java.util.Optional;
 
 /**
  * Repository for Course entity
- * Based on schema: course table with fields (id, course_code, course_name, course_description, semester_id, created_at, is_active)
+ * Based on schema: course table with fields (id, course_code, course_name, course_description, semester_id, student_count, created_at, is_active)
  */
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
@@ -65,6 +65,10 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     // Note: These queries use the course_instructor junction table
     @Query("SELECT c FROM Course c JOIN CourseInstructor ci ON c.id = ci.courseId WHERE ci.programUserId = :programUserId AND c.isActive = true")
     List<Course> findActiveCoursesByProgramUserId(@Param("programUserId") Long programUserId);
+
+    @Query("SELECT DISTINCT c FROM Course c JOIN CourseInstructor ci ON c.id = ci.courseId JOIN ProgramUser pu ON pu.id = ci.programUserId WHERE pu.programId = :programId AND pu.isActive = true AND c.isActive = true")
+    List<Course> findActiveCoursesByProgramId(@Param("programId") Long programId);
+
 
     @Query("SELECT c FROM Course c JOIN CourseInstructor ci ON c.id = ci.courseId WHERE ci.programUserId = :programUserId")
     List<Course> findCoursesByProgramUserId(@Param("programUserId") Long programUserId);

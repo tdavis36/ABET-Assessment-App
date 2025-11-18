@@ -28,6 +28,9 @@ public class Course extends BaseEntity {
     @Column(name = "semester_id", nullable = false)
     private Long semesterId;
 
+    @Column(name = "student_count")
+    private Integer studentCount;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
@@ -40,6 +43,7 @@ public class Course extends BaseEntity {
         this.courseName = courseName;
         this.courseDescription = courseDescription;
         this.semesterId = semesterId;
+        this.studentCount = null;
         this.isActive = true;
     }
 
@@ -76,6 +80,14 @@ public class Course extends BaseEntity {
         this.semesterId = semesterId;
     }
 
+    public Integer getStudentCount() {
+        return studentCount;
+    }
+
+    public void setStudentCount(Integer studentCount) {
+        this.studentCount = studentCount;
+    }
+
     public Boolean getIsActive() {
         return isActive;
     }
@@ -92,6 +104,7 @@ public class Course extends BaseEntity {
                 ", courseName='" + courseName + '\'' +
                 ", courseDescription='" + courseDescription + '\'' +
                 ", semesterId=" + semesterId +
+                ", studentCount=" + studentCount +
                 ", isActive=" + isActive +
                 ", createdAt=" + getCreatedAt() +
                 ", updatedAt=" + getUpdatedAt() +

@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import api from "@/api"; // axios instance with interceptor
+import api from "@/api";
+import router from "@/router";
 
 export interface User {
   id: number;
@@ -57,7 +58,7 @@ export const useUserStore = defineStore("user", () => {
       const { data } = await api.post("/users/login", { email, password });
 
       user.value = data.user;
-      authToken.value = data.token;
+      authToken.value = data.authToken;
       programs.value = data.programs;
       currentProgramId.value = data.user.currentProgramId;
 
@@ -95,7 +96,7 @@ export const useUserStore = defineStore("user", () => {
       const { data } = await api.post("/users/signup", userData);
 
       user.value = data.user;
-      authToken.value = data.token;
+      authToken.value = data.authToken;
       currentProgramId.value = data.user.currentProgramId ?? null;
 
       localStorage.setItem("authToken", data.authToken);
@@ -149,6 +150,27 @@ export const useUserStore = defineStore("user", () => {
   }
 
   // -------------------------
+  // ACTION: SAVE TO STORAGE
+  // -------------------------
+  function saveToStorage() {
+    if (authToken.value) {
+      localStorage.setItem("authToken", authToken.value);
+    }
+
+    if (user.value) {
+      localStorage.setItem("currentUser", JSON.stringify(user.value));
+    }
+
+    if (programs.value) {
+      localStorage.setItem("programs", JSON.stringify(programs.value));
+    }
+
+    if (currentProgramId.value !== null) {
+      localStorage.setItem("currentProgramId", String(currentProgramId.value));
+    }
+  }
+
+  // -------------------------
   // ACTION: LOGOUT
   // -------------------------
   function logout() {
@@ -159,6 +181,8 @@ export const useUserStore = defineStore("user", () => {
     error.value = null;
 
     localStorage.clear();
+
+    router.push("/login");
   }
 
   return {
@@ -183,5 +207,6 @@ export const useUserStore = defineStore("user", () => {
     logout,
     switchProgram,
     loadFromStorage,
+    saveToStorage,
   };
 });

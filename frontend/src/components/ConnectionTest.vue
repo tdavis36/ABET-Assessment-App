@@ -46,6 +46,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import api from '@/api'
 
 const loading = ref(false)
 const helloResult = ref('')
@@ -55,66 +56,57 @@ const messageInput = ref('')
 const error = ref('')
 const connectionStatus = ref('disconnected')
 
-const API_BASE = 'http://localhost:8080/api'
-
-async function makeRequest(url: string, options: RequestInit = {}) {
+async function testHello() {
   loading.value = true
   error.value = ''
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      ...options
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
+    const response = await api.get('/hello')
+    helloResult.value = JSON.stringify(response.data, null, 2)
     connectionStatus.value = 'connected'
-    return data
   } catch (err) {
     connectionStatus.value = 'disconnected'
     error.value = err instanceof Error ? err.message : 'Unknown error'
-    throw err
+    console.error('Hello test failed:', err)
   } finally {
     loading.value = false
   }
 }
 
-async function testHello() {
-  try {
-    const result = await makeRequest(`${API_BASE}/hello`)
-    helloResult.value = JSON.stringify(result, null, 2)
-  } catch (err) {
-    console.error('Hello test failed:', err)
-  }
-}
-
 async function checkStatus() {
+  loading.value = true
+  error.value = ''
+
   try {
-    const result = await makeRequest(`${API_BASE}/status`)
-    statusResult.value = JSON.stringify(result, null, 2)
+    const response = await api.get('/status')
+    statusResult.value = JSON.stringify(response.data, null, 2)
+    connectionStatus.value = 'connected'
   } catch (err) {
+    connectionStatus.value = 'disconnected'
+    error.value = err instanceof Error ? err.message : 'Unknown error'
     console.error('Status check failed:', err)
+  } finally {
+    loading.value = false
   }
 }
 
 async function testEcho() {
   if (!messageInput.value) return
 
+  loading.value = true
+  error.value = ''
+
   try {
-    const result = await makeRequest(`${API_BASE}/echo`, {
-      method: 'POST',
-      body: JSON.stringify({ message: messageInput.value })
-    })
-    echoResult.value = JSON.stringify(result, null, 2)
+    const response = await api.post('/echo', { message: messageInput.value })
+    echoResult.value = JSON.stringify(response.data, null, 2)
     messageInput.value = ''
+    connectionStatus.value = 'connected'
   } catch (err) {
+    connectionStatus.value = 'disconnected'
+    error.value = err instanceof Error ? err.message : 'Unknown error'
     console.error('Echo test failed:', err)
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -162,7 +154,7 @@ input {
 }
 
 .result {
-  background: #f8f9fa;
+  background: var(--color-bg-secondary);
   border: 1px solid #e9ecef;
   padding: 10px;
   margin: 10px 0;

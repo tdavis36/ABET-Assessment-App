@@ -7,6 +7,7 @@ import com.abetappteam.abetapp.entity.ProgramUser;
 import com.abetappteam.abetapp.entity.Users;
 import com.abetappteam.abetapp.exception.BadRequestException;
 import com.abetappteam.abetapp.dto.UsersDTO;
+import com.abetappteam.abetapp.dto.UpdateUsersDTO;
 import com.abetappteam.abetapp.exception.ForbiddenException;
 import com.abetappteam.abetapp.security.JwtUtil;
 import com.abetappteam.abetapp.service.ProgramService;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -135,11 +137,11 @@ public class UsersController extends BaseController {
     public ResponseEntity<PagedResponse<Users>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-            Pageable pageable = createPageable(page, size, DEFAULT_SORT_FIELD, DEFAULT_SORT_DIRECTION);
-            Page<Users> users = usersService.findAll(pageable);
-            return pagedSuccess(users);
-        }
-    
+        Pageable pageable = createPageable(page, size, DEFAULT_SORT_FIELD, DEFAULT_SORT_DIRECTION);
+        Page<Users> users = usersService.findAll(pageable);
+        return pagedSuccess(users);
+    }
+
     //Find user by id
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Users>> getUser(@PathVariable Long id) {
@@ -225,7 +227,7 @@ public class UsersController extends BaseController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Users>> updateUser(
             @PathVariable Long id,
-            @Valid @RequestBody UsersDTO dto) {
+            @Valid @RequestBody UpdateUsersDTO dto) {
 
         Users updated = usersService.update(id, dto);
         return success(updated, "User updated successfully");
