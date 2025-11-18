@@ -233,21 +233,35 @@ public class ProgramControllerUnitTest {
 
     @Test
     void shouldUpdateUserRole() throws Exception {
-        var updated = new ProgramUser(true, 1L, 20L);
-        when(programService.updateUserRole(20L, 1L, true)).thenReturn(updated);
+        // Given
+        Long programId = 1L;
+        Long programUserId = 20L;  // This is the ProgramUser ID, not User ID
 
-        var body = """
-            {"isAdmin":true}
-            """;
+        ProgramUser mockProgramUser = new ProgramUser();
+        mockProgramUser.setId(programUserId);
+        mockProgramUser.setProgramId(programId);
+        mockProgramUser.setUserId(1L);  // The actual user ID
+        mockProgramUser.setAdminStatus(false);
 
-        mockMvc.perform(put("/api/program/1/users/20")
+        ProgramUser updatedProgramUser = new ProgramUser();
+        updatedProgramUser.setId(programUserId);
+        updatedProgramUser.setProgramId(programId);
+        updatedProgramUser.setUserId(1L);
+        updatedProgramUser.setAdminStatus(true);  // After update
+
+        // Mock the new methods instead of the old updateUserRole method
+        when(programService.findProgramUserById(programUserId))
+                .thenReturn(mockProgramUser);
+        when(programService.saveProgramUser(any(ProgramUser.class)))
+                .thenReturn(updatedProgramUser);
+
+        // When/Then
+        mockMvc.perform(put("/api/program/{programId}/users/{programUserId}", programId, programUserId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content("{\"isAdmin\":true}"))  // or use "adminStatus"
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.adminStatus").value(true))
-                .andExpect(jsonPath("$.message").value("User role updated successfully"));
-
-        verify(programService).updateUserRole(20L, 1L, true);
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.adminStatus").value(true));
     }
 
     @Test

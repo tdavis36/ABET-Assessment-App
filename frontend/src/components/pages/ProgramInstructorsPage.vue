@@ -46,6 +46,7 @@
             </p>
             <p class="instructor-meta">
               {{ instructor.courseCount }} course{{ instructor.courseCount !== 1 ? 's' : '' }}
+              <span v-if="instructor.role === 'ADMIN'" class="role-badge">Admin</span>
             </p>
           </div>
         </div>
@@ -56,7 +57,7 @@
       <p>No instructors found in this program.</p>
     </div>
 
-    <!-- Instructor Modal -->
+    <!-- Instructor Details Modal -->
     <BaseModal
       v-model:isOpen="showModal"
       :title="selectedInstructor
@@ -68,8 +69,18 @@
       <div v-if="selectedInstructor" class="instructor-details">
         <!-- Personal Info -->
         <section class="detail-section">
-          <h3>Personal Information</h3>
-          <div class="detail-grid">
+          <div class="section-header">
+            <h3>Personal Information</h3>
+            <button
+              v-if="!isEditingInfo"
+              class="btn-secondary btn-small"
+              @click="startEditingInfo"
+            >
+              Edit Info
+            </button>
+          </div>
+
+          <div v-if="!isEditingInfo" class="detail-grid">
             <div class="detail-item">
               <span class="detail-label">Name:</span>
               <span class="detail-value">
@@ -95,6 +106,63 @@
               <span class="detail-value">
                 {{ selectedInstructor.userId }}
               </span>
+            </div>
+          </div>
+
+          <!-- Edit Form -->
+          <div v-else class="edit-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>First Name</label>
+                <BaseInput
+                  v-model="editForm.firstName"
+                  placeholder="First Name"
+                  :error="editErrors.firstName"
+                />
+              </div>
+              <div class="form-group">
+                <label>Last Name</label>
+                <BaseInput
+                  v-model="editForm.lastName"
+                  placeholder="Last Name"
+                  :error="editErrors.lastName"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Email</label>
+              <BaseInput
+                v-model="editForm.email"
+                type="email"
+                placeholder="Email"
+                :error="editErrors.email"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Role</label>
+              <BaseSelect
+                v-model="editForm.role"
+                :options="roleOptions"
+              />
+            </div>
+
+            <div class="form-actions">
+              <button
+                class="btn-secondary"
+                @click="cancelEditingInfo"
+                :disabled="saving"
+              >
+                Cancel
+              </button>
+              <button
+                class="btn-primary"
+                @click="saveInstructorInfo"
+                :disabled="saving"
+              >
+                {{ saving ? 'Saving...' : 'Save Changes' }}
+              </button>
             </div>
           </div>
         </section>
@@ -153,10 +221,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, reactive } from "vue";
 import api from "@/api";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import BaseModal from "@/components/ui/BaseModal.vue";
+import BaseInput from "@/components/ui/BaseInput.vue";
+import BaseSelect from "@/components/ui/BaseSelect.vue";
+import { useToast } from "@/composables/use-toast";
+
+const toast = useToast();
 
 interface Course {
   id: number;
@@ -192,6 +265,19 @@ interface ProgramUser {
   adminStatus: boolean;
 }
 
+interface EditForm {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: "ADMIN" | "INSTRUCTOR";
+}
+
+interface EditErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+}
+
 const props = defineProps<{
   programId: number | null
 }>();
@@ -201,6 +287,22 @@ const selectedInstructor = ref<Instructor | null>(null);
 const showModal = ref(false);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+// Editing state
+const isEditingInfo = ref(false);
+const saving = ref(false);
+const editForm = reactive<EditForm>({
+  firstName: "",
+  lastName: "",
+  email: "",
+  role: "INSTRUCTOR"
+});
+const editErrors = reactive<EditErrors>({});
+
+const roleOptions = [
+  { value: "INSTRUCTOR", label: "Instructor" },
+  { value: "ADMIN", label: "Admin" }
+];
 
 /* -----------------------------
  * Load instructors for program
@@ -251,6 +353,98 @@ async function loadProgramInstructors() {
   }
 }
 
+/* -----------------------------
+ * Editing functions
+ * ----------------------------- */
+function startEditingInfo() {
+  if (!selectedInstructor.value) return;
+
+  editForm.firstName = selectedInstructor.value.firstName;
+  editForm.lastName = selectedInstructor.value.lastName;
+  editForm.email = selectedInstructor.value.email;
+  editForm.role = selectedInstructor.value.role;
+
+  Object.keys(editErrors).forEach(key => delete editErrors[key as keyof EditErrors]);
+  isEditingInfo.value = true;
+}
+
+function cancelEditingInfo() {
+  isEditingInfo.value = false;
+  Object.keys(editErrors).forEach(key => delete editErrors[key as keyof EditErrors]);
+}
+
+function validateEditForm(): boolean {
+  Object.keys(editErrors).forEach(key => delete editErrors[key as keyof EditErrors]);
+
+  let isValid = true;
+
+  if (!editForm.firstName.trim()) {
+    editErrors.firstName = "First name is required";
+    isValid = false;
+  }
+
+  if (!editForm.lastName.trim()) {
+    editErrors.lastName = "Last name is required";
+    isValid = false;
+  }
+
+  if (!editForm.email.trim()) {
+    editErrors.email = "Email is required";
+    isValid = false;
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.email)) {
+    editErrors.email = "Invalid email format";
+    isValid = false;
+  }
+
+  return isValid;
+}
+
+async function saveInstructorInfo() {
+  if (!selectedInstructor.value || !validateEditForm()) return;
+
+  saving.value = true;
+
+  try {
+    // Update user info
+    await api.put(`/users/${selectedInstructor.value.userId}`, {
+      firstName: editForm.firstName,
+      lastName: editForm.lastName,
+      email: editForm.email
+    });
+
+    // Update program user role (admin status)
+    const adminStatus = editForm.role === "ADMIN";
+    await api.put(`/program/${props.programId}/users/${selectedInstructor.value.programUserId}`, {
+      adminStatus
+    });
+
+    // Update local state
+    selectedInstructor.value.firstName = editForm.firstName;
+    selectedInstructor.value.lastName = editForm.lastName;
+    selectedInstructor.value.email = editForm.email;
+    selectedInstructor.value.role = editForm.role;
+
+    // Update in instructors list
+    const instructorIndex = instructors.value.findIndex(
+      i => i.programUserId === selectedInstructor.value?.programUserId
+    );
+    if (instructorIndex !== -1) {
+      instructors.value[instructorIndex] = { ...selectedInstructor.value };
+    }
+
+    toast.success("Instructor updated successfully");
+    isEditingInfo.value = false;
+
+  } catch (err: any) {
+    console.error("Error saving instructor:", err);
+    toast.error(
+      err.response?.data?.message || "Failed to update instructor"
+    );
+  } finally {
+    saving.value = false;
+  }
+}
+
 watch(() => props.programId, () => {
   loadProgramInstructors();
 });
@@ -259,8 +453,16 @@ onMounted(() => {
   if (props.programId) loadProgramInstructors();
 });
 
-function closeModal() { showModal.value = false; selectedInstructor.value = null; }
-function showInstructorDetails(i: Instructor) { selectedInstructor.value = i; showModal.value = true; }
+function closeModal() {
+  showModal.value = false;
+  selectedInstructor.value = null;
+  isEditingInfo.value = false;
+}
+
+function showInstructorDetails(i: Instructor) {
+  selectedInstructor.value = i;
+  showModal.value = true;
+}
 </script>
 
 <style scoped>
@@ -361,6 +563,19 @@ function showInstructorDetails(i: Instructor) { selectedInstructor.value = i; sh
   margin: 0;
   font-size: 0.875rem;
   color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 /* Instructor Details */
@@ -376,6 +591,21 @@ function showInstructorDetails(i: Instructor) { selectedInstructor.value = i; sh
   color: var(--color-text-primary);
   border-bottom: 2px solid var(--color-border-light);
   padding-bottom: 0.5rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--color-border-light);
+  padding-bottom: 0.5rem;
+}
+
+.section-header h3 {
+  margin: 0;
+  border: none;
+  padding: 0;
 }
 
 .detail-grid {
@@ -408,6 +638,40 @@ function showInstructorDetails(i: Instructor) { selectedInstructor.value = i; sh
 
 .detail-value a:hover {
   text-decoration: underline;
+}
+
+/* Edit Form */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-light);
 }
 
 /* Courses Table */
@@ -461,8 +725,40 @@ function showInstructorDetails(i: Instructor) { selectedInstructor.value = i; sh
   transition: all 0.2s;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--color-primary-dark);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-dark);
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-dark);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-small {
+  padding: 0.375rem 1rem;
+  font-size: 0.8125rem;
 }
 
 /* Responsive */
@@ -489,6 +785,10 @@ function showInstructorDetails(i: Instructor) { selectedInstructor.value = i; sh
     grid-template-columns: 1fr;
   }
 
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
   .courses-table {
     font-size: 0.875rem;
     display: block;
@@ -498,6 +798,20 @@ function showInstructorDetails(i: Instructor) { selectedInstructor.value = i; sh
   .courses-table th,
   .courses-table td {
     padding: 0.5rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
   }
 }
 </style>

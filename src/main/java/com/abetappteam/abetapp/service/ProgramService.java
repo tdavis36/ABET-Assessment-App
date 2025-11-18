@@ -259,4 +259,25 @@ public class ProgramService extends BaseService<Program, Long, ProgramRepository
         logger.warn("Permanently deleting user {} from program {}", userId, programId);
         programUserRepository.deleteByProgramIdAndUserId(programId, userId);
     }
+
+    /**
+     * Find ProgramUser by ID
+     */
+    @Transactional(readOnly = true)
+    public ProgramUser findProgramUserById(Long programUserId) {
+        logger.debug("Fetching ProgramUser with ID: {}", programUserId);
+        return programUserRepository.findById(programUserId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "ProgramUser not found with ID: " + programUserId
+                ));
+    }
+
+    /**
+     * Save ProgramUser
+     */
+    @Transactional
+    public ProgramUser saveProgramUser(ProgramUser programUser) {
+        logger.debug("Saving ProgramUser: {}", programUser.getId());
+        return programUserRepository.save(programUser);
+    }
 }

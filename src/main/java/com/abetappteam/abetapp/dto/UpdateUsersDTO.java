@@ -4,15 +4,18 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Email;
 
-//Data Transfer Object for Users
-public class UsersDTO {
+/**
+ * Data Transfer Object for updating existing Users
+ * Password is optional for updates
+ */
+public class UpdateUsersDTO {
 
     @NotBlank(message = "Email address is required")
     @Email()
     @Size(min = 3, max = 255, message = "Email address must be 3 to 255 characters long")
     private String email;
 
-    @NotBlank(message = "Password is required")
+    // Password is optional for updates
     @Size(min = 1, max = 255, message = "Password must be 1 to 255 characters long")
     private String passwordHash;
 
@@ -30,9 +33,9 @@ public class UsersDTO {
     private Boolean active;
 
     //Constructors
-    public UsersDTO(){}
+    public UpdateUsersDTO(){}
 
-    public UsersDTO(String email, String passwordHash, String firstName, String lastName, String title, Boolean active) {
+    public UpdateUsersDTO(String email, String passwordHash, String firstName, String lastName, String title, Boolean active) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.firstName = firstName;

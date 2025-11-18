@@ -2,6 +2,8 @@ package com.abetappteam.abetapp.controller;
 
 import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.entity.ProgramUser;
+import com.abetappteam.abetapp.exception.BadRequestException;
+import com.abetappteam.abetapp.exception.ResourceNotFoundException;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.abetappteam.abetapp.dto.ApiResponse;
@@ -33,13 +35,13 @@ public class ProgramController extends BaseController {
 
     @GetMapping
     public ResponseEntity<PagedResponse<Program>> getAllPrograms(
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "20") int size){
-            Pageable pageable = createPageable(page, size, DEFAULT_SORT_FIELD, DEFAULT_SORT_DIRECTION);
-            Page<Program> programs = programService.findAll(pageable);
-            return pagedSuccess(programs);
-        }
-    
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size){
+        Pageable pageable = createPageable(page, size, DEFAULT_SORT_FIELD, DEFAULT_SORT_DIRECTION);
+        Page<Program> programs = programService.findAll(pageable);
+        return pagedSuccess(programs);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Program>> getProgram(@PathVariable Long id) {
         Program program = programService.findById(id);
@@ -51,7 +53,7 @@ public class ProgramController extends BaseController {
         Program program = programService.create(dto);
         return created(program);
     }
-    
+
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Program>> updateProgram(@PathVariable Long id, @Valid @RequestBody ProgramDTO dto) {
         Program updated = programService.update(id, dto);
@@ -109,15 +111,38 @@ public class ProgramController extends BaseController {
     /**
      * Update user's role in a program
      */
-    @PutMapping("/{programId}/users/{userId}")
+    @PutMapping("/{programId}/users/{programUserId}")
     public ResponseEntity<ApiResponse<ProgramUser>> updateUserRole(
             @PathVariable Long programId,
-            @PathVariable Long userId,
+            @PathVariable Long programUserId,
             @RequestBody Map<String, Boolean> request) {
 
-        Boolean isAdmin = request.get("isAdmin");
+        Boolean adminStatus = request.get("adminStatus");
+        if (adminStatus == null) {
+            // Fallback to check for "isAdmin" for backwards compatibility
+            adminStatus = request.get("isAdmin");
+        }
 
-        ProgramUser updated = programService.updateUserRole(userId, programId, isAdmin);
+        if (adminStatus == null) {
+            throw new BadRequestException("adminStatus is required");
+        }
+
+        // Fetch the ProgramUser directly by ID
+        ProgramUser programUser = programService.findProgramUserById(programUserId);
+
+        if (programUser == null) {
+            throw new ResourceNotFoundException("ProgramUser not found with ID: " + programUserId);
+        }
+
+        // Verify it belongs to the correct program
+        if (!programUser.getProgramId().equals(programId)) {
+            throw new BadRequestException("ProgramUser does not belong to this program");
+        }
+
+        // Update the admin status
+        programUser.setAdminStatus(adminStatus);
+        ProgramUser updated = programService.saveProgramUser(programUser);
+
         return success(updated, "User role updated successfully");
     }
 
