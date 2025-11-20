@@ -16,10 +16,12 @@ const emit = defineEmits(["logout"])
         <router-link to="/" class="nav_button">Home</router-link>
         <div class="nav-divider"></div>
         <router-link to="/about" class="nav_button">About</router-link>
-        <div class="nav-divider"></div>
-        <router-link to="/fcar/1" class="nav_button">FCAR (Testing)</router-link>
-        <div class="nav-divider"></div>
-        <router-link to="/setup" class="nav_button">Setup</router-link>
+
+        <template v-if="loggedIn">
+          <div class="nav-divider"></div>
+          <router-link to="/setup" class="nav_button">Setup</router-link>
+        </template>
+
       </div>
 
       <!-- USER + LOGIN/LOGOUT SECTION -->
@@ -68,11 +70,8 @@ const emit = defineEmits(["logout"])
 
 .navbar-container {
   display: flex;
-  align-items: stretch;
   height: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: var(--navbar-padding-y) var(--navbar-padding-x);
+  padding: var(--navbar-padding-y)
 }
 
 #logo {
@@ -82,7 +81,6 @@ const emit = defineEmits(["logout"])
   font-weight: var(--font-weight-bold);
   color: var(--navbar-text);
   padding: 0 var(--spacing-xl);
-  border-right: 2px solid var(--navbar-divider);
   white-space: nowrap;
   letter-spacing: 0.5px;
   flex-shrink: 0;
@@ -91,6 +89,7 @@ const emit = defineEmits(["logout"])
 .navbar-links {
   display: flex;
   align-items: stretch;
+  justify-content: end;
   flex: 1;
 }
 
