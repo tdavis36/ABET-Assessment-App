@@ -10,7 +10,6 @@ import jakarta.persistence.Table;
 @Table(name = "student_outcome")
 public class Outcome extends BaseEntity{
     
-    @NotBlank(message = "Number of Student Outcome is required")
     @Column(name = "out_number", nullable = false)
     private Integer number;
 

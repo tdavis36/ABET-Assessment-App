@@ -7,8 +7,10 @@ import com.abetappteam.abetapp.dto.ProgramDTO;
 import com.abetappteam.abetapp.entity.Course;
 import com.abetappteam.abetapp.entity.CourseIndicator;
 import com.abetappteam.abetapp.entity.Measure;
+import com.abetappteam.abetapp.entity.Outcome;
 import com.abetappteam.abetapp.dto.CourseDTO;
 import com.abetappteam.abetapp.dto.MeasureDTO;
+import com.abetappteam.abetapp.dto.OutcomeDTO;
 import com.abetappteam.abetapp.dto.UsersDTO;
 import com.abetappteam.abetapp.entity.Semester;
 import com.abetappteam.abetapp.dto.SemesterDTO;
@@ -475,8 +477,7 @@ public class TestDataBuilder {
         return measureDTO;
     }
 
-    // Create a list of programs belonging to "Example University", every odd
-    // numbered program will be inactive
+    // Create a list of Measures where every other measure is inactive
     public static List<Measure> createMeasureList(int count) {
         List<Measure> measures = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
@@ -509,5 +510,64 @@ public class TestDataBuilder {
         courseIndicator.setIndicatorId(indicatorId);
         courseIndicator.setIsActive(active);
         return courseIndicator;
+    }
+
+    //STUDENT OUTCOME DATA
+
+    //Create Outcome
+    public static Outcome createOutcome(){
+        return createOutcome(1, "Test Outcome", 1l, 80, "Looks good", true);
+    }
+
+    //Create custom Outcome
+    public static Outcome createOutcome(Integer number, String description, Long semesterId, Integer value, String evaluation, Boolean active){
+        Outcome outcome = new Outcome();
+        outcome.setNumber(number);
+        outcome.setDescription(description);
+        outcome.setSemesterId(semesterId);
+        outcome.setValue(value);
+        outcome.setEvaluation(evaluation);
+        outcome.setActive(active);
+        return outcome;
+    }
+
+    //Create custom Outcome with Id
+    public static Outcome createOutcomeWithId(Long id, Integer number, String description, Long semesterId, Integer value, String evaluation, Boolean active){
+        Outcome outcome = createOutcome(number, description, semesterId, value, evaluation, active);
+        outcome.setId(id);
+        return outcome;
+    }
+
+    //Create OutcomeDTO
+    public static OutcomeDTO createOutcomeDTO(){
+        return createOutcomeDTO(2, "New Description", 1l, 20, "Looks bad", true);   
+    }
+
+    //Create custom OutcomeDTO
+    public static OutcomeDTO createOutcomeDTO(Integer number, String description, Long semesterId, Integer value, String evaluation, Boolean active){
+        OutcomeDTO dto = new OutcomeDTO();
+        dto.setNumber(number);
+        dto.setDescription(description);
+        dto.setSemesterId(semesterId);
+        dto.setValue(value);
+        dto.setEvaluation(evaluation);
+        dto.setActive(active);
+        return dto;
+    }
+
+    // Create a list of Outcomes where every other outcome is inactive
+    public static List<Outcome> createOutcomeList(int count) {
+        List<Outcome> outcomes = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            outcomes.add(createOutcomeWithId(
+                    (long) i,
+                    i,
+                    "Description " + i,
+                    1l,
+                    80,
+                    null,
+                    i % 2 == 0));
+        }
+        return outcomes;
     }
 }

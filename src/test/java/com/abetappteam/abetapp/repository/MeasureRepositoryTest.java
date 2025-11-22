@@ -26,7 +26,7 @@ public class MeasureRepositoryTest extends BaseRepositoryTest{
     }
 
     @Test
-    void shouldSaveAndRetrieveProgram() {
+    void shouldSaveAndRetrieveMeasure() {
         //Given
         Measure saved = measureRepository.save(testMeasure);
         clearContext();
