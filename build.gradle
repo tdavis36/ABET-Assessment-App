@@ -96,6 +96,7 @@ tasks.register('devFrontend', Exec) {
 tasks.register('devWithBuiltInFrontend') {
     group = 'abet-dev'
     description = 'Run with built frontend locally'
+    dependsOn 'copyFrontend'
     doFirst {
         tasks.bootRun.configure {
             args = ['--spring.profiles.active=dev-builtin']
@@ -134,6 +135,7 @@ tasks.register('buildFrontend', Exec) {
 // Task to copy the built frontend into Spring Boot's static resources
 tasks.register('copyFrontend', Copy) {
     dependsOn 'buildFrontend'
+    dependsOn 'processResources'
     from "${frontendDist}"
     into "${projectDir}/src/main/resources/static"
 }
