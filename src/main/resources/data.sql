@@ -19,7 +19,7 @@ VALUES
 ------------------------------------------------------------
 -- PROGRAM_USER (maps users to programs)
 ------------------------------------------------------------
-INSERT INTO program_user (id, isAdmin, program_id, user_id, is_active)
+INSERT INTO program_user (id, is_admin, program_id, user_id, is_active)
 VALUES
     (1, FALSE, 1, 1, TRUE),
     (2, FALSE, 1, 2, TRUE),

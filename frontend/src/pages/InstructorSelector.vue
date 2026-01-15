@@ -156,10 +156,10 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/api'
-import BaseCard from '../ui/BaseCard.vue'
-import BaseSelect from '../ui/BaseSelect.vue'
-import BaseButton from '../ui/BaseButton.vue'
-import BaseSpinner from '../ui/BaseSpinner.vue'
+import BaseCard from '../components/ui/BaseCard.vue'
+import BaseSelect from '../components/ui/BaseSelect.vue'
+import BaseButton from '../components/ui/BaseButton.vue'
+import BaseSpinner from '../components/ui/BaseSpinner.vue'
 import type { SelectOption } from '@/components/ui'
 
 interface Program {

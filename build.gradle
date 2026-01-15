@@ -65,7 +65,7 @@ node {
 
 def npmExecutable = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
 def frontendDir = "$projectDir/frontend"
-def frontendDist = "$frontendDir/dist"
+def frontendDist= "$frontendDir/dist"
 
 tasks.withType(Test).configureEach {
     jvmArgs '-XX:+EnableDynamicAgentLoading'
@@ -84,9 +84,8 @@ tasks.register('dev') {
 
 tasks.register('devFrontend', Exec) {
     group = 'abet-dev'
-    dependsOn tasks.installFrontendDeps
+    dependsOn 'installFrontendDeps'
     workingDir 'frontend'
-    onlyIf { !project.ext.skipFrontend }
     executable npmExecutable
     args 'run', 'dev'
     inputs.files(fileTree("frontend/src"))
@@ -103,6 +102,7 @@ tasks.register('devWithBuiltInFrontend') {
             args = ['--spring.profiles.active=dev-builtin']
         }
     }
+
     finalizedBy 'bootRun'
 }
 
@@ -110,7 +110,6 @@ tasks.register('devWithBuiltInFrontend') {
 // Cleans and then installs the dependencies
 tasks.register('installFrontendDeps', Exec) {
     workingDir 'frontend'
-    onlyIf { !project.ext.skipFrontend }
     executable npmExecutable
     args 'ci'
 
@@ -138,7 +137,11 @@ tasks.register('copyFrontend', Copy) {
     dependsOn 'buildFrontend'
     dependsOn 'processResources'
     from "${frontendDist}"
-    into "${projectDir}/src/main/resources/static"
+    into layout.buildDirectory.dir("resources/main/static")
+}
+
+tasks.named('resolveMainClassName') {
+    mustRunAfter 'copyFrontend'
 }
 
 // TESTS
@@ -242,9 +245,8 @@ tasks.register('dockerLogs', Exec) {
     executable 'docker'
 }
 
-// Keep only essential Docker Compose tasks
 tasks.register('composeBuild', Exec) {
     description = 'Build Docker images'
-    executable 'docker'
     args 'compose', 'build'
+    executable 'docker'
 }

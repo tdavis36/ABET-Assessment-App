@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { useUserStore } from "@/stores/user-store";
+import { useUserStore } from "@/stores/user-store.ts";
 
 import CourseListing from "@/components/CourseListing.vue";
-import ProgramInstructorsPage from "@/components/pages/ProgramInstructorsPage.vue";
+import ProgramInstructorsPage from "@/pages/ProgramInstructorsPage.vue";
 
 const userStore = useUserStore();
 const { currentProgramId: programId } = storeToRefs(userStore);
