@@ -53,11 +53,43 @@ jobs:
     environment: staging
     steps:
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
+        uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
+          version: 4.0.2
+
+      # Get the Tailscale IP of staging server
+      - name: Get staging server Tailscale IP
+        id: get-tailscale-ip
+        run: |
+          # Wait a moment for Tailscale to fully initialize
+          sleep 5
+          
+          # Try to get IP by hostname first, fallback to direct IP if needed
+          STAGING_IP=""
+          
+          # Option 1: Try by hostname
+          if command -v nslookup >/dev/null 2>&1; then
+            STAGING_IP=$(tailscale ip -4 abet-app-server 2>/dev/null || echo "")
+          fi
+          
+          # Option 2: If hostname fails, use the direct IP you know
+          if [ -z "$STAGING_IP" ]; then
+            STAGING_IP="${{ secrets.STAGING_TAILSCALE_IP }}"
+          fi
+          
+          # Validate we have an IP
+          if [ -z "$STAGING_IP" ]; then
+            echo "ERROR: Could not determine staging server Tailscale IP"
+            echo "Available Tailscale devices:"
+            tailscale status || true
+            exit 1
+          fi
+          
+          echo "tailscale_ip=$STAGING_IP" >> $GITHUB_OUTPUT
+          echo "Staging server Tailscale IP: $STAGING_IP"
 
       - name: Deploy via SSH
         run: |
