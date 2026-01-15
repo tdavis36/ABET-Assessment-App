@@ -1,19 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user-store'
 import ConnectionTest from '@/components/ConnectionTest.vue'
-import HomePage from '@/components/pages/HomePage.vue'
-import SummaryPage from '@/components/pages/SummaryPage.vue'
-import FCARPage from '@/components/pages/FCARPage.vue'
-import CourseViewPage from '@/components/pages/CourseViewPage.vue'
-import InstructorViewPage from '@/components/pages/InstructorViewPage.vue'
-import ProgramCoursesPage from '@/components/pages/ProgramCoursesPage.vue'
-import ProgramInstructorsPage from '@/components/pages/ProgramInstructorsPage.vue'
-import LogInPage from '@/components/pages/LogIn.vue'
-import SignUpPage from '@/components/pages/SignUp.vue'
+import HomePage from '@/pages/HomePage.vue'
+import SummaryPage from '@/pages/SummaryPage.vue'
+import FCARPage from '@/pages/FCARPage.vue'
+import CourseViewPage from '@/pages/CourseViewPage.vue'
+import InstructorViewPage from '@/pages/InstructorViewPage.vue'
+import ProgramCoursesPage from '@/pages/ProgramCoursesPage.vue'
+import ProgramInstructorsPage from '@/pages/ProgramInstructorsPage.vue'
+import LogInPage from '@/pages/LogIn.vue'
+import SignUpPage from '@/pages/SignUp.vue'
 import AdminDashboard from '@/components/AdminDashboard.vue'
-import ExamplePage from "@/components/pages/ExamplePage.vue";
-import AboutPage from '@/components/pages/AboutPage.vue'
-import ManagementPage from "@/components/ManagementPage.vue";
+import ExamplePage from "@/pages/ExamplePage.vue";
+import AboutPage from '@/pages/AboutPage.vue'
+import ManagementPage from "@/pages/ManagementPage.vue";
 
 const routes = [
   {

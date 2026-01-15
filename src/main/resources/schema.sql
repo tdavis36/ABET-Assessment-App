@@ -45,10 +45,10 @@ CREATE TABLE program (
                          is_active BOOLEAN DEFAULT TRUE NOT NULL
 );
 
--- ProgramUser table
+-- ProgramUser table (FIXED: changed isAdmin to admin_status)
 CREATE TABLE program_user (
                               id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                              isAdmin BOOLEAN NOT NULL DEFAULT FALSE,
+                              is_admin BOOLEAN NOT NULL DEFAULT FALSE,
                               program_id BIGINT NOT NULL,
                               user_id BIGINT NOT NULL,
     -- From BaseEntity
@@ -83,29 +83,6 @@ CREATE TABLE semester (
                           deleted BOOLEAN DEFAULT FALSE NOT NULL,
                           deleted_at TIMESTAMP NULL,
                           FOREIGN KEY (program_id) REFERENCES program(id)
-);
-
--- ProgramUser table
-CREATE TABLE program_user (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                isAdmin BOOLEAN NOT NULL DEFAULT FALSE,
-                program_id BIGINT NOT NULL,
-                user_id BIGINT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT TRUE,
-                FOREIGN KEY (program_id) REFERENCES program(id),
-                FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- Semester table
-CREATE TABLE semester (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                season VARCHAR(6) NOT NULL,
-                semester_year SMALLINT NOT NULL,
-                program_id BIGINT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT TRUE,
-                FOREIGN KEY (program_id) REFERENCES program(id)
 );
 
 -- Student outcomes table

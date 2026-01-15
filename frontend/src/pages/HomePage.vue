@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
 import api from "@/api";
 
-import { useUserStore } from "@/stores/user-store";
+import { useUserStore } from "@/stores/user-store.ts";
 import AdminDashboard from "@/components/AdminDashboard.vue";
 import InstructorDashboard from "@/components/InstructorDashboard.vue";
 

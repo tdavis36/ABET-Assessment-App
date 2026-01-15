@@ -2,8 +2,8 @@
 import { ref, onMounted, computed, watch } from "vue";
 import api from "@/api";
 import { useUserStore } from "@/stores/user-store.ts";
-import BaseCard from "@/components/ui/BaseCard.vue";
-import BaseModal from "@/components/ui/BaseModal.vue";
+import BaseCard from "../components/ui/BaseCard.vue";
+import BaseModal from "../components/ui/BaseModal.vue";
 
 const userStore = useUserStore();
 
