@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/abet-assessment-app
 
 jobs:
   build:
@@ -86,7 +86,7 @@ jobs:
       - name: Copy docker-compose file
         run: |
           cd ~/abet-production
-          cp $GITHUB_WORKSPACE/docker-compose_prod.yml .
+          cp $GITHUB_WORKSPACE/docker-compose.prod.yml .
           
           # Copy database init scripts if they exist
           if [ -d "$GITHUB_WORKSPACE/database" ]; then
@@ -98,11 +98,11 @@ jobs:
           cd ~/abet-production
           
           # Check if database container exists and is running
-          if docker-compose -f docker-compose_prod.yml ps | grep -q "abet-db-prod.*Up"; then
+          if docker compose -f docker-compose.prod.yml ps | grep -q "abet-db-prod.*Up"; then
             echo "Creating database backup..."
             BACKUP_FILE="backups/abet_prod_$(date +%Y%m%d_%H%M%S).sql"
           
-            docker-compose -f docker-compose_prod.yml exec -T database \
+            docker compose -f docker-compose.prod.yml exec -T database \
               mysqldump -u root -p${{ secrets.PROD_DB_ROOT_PASSWORD }} \
               --single-transaction --routines --triggers \
               abet_prod > "$BACKUP_FILE" || echo "Backup failed, continuing anyway..."
@@ -125,7 +125,7 @@ jobs:
       - name: Pull latest image
         run: |
           cd ~/abet-production
-          docker-compose -f docker-compose_prod.yml pull app
+          docker compose -f docker-compose.prod.yml pull app
 
       - name: Perform rolling update
         run: |
@@ -167,8 +167,8 @@ jobs:
           
             # Stop and remove old container
             echo "Stopping old container..."
-            docker-compose -f docker-compose_prod.yml stop app
-            docker-compose -f docker-compose_prod.yml rm -f app
+            docker compose -f docker-compose.prod.yml stop app
+            docker compose -f docker-compose.prod.yml rm -f app
           
             # Remove temporary container (compose will manage it)
             docker stop abet-prod-new
@@ -177,8 +177,8 @@ jobs:
             echo "First deployment detected..."
           fi
           
-          # Start with docker-compose (will create fresh or use existing)
-          docker-compose -f docker-compose_prod.yml up -d
+          # Start with docker compose (will create fresh or use existing)
+          docker compose -f docker-compose.prod.yml up -d
 
       - name: Wait for services to be ready
         run: |
@@ -190,10 +190,10 @@ jobs:
           cd ~/abet-production
           
           # Check if containers are running
-          if ! docker-compose -f docker-compose_prod.yml ps | grep -q "Up"; then
+          if ! docker compose -f docker-compose.prod.yml ps | grep -q "Up"; then
             echo "Containers failed to start"
-            docker-compose -f docker-compose_prod.yml ps
-            docker-compose -f docker-compose_prod.yml logs --tail=50
+            docker compose -f docker-compose.prod.yml ps
+            docker compose -f docker-compose.prod.yml logs --tail=50
             exit 1
           fi
           
@@ -201,7 +201,7 @@ jobs:
           for i in {1..12}; do
             if curl -f http://localhost:8080/actuator/health 2>/dev/null; then
               echo "Production application is healthy!"
-              docker-compose -f docker-compose_prod.yml ps
+              docker compose -f docker-compose.prod.yml ps
               exit 0
             fi
             echo "Health check attempt $i/12..."
@@ -209,7 +209,7 @@ jobs:
           done
           
           echo "Health check failed after 60 seconds"
-          docker-compose -f docker-compose_prod.yml logs --tail=100 app
+          docker compose -f docker-compose.prod.yml logs --tail=100 app
           exit 1
 
       - name: Show deployment info
@@ -223,13 +223,13 @@ jobs:
           echo "Deployed at: $(date)"
           echo ""
           echo "=== Running Containers ==="
-          docker-compose -f docker-compose_prod.yml ps
+          docker compose -f docker-compose.prod.yml ps
           echo ""
           echo "=== Container Resource Usage ==="
           docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}"
           echo ""
           echo "=== Recent Application Logs ==="
-          docker-compose -f docker-compose_prod.yml logs --tail=20 app
+          docker compose -f docker-compose.prod.yml logs --tail=20 app
 
       - name: Cleanup old images
         if: success()
@@ -250,16 +250,16 @@ jobs:
           cd ~/abet-production
           echo "Production deployment failed!"
           echo "Current status:"
-          docker-compose -f docker-compose_prod.yml ps
+          docker compose -f docker-compose.prod.yml ps
           echo ""
           echo "Recent logs:"
-          docker-compose -f docker-compose_prod.yml logs --tail=100
+          docker compose -f docker-compose.prod.yml logs --tail=100
           echo ""
           echo "To rollback manually:"
           echo "1. Check available backups: ls -lh ~/abet-production/backups/"
-          echo "2. Stop services: cd ~/abet-production && docker-compose -f docker-compose_prod.yml down"
-          echo "3. Restore database: docker-compose -f docker-compose_prod.yml exec -T database mysql -u root -p abet_prod < backups/[backup-file]"
-          echo "4. Start services: docker-compose -f docker-compose_prod.yml up -d"
+          echo "2. Stop services: cd ~/abet-production && docker compose -f docker-compose.prod.yml down"
+          echo "3. Restore database: docker compose -f docker-compose.prod.yml exec -T database mysql -u root -p abet_prod < backups/[backup-file]"
+          echo "4. Start services: docker compose -f docker-compose.prod.yml up -d"
 
   notify:
     name: Send Deployment Notification
