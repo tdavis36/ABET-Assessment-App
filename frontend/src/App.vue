@@ -1,53 +1,65 @@
+<script lang="ts" setup>
+import { onMounted } from 'vue'
+import NavBar from '@/components/NavBar.vue'
+import GlobalToast from '@/components/ui/GlobalToast.vue'
+import { useUserStore } from '@/stores/user-store.js'
+
+const userStore = useUserStore()
+
+onMounted(() => {
+  userStore.loadFromStorage()
+})
+
+function handleLogout() {
+  userStore.logout()
+}
+</script>
+
 <template>
   <div id="app">
     <header>
-      <h1>ABET Assessment App</h1>
-      <nav>
-        <router-link to="/">Home</router-link> |
-        <router-link to="/test-connection">Test Connection</router-link>
-      </nav>
-      <h1 hidden>This hidden element checks if the site loaded</h1>
+      <NavBar
+        :loggedIn="userStore.isLoggedIn"
+        :username="userStore.userFullName"
+        @logout="handleLogout"
+      />
     </header>
 
     <main>
       <router-view />
     </main>
+
+    <footer class="footer">
+      <p>© 2025 ABET Assessment App</p>
+      <p>Definitions adapted from ABET documentation.</p>
+    </footer>
+
+    <GlobalToast />
   </div>
 </template>
 
 <style>
 #app {
   margin: 0 auto;
-  padding: 2rem;
   text-align: center;
+  font-family: Noto Sans, system-ui, -apple-system, sans-serif;
 }
 
 header {
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
+  margin-bottom: 1rem;
 }
 
-nav {
-  margin: 1rem 0;
+.footer {
+  text-align: center;
+  color: #555;
+  font-size: 0.9rem;
+  margin-top: 3rem;
 }
 
-nav a {
-  margin: 0 1rem;
-  color: #007bff;
-  text-decoration: none;
-}
-
-nav a:hover {
-  text-decoration: underline;
-}
-
-nav a.router-link-active {
-  color: #0056b3;
-  font-weight: bold;
-}
-
-main {
-  margin-top: 2rem;
+.footer hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin-bottom: 1rem;
+  width: 100%;
 }
 </style>
