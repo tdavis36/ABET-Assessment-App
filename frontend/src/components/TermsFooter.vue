@@ -11,7 +11,6 @@
 
         <section class="content-section">
         <h2>Fundamental Assessment Concepts</h2>
-
         <div class="two-column">
             <div class="column">
             <h3>Program Educational Objectives</h3>
@@ -156,7 +155,7 @@
 
 .section-divider {
   border: none;
-  border-top: 2px dashed rgba(178, 34, 34, 0.35); 
+  border-top: 2px dashed rgba(178, 34, 34, 0.35);
   margin: 2.5rem auto;   /* space between dashbaords*/
   width: 80%;
 }

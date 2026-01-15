@@ -2,15 +2,16 @@ services:
   app:
     image: ${IMAGE_TAG}
     container_name: abet-prod
-    restart: unless-stopped
     environment:
-      - ENVIRONMENT_NAME=${ENVIRONMENT_NAME:-production}
-      - SPRING_PROFILES_ACTIVE=prod
-      - JAVA_OPTS=-Xmx1g -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport
-      - SERVER_FORWARD_HEADERS_STRATEGY=framework
-      - SPRING_DATASOURCE_URL=jdbc:mariadb://database:3306/abet_prod
-      - SPRING_DATASOURCE_USERNAME=abet_user
-      - SPRING_DATASOURCE_PASSWORD=${PROD_DB_PASSWORD}
+      ENVIRONMENT_NAME: ${ENVIRONMENT_NAME:-production}
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mariadb://database:3306/abet_prod
+      SPRING_DATASOURCE_USERNAME: abet_user
+      SPRING_DATASOURCE_PASSWORD: ${PROD_DB_PASSWORD}
+      JAVA_OPTS: -Xmx1g -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxGCPauseMillis=200
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      SERVER_COMPRESSION_ENABLED: true
+      SERVER_COMPRESSION_MIN_RESPONSE_SIZE: 1024
     ports:
       - "8080:8080"
     networks:
@@ -18,43 +19,70 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   database:
-    image: mariadb:11
+    image: mariadb:11.4
     container_name: abet-db-prod
-    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: abet_prod
-      MYSQL_USER: abet_user
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      # Production database optimizations
-      MYSQL_INITDB_SKIP_TZINFO: 1
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: abet_prod
+      MARIADB_USER: abet_user
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_INITDB_SKIP_TZINFO: 1
+      MARIADB_AUTO_UPGRADE: 1
+    ports:
+      - "3306:3306"
     volumes:
       - db_data_prod:/var/lib/mysql
       - ./database/init:/docker-entrypoint-initdb.d:ro
-    ports:
-      - "3306:3306"
     networks:
       - abet-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 30s
-    command: >
-      --innodb-buffer-pool-size=512M
-      --innodb-log-file-size=128M
-      --max-connections=200
-      --query-cache-size=64M
-      --query-cache-type=1
+    command:
+      - --innodb-buffer-pool-size=512M
+      - --innodb-log-file-size=128M
+      - --max-connections=200
+      - --innodb-flush-log-at-trx-commit=2
+      - --innodb-flush-method=O_DIRECT
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   db_data_prod:
