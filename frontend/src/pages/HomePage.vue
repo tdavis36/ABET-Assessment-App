@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import api from "@/api";
 
 import { useUserStore } from "@/stores/user-store.ts";
-import AdminDashboard from "@/components/AdminDashboard.vue";
+import AdminDashboard from "@/pages/AdminDashboard.vue";
 import InstructorDashboard from "@/components/InstructorDashboard.vue";
 
 // User store

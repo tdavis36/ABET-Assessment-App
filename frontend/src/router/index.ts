@@ -10,9 +10,8 @@ import ProgramCoursesPage from '@/pages/ProgramCoursesPage.vue'
 import ProgramInstructorsPage from '@/pages/ProgramInstructorsPage.vue'
 import LogInPage from '@/pages/LogIn.vue'
 import SignUpPage from '@/pages/SignUp.vue'
-import AdminDashboard from '@/components/AdminDashboard.vue'
+import AdminDashboard from '@/pages/AdminDashboard.vue'
 import ExamplePage from "@/pages/ExamplePage.vue";
-import AboutPage from '@/pages/AboutPage.vue'
 import ManagementPage from "@/pages/ManagementPage.vue";
 
 const routes = [
@@ -30,11 +29,6 @@ const routes = [
     name: 'Home',
     component: HomePage,
     meta: { requiresAuth: true }
-  },
-  {
-    path: '/about',
-    name: 'About',
-    component: AboutPage
   },
   {
     path: '/:program_id/summary/',
