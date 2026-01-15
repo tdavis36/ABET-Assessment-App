@@ -91,17 +91,17 @@ jobs:
       - name: Pull latest image
         run: |
           cd ~/abet-staging
-          docker-compose -f docker-compose.staging.yml pull app
+          docker compose -f docker-compose.staging.yml pull app
 
       - name: Stop existing containers
         run: |
           cd ~/abet-staging
-          docker-compose -f docker-compose.staging.yml down || true
+          docker compose -f docker-compose.staging.yml down || true
 
       - name: Start services
         run: |
           cd ~/abet-staging
-          docker-compose -f docker-compose.staging.yml up -d
+          docker compose -f docker-compose.staging.yml up -d
 
       - name: Wait for services to be ready
         run: |
@@ -115,8 +115,8 @@ jobs:
           # Check if containers are running
           if ! docker-compose -f docker-compose.staging.yml ps | grep -q "Up"; then
             echo "Containers failed to start"
-            docker-compose -f docker-compose.staging.yml ps
-            docker-compose -f docker-compose.staging.yml logs --tail=50
+            docker compose -f docker-compose.staging.yml ps
+            docker compose -f docker-compose.staging.yml logs --tail=50
             exit 1
           fi
           
@@ -125,7 +125,7 @@ jobs:
           for i in {1..12}; do
             if curl -f http://${TAILSCALE_IP}:8081/actuator/health 2>/dev/null; then
               echo "Application is healthy!"
-              docker-compose -f docker-compose.staging.yml ps
+              docker compose -f docker-compose.staging.yml ps
               exit 0
             fi
             echo "Health check attempt $i/12..."
@@ -133,7 +133,7 @@ jobs:
           done
           
           echo "Health check failed after 60 seconds"
-          docker-compose -f docker-compose.staging.yml logs --tail=100 app
+          docker compose -f docker-compose.staging.yml logs --tail=100 app
           exit 1
 
       - name: Show deployment info
@@ -146,10 +146,10 @@ jobs:
           echo "Access URL: http://${{ secrets.TAILSCALE_IP }}:8081"
           echo ""
           echo "=== Running Containers ==="
-          docker-compose -f docker-compose.staging.yml ps
+          docker compose -f docker-compose.staging.yml ps
           echo ""
           echo "=== Recent Logs ==="
-          docker-compose -f docker-compose.staging.yml logs --tail=20 app
+          docker compose -f docker-compose.staging.yml logs --tail=20 app
 
       - name: Cleanup old images
         if: success()
@@ -169,9 +169,9 @@ jobs:
         run: |
           cd ~/abet-staging
           echo "Deployment failed, attempting rollback..."
-          docker-compose -f docker-compose.staging.yml down
+          docker compose -f docker-compose.staging.yml down
           echo "Containers stopped. Check logs above for error details."
-          echo "To manually investigate: cd ~/abet-staging && docker-compose -f docker-compose.staging.yml logs"
+          echo "To manually investigate: cd ~/abet-staging && docker compose -f docker-compose.staging.yml logs"
 
   # Optional: Run E2E tests after deployment
   test:
@@ -186,18 +186,18 @@ jobs:
           cd ~/abet-staging
           
           echo "Starting E2E tests..."
-          docker-compose -f docker-compose.staging.yml --profile e2e up \
+          docker compose -f docker-compose.staging.yml --profile e2e up \
             --exit-code-from playwright-tests \
             playwright-tests || TEST_EXIT=$?
           
           # Copy test results even if tests failed
-          docker-compose -f docker-compose.staging.yml cp \
+          docker compose -f docker-compose.staging.yml cp \
             playwright-tests:/app/test-results ./test-results || true
-          docker-compose -f docker-compose.staging.yml cp \
+          docker compose -f docker-compose.staging.yml cp \
             playwright-tests:/app/playwright-report ./playwright-report || true
           
           # Clean up test container
-          docker-compose -f docker-compose.staging.yml --profile e2e down playwright-tests
+          docker compose -f docker-compose.staging.yml --profile e2e down playwright-tests
           
           # Exit with test result
           exit ${TEST_EXIT:-0}
