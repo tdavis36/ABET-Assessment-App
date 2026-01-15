@@ -1,0 +1,213 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=staging-
+            type=raw,value=staging-latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Staging Server
+    needs: build
+    runs-on: self-hosted
+
+    steps:
+      - name: Set up deployment directory
+        run: |
+          mkdir -p ~/abet-staging
+          cd ~/abet-staging
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create environment file
+        run: |
+          cd ~/abet-staging
+          cat > .env << EOF
+          IMAGE_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-latest
+          ENVIRONMENT_NAME=staging
+          DB_PASSWORD=${{ secrets.STAGING_DB_PASSWORD }}
+          DB_ROOT_PASSWORD=${{ secrets.STAGING_DB_ROOT_PASSWORD }}
+          TAILSCALE_IP=${{ secrets.TAILSCALE_IP }}
+          DEBUG=pw:api
+          EOF
+
+      - name: Copy docker-compose file
+        run: |
+          cd ~/abet-staging
+          cp $GITHUB_WORKSPACE/docker-compose_staging.yml .
+
+      - name: Login to Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Pull latest image
+        run: |
+          cd ~/abet-staging
+          docker-compose -f docker-compose_staging.yml pull app
+
+      - name: Stop existing containers
+        run: |
+          cd ~/abet-staging
+          docker-compose -f docker-compose_staging.yml down || true
+
+      - name: Start services
+        run: |
+          cd ~/abet-staging
+          docker-compose -f docker-compose_staging.yml up -d
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to start..."
+          sleep 20
+
+      - name: Check service health
+        run: |
+          cd ~/abet-staging
+          
+          # Check if containers are running
+          if ! docker-compose -f docker-compose_staging.yml ps | grep -q "Up"; then
+            echo "Containers failed to start"
+            docker-compose -f docker-compose_staging.yml ps
+            docker-compose -f docker-compose_staging.yml logs --tail=50
+            exit 1
+          fi
+          
+          # Wait for health check (up to 60 seconds)
+          TAILSCALE_IP=${{ secrets.TAILSCALE_IP }}
+          for i in {1..12}; do
+            if curl -f http://${TAILSCALE_IP}:8081/actuator/health 2>/dev/null; then
+              echo "Application is healthy!"
+              docker-compose -f docker-compose_staging.yml ps
+              exit 0
+            fi
+            echo "Health check attempt $i/12..."
+            sleep 5
+          done
+          
+          echo "Health check failed after 60 seconds"
+          docker-compose -f docker-compose_staging.yml logs --tail=100 app
+          exit 1
+
+      - name: Show deployment info
+        if: success()
+        run: |
+          cd ~/abet-staging
+          echo "=== Deployment Summary ==="
+          echo "Environment: Staging"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-latest"
+          echo "Access URL: http://${{ secrets.TAILSCALE_IP }}:8081"
+          echo ""
+          echo "=== Running Containers ==="
+          docker-compose -f docker-compose_staging.yml ps
+          echo ""
+          echo "=== Recent Logs ==="
+          docker-compose -f docker-compose_staging.yml logs --tail=20 app
+
+      - name: Cleanup old images
+        if: success()
+        run: |
+          echo "Cleaning up old Docker images..."
+          docker image prune -f
+          
+          # Keep only last 3 staging images
+          docker images ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} | \
+            grep staging | \
+            tail -n +4 | \
+            awk '{print $3}' | \
+            xargs -r docker rmi -f || true
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          cd ~/abet-staging
+          echo "Deployment failed, attempting rollback..."
+          docker-compose -f docker-compose_staging.yml down
+          echo "Containers stopped. Check logs above for error details."
+          echo "To manually investigate: cd ~/abet-staging && docker-compose -f docker-compose_staging.yml logs"
+
+  # Optional: Run E2E tests after deployment
+  test:
+    name: Run E2E Tests
+    needs: deploy
+    runs-on: self-hosted
+    if: success()
+
+    steps:
+      - name: Run Playwright E2E tests
+        run: |
+          cd ~/abet-staging
+          
+          echo "Starting E2E tests..."
+          docker-compose -f docker-compose_staging.yml --profile e2e up \
+            --exit-code-from playwright-tests \
+            playwright-tests || TEST_EXIT=$?
+          
+          # Copy test results even if tests failed
+          docker-compose -f docker-compose_staging.yml cp \
+            playwright-tests:/app/test-results ./test-results || true
+          docker-compose -f docker-compose_staging.yml cp \
+            playwright-tests:/app/playwright-report ./playwright-report || true
+          
+          # Clean up test container
+          docker-compose -f docker-compose_staging.yml --profile e2e down playwright-tests
+          
+          # Exit with test result
+          exit ${TEST_EXIT:-0}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: |
+            ~/abet-staging/test-results/
+            ~/abet-staging/playwright-report/
+          retention-days: 7

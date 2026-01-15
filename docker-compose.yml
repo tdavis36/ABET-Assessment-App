@@ -3,13 +3,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: abet-dev
     environment:
       SPRING_PROFILES_ACTIVE: dev-docker
+      JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m -XX:+UseG1GC}
     ports:
       - "8080:8080"
     networks:
       - abet-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   abet-network:
