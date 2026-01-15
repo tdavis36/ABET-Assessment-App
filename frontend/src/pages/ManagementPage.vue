@@ -92,8 +92,8 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import CourseViewPage from '@/components/pages/CourseViewPage.vue'
-import InstructorSelector from '@/components/pages/InstructorSelector.vue'
+import CourseViewPage from '@/pages/CourseViewPage.vue'
+import InstructorSelector from '@/pages/InstructorSelector.vue'
 import api from '@/api'
 import CourseEditorModal from "@/components/CourseEditorModal.vue";
 

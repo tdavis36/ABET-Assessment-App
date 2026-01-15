@@ -38,20 +38,9 @@ public class WebSecurityConfig {
                                 "/signup",
                                 "/login",
                                 "/test-connection",
-                                "/h2-console/**"
+                                "/h2-console/**",
+                                "/api/**"
                         ).permitAll()
-                        // Public API endpoints
-                        .requestMatchers(
-                                "/api/users/login",
-                                "/api/users/signup"
-                        ).permitAll()
-                        // Protected API endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/instructor/**").hasAnyRole("ADMIN", "INSTRUCTOR")
-                        .requestMatchers("/api/hello").authenticated()
-                        .requestMatchers("/api/**").authenticated()
-                        // Everything else (for Vue routing)
-                        .anyRequest().permitAll()
                 )
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .formLogin(AbstractHttpConfigurer::disable)

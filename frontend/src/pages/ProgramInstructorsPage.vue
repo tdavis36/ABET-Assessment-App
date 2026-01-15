@@ -223,11 +223,11 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, reactive } from "vue";
 import api from "@/api";
-import BaseCard from "@/components/ui/BaseCard.vue";
-import BaseModal from "@/components/ui/BaseModal.vue";
-import BaseInput from "@/components/ui/BaseInput.vue";
-import BaseSelect from "@/components/ui/BaseSelect.vue";
-import { useToast } from "@/composables/use-toast";
+import BaseCard from "../components/ui/BaseCard.vue";
+import BaseModal from "../components/ui/BaseModal.vue";
+import BaseInput from "../components/ui/BaseInput.vue";
+import BaseSelect from "../components/ui/BaseSelect.vue";
+import { useToast } from "@/composables/use-toast.ts";
 
 const toast = useToast();
 
