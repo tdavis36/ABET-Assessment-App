@@ -2,8 +2,6 @@ package com.abetappteam.abetapp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
  * @WebMvcTest(YourController.class)
  */
 @ActiveProfiles("test")
-@Execution(ExecutionMode.SAME_THREAD)
 public abstract class BaseControllerTest {
 
     @Autowired

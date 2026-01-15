@@ -705,6 +705,8 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
+   frontend/test/
+
 ### Gradle template
 **/build/
 !src/**/build/

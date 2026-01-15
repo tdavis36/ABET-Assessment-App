@@ -140,12 +140,24 @@ tasks.register('copyFrontend', Copy) {
     into "${projectDir}/src/main/resources/static"
 }
 
-// TESTS
-// Run backend tests
+tasks.register('devFrontend', Exec) {
+    group = 'abet-dev'
+    dependsOn tasks.installFrontendDeps
+    workingDir 'frontend'
+    executable npmExecutable
+    args 'run', 'dev'
+    inputs.files(fileTree("frontend/src"))
+    inputs.file("frontend/package.json")
+    outputs.dir("frontend/dist")
+    onlyIf { !skipFrontend }
+}
+
+// Configure main tasks
 tasks.named('test') {
     group = 'abet-dev'
-    useJUnitPlatform()
-    outputs.upToDateWhen { false }
+    if (!skipFrontend) {
+        dependsOn tasks.testFrontend
+    }
 }
 
 // Run frontend unit tests

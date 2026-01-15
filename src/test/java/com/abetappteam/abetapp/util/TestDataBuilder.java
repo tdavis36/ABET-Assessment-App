@@ -1,21 +1,8 @@
 package com.abetappteam.abetapp.util;
 
-import com.abetappteam.abetapp.entity.Program;
-import com.abetappteam.abetapp.entity.ProgramUser;
-import com.abetappteam.abetapp.entity.Users;
-import com.abetappteam.abetapp.dto.ProgramDTO;
-import com.abetappteam.abetapp.entity.Course;
-import com.abetappteam.abetapp.entity.CourseIndicator;
-import com.abetappteam.abetapp.entity.Measure;
-import com.abetappteam.abetapp.entity.Outcome;
-import com.abetappteam.abetapp.dto.CourseDTO;
-import com.abetappteam.abetapp.dto.MeasureDTO;
-import com.abetappteam.abetapp.dto.OutcomeDTO;
-import com.abetappteam.abetapp.dto.UsersDTO;
-import com.abetappteam.abetapp.entity.Semester;
-import com.abetappteam.abetapp.dto.SemesterDTO;
+import com.abetappteam.abetapp.entity.Example;
+import com.abetappteam.abetapp.dto.ExampleDTO;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +15,69 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TestDataBuilder {
 
     private static final AtomicLong idCounter = new AtomicLong(1);
+
+    /**
+     * Create a default Example entity for testing
+     */
+    public static Example createExample() {
+        return createExample("Test Example", "Test Description", true);
+    }
+
+    /**
+     * Create an Example entity with custom values
+     */
+    public static Example createExample(String name, String description, Boolean active) {
+        Example example = new Example();
+        example.setName(name);
+        example.setDescription(description);
+        example.setActive(active);
+        return example;
+    }
+
+    /**
+     * Create an Example entity with ID (simulating persisted entity)
+     */
+    public static Example createExampleWithId(Long id, String name, String description, Boolean active) {
+        Example example = createExample(name, description, active);
+        example.setId(id);
+        example.setCreatedAt(LocalDateTime.now());
+        example.setUpdatedAt(LocalDateTime.now());
+        return example;
+    }
+
+    /**
+     * Create a default ExampleDTO for testing
+     */
+    public static ExampleDTO createExampleDTO() {
+        return createExampleDTO("Test Example DTO", "Test Description", true);
+    }
+
+    /**
+     * Create an ExampleDTO with custom values
+     */
+    public static ExampleDTO createExampleDTO(String name, String description, Boolean active) {
+        ExampleDTO dto = new ExampleDTO();
+        dto.setName(name);
+        dto.setDescription(description);
+        dto.setActive(active);
+        return dto;
+    }
+
+    /**
+     * Create a list of Example entities
+     */
+    public static List<Example> createExampleList(int count) {
+        List<Example> examples = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            examples.add(createExampleWithId(
+                    (long) i,
+                    "Example " + i,
+                    "Description " + i,
+                    i % 2 == 0
+            ));
+        }
+        return examples;
+    }
 
     /**
      * Generate a unique ID for testing
@@ -44,530 +94,22 @@ public class TestDataBuilder {
     }
 
     /**
-     * Create a Course entity with ID (simulating persisted entity)
+     * Create an Example with invalid data (for validation testing)
      */
-    public static Course createCourseWithId(Long id, String courseCode, String courseName, String courseDescription,
-            Long semesterId) {
-        Course course = new Course();
-        course.setId(id);
-        course.setCourseCode(courseCode);
-        course.setCourseName(courseName);
-        course.setCourseDescription(courseDescription);
-        course.setSemesterId(semesterId);
-        course.setIsActive(true);
-        course.setCreatedAt(LocalDateTime.now());
-        course.setUpdatedAt(LocalDateTime.now());
-        return course;
+    public static Example createInvalidExample() {
+        Example example = new Example();
+        example.setName(""); // Empty name - should fail validation
+        example.setDescription("x".repeat(501)); // Too long - should fail validation
+        return example;
     }
 
     /**
-     * Create a Course entity without ID (for creation tests)
+     * Create an ExampleDTO with invalid data (for validation testing)
      */
-    public static Course createCourse(String courseCode, String courseName, String courseDescription, Long semesterId) {
-        return new Course(courseCode, courseName, courseDescription, semesterId);
-    }
-
-    /**
-     * Create a default Course entity
-     */
-    public static Course createCourse() {
-        return createCourse("CS101", "Introduction to Computer Science", "Basic computer science principles", 1L);
-    }
-
-    /**
-     * Create a CourseDTO for testing
-     */
-    public static CourseDTO createCourseDTO(String courseCode, String courseName, String courseDescription,
-            Long semesterId) {
-        return new CourseDTO(courseCode, courseName, courseDescription, semesterId);
-    }
-
-    /**
-     * Create a default CourseDTO
-     */
-    public static CourseDTO createCourseDTO() {
-        return createCourseDTO("CS101", "Introduction to Computer Science", "Basic computer science principles", 1L);
-    }
-
-    /**
-     * Create an invalid Course DTO (for validation tests)
-     */
-    public static CourseDTO createInvalidCourseDTO() {
-        CourseDTO dto = new CourseDTO();
-        dto.setCourseCode(null); // Invalid - required
-        dto.setCourseName(""); // Invalid - blank
-        dto.setCourseDescription(null); // Invalid - required
-        dto.setSemesterId(null); // Invalid - required
+    public static ExampleDTO createInvalidExampleDTO() {
+        ExampleDTO dto = new ExampleDTO();
+        dto.setName(""); // Empty name - should fail validation
+        dto.setDescription("x".repeat(501)); // Too long - should fail validation
         return dto;
-    }
-
-    /**
-     * Create a list of Course entities for testing
-     */
-    public static List<Course> createCourseList(int count) {
-        List<Course> courses = new ArrayList<>();
-        for (int i = 1; i <= count; i++) {
-            courses.add(createCourseWithId(
-                    (long) i,
-                    "CS" + (100 + i),
-                    "Course " + i,
-                    "Description for Course " + i,
-                    1L));
-        }
-        return courses;
-    }
-
-    /**
-     * Create a list of Course entities with custom semester
-     */
-    public static List<Course> createCourseList(int count, Long semesterId) {
-        List<Course> courses = new ArrayList<>();
-        for (int i = 1; i <= count; i++) {
-            courses.add(createCourseWithId(
-                    (long) i,
-                    "CS" + (100 + i),
-                    "Course " + i,
-                    "Description for Course " + i,
-                    semesterId));
-        }
-        return courses;
-    }
-
-    /**
-     * Create a list of Course entities with alternating active status
-     */
-    public static List<Course> createCourseListWithStatus(int count) {
-        List<Course> courses = new ArrayList<>();
-        for (int i = 1; i <= count; i++) {
-            Course course = createCourseWithId(
-                    (long) i,
-                    "CS" + (100 + i),
-                    "Course " + i,
-                    "Description for Course " + i,
-                    1L);
-            course.setIsActive(i % 2 == 0); // Even courses are active
-            courses.add(course);
-        }
-        return courses;
-    }
-
-    // USERS TEST DATA
-    // Create default user entity for testing
-    public static Users createUser() {
-        return createUser("test@gmail.com", "password", "Test", "User", "Dr.", true);
-    }
-
-    // Create custom user entity for testing
-    public static Users createUser(String email, String passwordHash, String firstName, String lastName, String title,
-            Boolean active) {
-        Users user = new Users();
-        user.setEmail(email);
-        user.setPasswordHash(passwordHash);
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setTitle(title);
-        user.setActive(active);
-        return user;
-    }
-
-    // Create custom user entity with id
-    public static Users createUserWithId(Long id, String email, String passwordHash, String firstName, String lastName,
-            String title, Boolean active) {
-        Users user = createUser(email, passwordHash, firstName, lastName, title, active);
-        user.setId(id);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        return user;
-    }
-
-    // Create invalid user
-    public static Users createInvalidUser() {
-        Users user = new Users();
-        user.setEmail("email"); // Must be a valid email
-        user.setPasswordHash(null); // Can't be null
-        user.setFirstName(""); // Can't be empty
-        user.setLastName(null); // Can't be null
-        user.setTitle("Thisisaveryverylongtitlethatgoesoverthelimitthatwassetforhowlongatitlteshouldbe"); // Too long
-        user.setActive(true);
-        return user;
-    }
-
-    // Create default user dto for testing
-    public static UsersDTO createUsersDTO() {
-        return createUsersDTO("newEmail@gmail.com", "NewPassword", "NewFirstName", "NewLastName", "NewTitle", true);
-    }
-
-    // Create custom user dto
-    public static UsersDTO createUsersDTO(String email, String passwordHash, String firstName, String lastName,
-            String title, Boolean active) {
-        UsersDTO dto = new UsersDTO();
-        dto.setEmail(email);
-        dto.setPasswordHash(passwordHash);
-        dto.setFirstName(firstName);
-        dto.setLastName(lastName);
-        dto.setTitle(title);
-        dto.setActive(active);
-        return dto;
-    }
-
-    // Create invalid user dto
-    public static UsersDTO createInvalidUsersDTO() {
-        UsersDTO dto = new UsersDTO();
-        dto.setEmail("email"); // Must be a valid email address
-        dto.setPasswordHash(null); // Can't be null
-        dto.setFirstName(""); // Can't be empty
-        dto.setLastName(null); // Can't be null
-        dto.setTitle("Thisisaveryverylongtitlethatgoesoverthelimitthatwassetforhowlongatitlteshouldbe"); // Too Long
-        dto.setActive(true);
-        return dto;
-    }
-
-    // Create a list of users, every odd numbered user will be inactive
-    public static List<Users> createUserList(int count) {
-        List<Users> users = new ArrayList<>();
-        for (int i = 1; i <= count; i++) {
-            users.add(createUserWithId(
-                    (long) i,
-                    "user" + i + "@gmail.com",
-                    "Password " + i,
-                    "User" + i,
-                    "Doe" + i,
-                    "Dr.",
-                    i % 2 == 0));
-        }
-        return users;
-    }
-
-    // PROGRAM TEST DATA
-
-    // Create default program
-    public static Program createProgram() {
-        return createProgram("EU Testing", "Example University", true);
-    }
-
-    // Create custom program
-    public static Program createProgram(String name, String institution, Boolean active) {
-        Program program = new Program();
-        program.setName(name);
-        program.setInstitution(institution);
-        program.setActive(active);
-        return program;
-    }
-
-    // Create default ProgramDTO
-    public static ProgramDTO createProgramDTO() {
-        return createProgramDTO("New Program", "New Institution", true);
-    }
-
-    // Create custom ProgramDTO
-    public static ProgramDTO createProgramDTO(String name, String institution, Boolean active) {
-        ProgramDTO dto = new ProgramDTO();
-        dto.setName(name);
-        dto.setInstitution(institution);
-        dto.setActive(active);
-        return dto;
-    }
-
-    // Create custom program entity with id
-    public static Program createProgramWithId(Long id, String name, String institution, Boolean active) {
-        Program program = createProgram(name, institution, active);
-        program.setId(id);
-        program.setCreatedAt(LocalDateTime.now());
-        program.setUpdatedAt(LocalDateTime.now());
-        return program;
-    }
-
-    // Create a list of programs belonging to "Example University", every odd
-    // numbered program will be inactive
-    public static List<Program> createProgramList(int count) {
-        List<Program> programs = new ArrayList<>();
-        for (int i = 1; i <= count; i++) {
-            programs.add(createProgramWithId(
-                    (long) i,
-                    "Program " + i,
-                    "Example University",
-                    i % 2 == 0));
-        }
-        return programs;
-    }
-
-    // PROGRAMUSER TEST DATA
-
-    // Create ProgramUser
-    public static ProgramUser createProgramUser() {
-        return createProgramUser(false, 1l, 1l, true);
-    }
-
-    // Create Custom ProgramUser
-    public static ProgramUser createProgramUser(Boolean isAdmin, Long programId, Long userId, Boolean isActive) {
-        ProgramUser pUser = new ProgramUser();
-        pUser.setProgramId(programId);
-        pUser.setUserId(userId);
-        pUser.setIsActive(isActive);
-        pUser.setAdminStatus(isAdmin);
-        return pUser;
-    }
-
-    // Create Custom ProgramUser with Id
-    public static ProgramUser createProgramUserWithId(Long id, Boolean isAdmin, Long programId, Long userId,
-            Boolean isActive) {
-        ProgramUser pUser = createProgramUser(isAdmin, programId, userId, isActive);
-        pUser.setId(id);
-        pUser.setCreatedAt(LocalDateTime.now());
-        return pUser;
-    }
-
-    // SEMESTER TEST DATA
-
-    /**
-     * Create a Semester with ID
-     */
-    public static Semester createSemesterWithId(Long id, String name, String code, LocalDate startDate,
-            LocalDate endDate,
-            Integer academicYear, Semester.SemesterType type, Long programId, String description,
-            Boolean isCurrent) {
-        Semester semester = new Semester();
-        semester.setId(id);
-        semester.setName(name);
-        semester.setCode(code);
-        semester.setStartDate(startDate);
-        semester.setEndDate(endDate);
-        semester.setAcademicYear(academicYear);
-        semester.setType(type);
-        semester.setProgramId(programId);
-        semester.setDescription(description);
-        semester.setIsCurrent(isCurrent);
-        semester.setCreatedAt(LocalDateTime.now());
-        semester.setUpdatedAt(LocalDateTime.now());
-        return semester;
-    }
-
-    /**
-     * Create a SemesterDTO with custom values
-     */
-    public static SemesterDTO createSemesterDTO(String name, String code, LocalDate startDate, LocalDate endDate,
-            Integer academicYear, String type, Long programId, String description, Boolean isCurrent) {
-        SemesterDTO dto = new SemesterDTO();
-        dto.setName(name);
-        dto.setCode(code);
-        dto.setStartDate(startDate);
-        dto.setEndDate(endDate);
-        dto.setAcademicYear(academicYear);
-        dto.setType(type);
-        dto.setProgramId(programId);
-        dto.setDescription(description);
-        dto.setIsCurrent(isCurrent);
-        return dto;
-    }
-
-    /**
-     * Create a list of Semester objects for testing
-     */
-    public static List<Semester> createSemesterList(int count, Long programId) {
-        List<Semester> semesters = new ArrayList<>();
-        for (int i = 1; i <= count; i++) {
-            Semester.SemesterType type = i % 2 == 0 ? Semester.SemesterType.SPRING
-                    : Semester.SemesterType.FALL;
-            semesters.add(createSemesterWithId(
-                    (long) i,
-                    type + " 202" + (i % 10),
-                    type + "-202" + (i % 10),
-                    LocalDate.of(2024 + (i % 3), type == Semester.SemesterType.FALL ? 9 : 1, 1),
-                    LocalDate.of(2024 + (i % 3), type == Semester.SemesterType.FALL ? 12 : 5, 15),
-                    2024 + (i % 3),
-                    type,
-                    programId,
-                    "Description for " + type + " 202" + (i % 10),
-                    i == 1)); // First one is current
-        }
-        return semesters;
-    }
-
-    /**
-     * Create a Semester with custom values
-     */
-    public static Semester createSemester(String name, String code, LocalDate startDate,
-            LocalDate endDate, Integer academicYear, Semester.SemesterType type, Long programId) {
-        Semester semester = new Semester(name, code, startDate, endDate, academicYear, type, programId);
-        semester.setDescription("Test semester description");
-        semester.setIsCurrent(false);
-        semester.setStatus(Semester.SemesterStatus.UPCOMING);
-        return semester;
-    }
-
-    /**
-     * Create a Semester with status
-     */
-    public static Semester createSemesterWithStatus(String name, String code, LocalDate startDate,
-            LocalDate endDate, Integer academicYear, Semester.SemesterType type, Long programId,
-            Semester.SemesterStatus status) {
-        Semester semester = createSemester(name, code, startDate, endDate, academicYear, type, programId);
-        semester.setStatus(status);
-        return semester;
-    }
-
-    /**
-     * Create a current semester
-     */
-    public static Semester createCurrentSemester() {
-        LocalDate startDate = LocalDate.of(2024, 6, 1);
-        LocalDate endDate = LocalDate.of(2024, 7, 31);
-
-        Semester semester = createSemester("Spring 2024", "SPRING-2024",
-                startDate, endDate, 2024, Semester.SemesterType.SPRING, 1L);
-        semester.setIsCurrent(true);
-        semester.setStatus(Semester.SemesterStatus.ACTIVE);
-        return semester;
-    }
-
-    //MEASURE TEST DATA
-
-    //Create Measure
-    public static Measure createMeasure(){
-        return createMeasure(1l, "Example Description", "Example Observation", "Example Recommended Action", "Example Fcar", 
-        3, 1, 2, "InProgress", true);
-    }
-
-    //Create Custom Measure
-    public static Measure createMeasure(Long courseIndicatorId, String description, String observation, String recAction, String fcar, 
-    Integer met, Integer exceeded, Integer below, String status, Boolean active) {
-        Measure measure = new Measure();
-        measure.setCourseIndicatorId(courseIndicatorId);
-        measure.setDescription(description);
-        measure.setObservation(observation);
-        measure.setRecommendedAction(recAction);
-        measure.setFcar(fcar);
-        measure.setStudentsMet(met);
-        measure.setStudentsExceeded(exceeded);
-        measure.setStudentsBelow(below);
-        measure.setStatus(status);
-        measure.setActive(active);
-        return measure;
-    }
-
-    //Create Custom Measure with ID
-    public static Measure createMeasureWithId(Long id, Long courseIndicatorId, String description, String observation, String recAction, String fcar, 
-    Integer met, Integer exceeded, Integer below, String status, Boolean active) {
-        Measure measure = createMeasure(courseIndicatorId, description, observation, recAction, fcar, met, exceeded, below, status, active);
-        measure.setId(id);
-        return measure;
-    }
-
-    //Create MeasureDTO
-    public static MeasureDTO creaMeasureDTO(){
-        return createMeasureDTO(1l, 1l, "New Description", "New Observation", 
-        "New Recommended Action", "New Fcar", 1, 2, 3, "InReview", true);
-    }
-
-    //Create Custom MeasureDTO
-    public static MeasureDTO createMeasureDTO(Long id, Long courseIndicatorId, String description, String observation, String recAction, String fcar,
-    Integer met, Integer exceeded, Integer below, String status, Boolean active){
-        MeasureDTO measureDTO = new MeasureDTO();
-        measureDTO.setId(id);
-        measureDTO.setCourseIndicatorId(courseIndicatorId);
-        measureDTO.setDescription(description);
-        measureDTO.setObservation(observation);
-        measureDTO.setRecommendedAction(recAction);
-        measureDTO.setFCar(fcar);
-        measureDTO.setStudentsMet(met);
-        measureDTO.setStudentsExceeded(exceeded);
-        measureDTO.setStudentsBelow(below);
-        measureDTO.setStatus(status);
-        measureDTO.setActive(active);
-        return measureDTO;
-    }
-
-    // Create a list of Measures where every other measure is inactive
-    public static List<Measure> createMeasureList(int count) {
-        List<Measure> measures = new ArrayList<>();
-        for (int i = 1; i <= count; i++) {
-            measures.add(createMeasureWithId(
-                    (long) i,
-                    (long) i,
-                    "Description" + i,
-                    "Observation" + i,
-                    "Action" + i,
-                    "Fcar" + i,
-                    i, i, i,
-                    "InProgress",
-                    i % 2 == 0));
-        }
-        return measures;
-    }
-
-    // COURSE INDICATOR DATA
-
-    //Create Course Indicator
-    public static CourseIndicator createCourseIndicator(){
-        return createCourseIndicator(1l, 1l, 1l, true);
-    }
-
-    //Create Custom Course Indicator
-    public static CourseIndicator createCourseIndicator(Long id, Long courseId, Long indicatorId, Boolean active){
-        CourseIndicator courseIndicator = new CourseIndicator();
-        courseIndicator.setId(id);
-        courseIndicator.setCourseId(courseId);
-        courseIndicator.setIndicatorId(indicatorId);
-        courseIndicator.setIsActive(active);
-        return courseIndicator;
-    }
-
-    //STUDENT OUTCOME DATA
-
-    //Create Outcome
-    public static Outcome createOutcome(){
-        return createOutcome(1, "Test Outcome", 1l, 80, "Looks good", true);
-    }
-
-    //Create custom Outcome
-    public static Outcome createOutcome(Integer number, String description, Long semesterId, Integer value, String evaluation, Boolean active){
-        Outcome outcome = new Outcome();
-        outcome.setNumber(number);
-        outcome.setDescription(description);
-        outcome.setSemesterId(semesterId);
-        outcome.setValue(value);
-        outcome.setEvaluation(evaluation);
-        outcome.setActive(active);
-        return outcome;
-    }
-
-    //Create custom Outcome with Id
-    public static Outcome createOutcomeWithId(Long id, Integer number, String description, Long semesterId, Integer value, String evaluation, Boolean active){
-        Outcome outcome = createOutcome(number, description, semesterId, value, evaluation, active);
-        outcome.setId(id);
-        return outcome;
-    }
-
-    //Create OutcomeDTO
-    public static OutcomeDTO createOutcomeDTO(){
-        return createOutcomeDTO(2, "New Description", 1l, 20, "Looks bad", true);   
-    }
-
-    //Create custom OutcomeDTO
-    public static OutcomeDTO createOutcomeDTO(Integer number, String description, Long semesterId, Integer value, String evaluation, Boolean active){
-        OutcomeDTO dto = new OutcomeDTO();
-        dto.setNumber(number);
-        dto.setDescription(description);
-        dto.setSemesterId(semesterId);
-        dto.setValue(value);
-        dto.setEvaluation(evaluation);
-        dto.setActive(active);
-        return dto;
-    }
-
-    // Create a list of Outcomes where every other outcome is inactive
-    public static List<Outcome> createOutcomeList(int count) {
-        List<Outcome> outcomes = new ArrayList<>();
-        for (int i = 1; i <= count; i++) {
-            outcomes.add(createOutcomeWithId(
-                    (long) i,
-                    i,
-                    "Description " + i,
-                    1l,
-                    80,
-                    null,
-                    i % 2 == 0));
-        }
-        return outcomes;
     }
 }

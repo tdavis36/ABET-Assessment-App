@@ -48,9 +48,8 @@ public abstract class BaseController {
      * Create a standardized error response
      */
     protected ResponseEntity<ApiResponse<Object>> error(String message, HttpStatus status) {
-        ApiResponse<Object> response = ApiResponse.error(message);
-        response.setMessage(message);
-        return ResponseEntity.status(status).body(response);
+        return ResponseEntity.status(status)
+                .body(ApiResponse.error(message));
     }
 
     /**
@@ -107,7 +106,7 @@ public abstract class BaseController {
     /**
      * Validate required path variables
      */
-    protected void validateId(Long id) {
+    protected void zvalidateId(Long id) {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("Invalid ID provided");
         }
