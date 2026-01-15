@@ -85,6 +85,29 @@ CREATE TABLE semester (
                           FOREIGN KEY (program_id) REFERENCES program(id)
 );
 
+-- ProgramUser table
+CREATE TABLE program_user (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                isAdmin BOOLEAN NOT NULL DEFAULT FALSE,
+                program_id BIGINT NOT NULL,
+                user_id BIGINT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE,
+                FOREIGN KEY (program_id) REFERENCES program(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Semester table
+CREATE TABLE semester (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                season VARCHAR(6) NOT NULL,
+                semester_year SMALLINT NOT NULL,
+                program_id BIGINT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE,
+                FOREIGN KEY (program_id) REFERENCES program(id)
+);
+
 -- Student outcomes table
 CREATE TABLE student_outcome (
                                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
