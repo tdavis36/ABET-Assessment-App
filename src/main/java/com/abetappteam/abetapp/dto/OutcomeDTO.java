@@ -3,10 +3,6 @@ package com.abetappteam.abetapp.dto;
 import jakarta.validation.constraints.NotBlank;
 
 public class OutcomeDTO {
-
-    private Long id;
-
-    @NotBlank(message = "Number of Student Outcome is required")
     private Integer number;
 
     private Integer value;
@@ -23,8 +19,7 @@ public class OutcomeDTO {
     //Constructors
     public OutcomeDTO(){}
 
-    public OutcomeDTO(Long id, Integer number, Integer value, String description, String evaluation, Long semesterId, Boolean active){
-        this.id = id;
+    public OutcomeDTO(Integer number, Integer value, String description, String evaluation, Long semesterId, Boolean active){
         this.number = number;
         this.value = value;
         this.description = description;
@@ -34,14 +29,6 @@ public class OutcomeDTO {
     }
 
     //Setters and Getters
-    public Long getId(){
-        return id;
-    }
-
-    public void setId(Long id){
-        this.id = id;
-    }
-
     public Integer getNumber(){
         return number;
     }
